@@ -12,7 +12,7 @@ The following graphs provide a summary of performance across all evaluated model
 | :--- | :--- |
 | **![Model Pass Rate](model-pass-rate.png)** | **Model Pass Rate**<br>Comparative performance of all models. |
 | **![Topic Pass Rate](topic-passrate.png)** | **Topic Pass Rate**<br>Breakdown of success rates across different documentation categories. |
-| **![Topic Pass Rate No Faithfulness](topic-passrate-w:o-faithfulness.png)** | **Topic Pass Rate (w/o Faithfulness)**<br>Topic breakdown excluding the faithfulness metric for broader relevancy analysis. |
+| **![Topic Pass Rate No Faithfulness](topic-passrate-without-faithfulness.png)** | **Topic Pass Rate (w/o Faithfulness)**<br>Topic breakdown excluding the faithfulness metric for broader relevancy analysis. |
 
 ---
 
