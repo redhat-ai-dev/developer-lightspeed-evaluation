@@ -1,0 +1,178 @@
+# About Red Hat Developer Hub
+
+Red Hat Developer Hub (RHDH) is an enterprise-grade internal developer portal (IDP) that helps simplify and accelerates software delivery. It provides a customizable web-based interface that centralizes access to key development resources, including source code repositories, CI and CD pipelines, APIs, documentation, and runtime environments.
+Red Hat Developer Hub is designed for cloud-native environments, including supported Kubernetes platforms, Red Hat OpenShift Container Platform, and hybrid infrastructure. By consolidating tools and standardizing development workflows, it helps teams deliver software faster with more consistency.
+Designed for enterprise-scale software teams, RHDH helps developers focus on building software rather than managing tools. Developers can onboard quickly, create environments, and integrate with existing systems. With enterprise-grade security, role-based access control, and 24x7 support, teams stay productive while meeting compliance and reliability standards.
+
+# Understanding internal developer platforms
+
+An internal developer platform (IDP) is a curated set of tools and services that supports developer self-service. Instead of navigating multiple systems, developers use a unified interface to provision environments, deploy code, and access APIs.
+
+Why IDPs matter:: IDPs address the challenges of modern software delivery by enabling self-service, enforcing standards, and improving the developer experience.
+For organizations:: 
+* Scalability: RHDH enables consistent developer onboarding and application delivery across growing teams and environments.
+* Security: Role-based access control (RBAC) and integration with enterprise systems ensure access is managed securely and in line with compliance requirements.
+* Operational efficiency: By removing manual handoffs and centralizing key development workflows, RHDH improves time to value and increases return on engineering investment.
+For platform engineers:: 
+* Curated platforms: Platform teams can design reusable templates and integrations aligned with organizational policies and developer needs.
+* Central configuration: Infrastructure and policies are defined as code and centrally managed, reducing drift and maintenance overhead.
+* Governance at scale: Policies and best practices are embedded into developer workflows using automation and templates, without adding friction to the process.
+For developers:: 
+* Faster onboarding: Developers can use learning paths, software templates, and software catalog to deploy compliant services within minutes, without depending on other teams for setup.
+* Reduced cognitive load: Developers can find tools, documentation, and deployment environments in one place, eliminating the need to switch between systems or manage disconnected resources.
+* Self-service workflows: Developers can create applications or environments on demand, without raising tickets or waiting for approvals.
+* Built-in standards: Developers can use preconfigured templates that enforce secure, compliant workflows without requiring manual setup.
+* Cross-team visibility: Developers can discover shared service catalogs and documentation to improve reuse and reduce duplication.
+* Higher productivity: Developers can spend more time building features and less time configuring infrastructure or resolving toolchain inconsistencies.
+
+Centralized dashboard:: Access development tools, CI/CD pipelines, APIs, monitoring tools, and documentation from a single interface. Integrate with systems like Git, Red Hat OpenShift Container Platform, Kubernetes, and JIRA.
+Learning paths:: Guide developers through structured tutorials and onboarding steps. Help teams upskill with internal and Red Hat training resources in one place.
+Plugins and integrations:: Extend RHDH with verified plugins that add new functionality without downtime. Dynamically integrate with supported tools such as Tekton for pipelines, GitOps for deployment automation, Nexus Repository for artifact storage, and JFrog Artifactory. RHDH also supports connecting to Red Hat OpenShift Container Platform, CI/CD systems, and security scanners through Red Hat-curated extensions.
+Role-Based Access Control (RBAC):: Manage user access with robust security permissions tailored to organizational needs.
+Software catalog:: Search, view, and manage services, APIs, and libraries from a central inventory. Track ownership, metadata, and component health in one place.
+Software templates:: Accelerate project setup using preconfigured templates for CI/CD, runtime, and security. Standardize implementation while enabling developer autonomy.
+Tech docs:: Create, store, and view technical documentation alongside code. Make content searchable, consistently formatted, and accessible through the portal.
+Scalability:: Support growing teams and applications while maintaining access to the same tools and services.
+
+* Configuring templates
+* TechDocs for Red Hat Developer Hub
+* Customizing the Learning Paths in Red Hat Developer Hub
+* Introduction to plugins
+* Integrations in Red Hat Developer Hub
+* Authentication in Red Hat Developer Hub
+
+# System architecture for deployment planning
+
+Red Hat Developer Hub (RHDH) uses a client-server architecture with a browser-based frontend and a stateless backend service layer. Use this architecture to plan for horizontal scaling, high availability, and efficient data synchronization across the Software Catalog.
+
+By understanding the RHDH architecture, you can perform the following planning tasks:
+
+Plan scalable deployments:: Deploy multiple backend instances behind a load balancer to manage increased load.
+Ensure high availability:: Configure database replication and cache clustering to eliminate single points of failure.
+Optimize resource allocation:: Assign infrastructure resources based on which components require persistent storage or high-performance memory.
+
+The following diagram shows the RHDH internal architecture (frontend and backend) and its external dependencies, such as authentication providers, load balancers, and databases:
+
+![rhdh architecture diagram]
+
+The RHDH architecture includes three primary layers. While the data layer (PostgreSQL and optional Redis cache) stores the indexed Software Catalog, the source of truth remains in external systems, such as Git repositories, CI/CD platforms, and other integrations. Catalog providers continuously scan these external systems and synchronize data to the database for fast querying.
+
+The frontend is a browser-based single-page application (SPA). Use the frontend interface to browse the Software Catalog, interact with plugins, and connect to external integrations. The frontend communicates with the backend exclusively using REST API calls.
+
+The backend provides REST API endpoints for the frontend. It manages the Software Catalog (an inventory of your organization&#8217;s software components, APIs, and resources) and handles authentication.
+
+The stateless design allows you to scale the backend horizontally by running multiple instances behind a load balancer. The backend externalizes all persistent state to a PostgreSQL database, including:
+
+* Catalog entities
+* Task history
+* Session data (managed through a database-backed session store)
+
+RHDH requires PostgreSQL for persistence. For production environments, use a logical cache to improve performance.
+
+PostgreSQL database:: Stores indexed Software Catalog entities (synchronized from external systems like Git repositories and CI/CD platforms), profiles, authentication data, and backend state. You must configure PostgreSQL with high availability (HA) for production deployments.
+Redis Cache (Optional):: Configure Redis as a shared logical cache across backend instances to improve performance for frequently accessed data, such as rendered TechDocs and catalog entities.
+
+
+[TIP]
+----
+The default in-memory cache is suitable only for single-instance deployments. You must use Redis for production deployments with multiple backend instances to ensure cache consistency.
+----
+
+# Achieve high availability with database and cache layers
+
+To achieve high availability (HA) in Red Hat Developer Hub, you must implement redundancy and failover for the backend service and its external data dependencies. This configuration uses horizontal scaling, database replication, and a shared logical cache to make sure RHDH remains operational during component failures.
+
+RHDH backend uses a stateless design to support horizontal scaling. PostgreSQL stores persistent data and the database manages sessions, allowing multiple backend instances to serve any request simultaneously. To improve performance, you can configure an optional logical cache using Redis.
+
+To maintain backend availability, observe the following architectural requirements:
+
+Deploy multiple backend instances:: Run at least two backend instances for basic HA.
+Configure a load balancer:: Use platform-provided load balancing, such as OpenShift Routes, Kubernetes Ingress, or cloud provider load balancers.
+Enable health checks:: Configure the load balancer to probe backend health and remove failed instances from rotation.
+Disable session affinity (sticky sessions):: Database-backed sessions allow any instance to serve any request.
+
+RHDH operations rely on PostgreSQL for persistence. A database outage renders the deployment non-functional until the database is restored. For production deployments, you must configure PostgreSQL with high availability (primary-replica replication) to minimize downtime.
+
+
+[IMPORTANT]
+----
+If you use catalog providers exclusively, the database acts as an indexed cache. You do not require disaster recovery backups because you can repopulate catalog data from external sources of truth, such as Git repositories, CI/CD platforms, and monitoring tools.
+----
+
+Configuring Redis as a shared logical cache improves production performance by sharing cached data across multiple backend instances. A shared cache makes sure that all instances access the same processed data, such as rendered TechDocs.
+
+If the logical cache fails, the platform remains functional, but you might experience the following symptoms:
+
+* Slower response times due to cache misses.
+* Increased database load because the backend must fetch data from PostgreSQL.
+* No impact on authentication or core functionality.
+
+For maximum performance stability in production, configure Redis with high availability using Redis Sentinel for small deployments or Redis Cluster for larger deployments.
+
+# Integrations in Red Hat Developer Hub
+
+Red Hat Developer Hub integrates seamlessly with Red Hat OpenShift Container Platform and other tools, enabling comprehensive development and deployment workflows across enterprise.
+
+## Integration with Red Hat OpenShift Container Platform
+
+Red Hat Developer Hub is fully integrated with Red Hat OpenShift Container Platform, offering:
+
+* Operators to manage application lifecycle.
+* Access to advanced OpenShift capabilities such as service mesh, serverless functions, GitOps, and distributed tracing.
+* Pipelines and GitOps plugins for streamlined cloud-native workflows.
+
+## Integration with Red Hat Advanced Developer Suite - secure supply chain
+
+Red Hat Advanced Developer Suite - secure supply chain (RHADS - ssc) enhances Red Hat Developer Hub by providing secure CI/CD capabilities that integrate security measures into every stage of the development process.
+
+While Red Hat Developer Hub focuses on the inner loop (code, build, and test), RHADS - ssc manages the outer loop, automating:
+
+* Code scanning
+* Image building
+* Vulnerability detection
+* Deployment
+
+RHADS - ssc includes tools like Red Hat Trusted Artifact Signer (TAS) for code integrity, Red Hat Trusted Profile Analyzer (TPA) for automated Software build of Materials (SBOM) creation, and Red Hat Advanced Cluster Security (ACS) for vulnerability scanning.
+
+## Extending Backstage with Red Hat Developer Hub
+
+Red Hat Developer Hub which is a fully supported, enterprise-grade productized version of upstream Backstage extends the upstream project by adding:
+
+* Enhanced search capabilities that aggregate data from CI/CD pipelines, cloud providers, source control, and more.
+* A centralized software catalog for locating applications, APIs, and resources.
+* Automation through open-source plugins that expand Backstage’s core functionality.
+* Simplified technical documentation using Markdown and GitHub, with integrated search for easy navigation.
+
+# Supported platforms
+
+You can find the supported platforms and life cycle dates for both current and past versions of Red Hat Developer Hub on the Life Cycle page.
+
+* Life Cycle page
+
+# Sizing requirements for Red Hat Developer Hub
+
+Learn about sizing requirements for Red Hat Developer Hub.
+Table 1 lists the sizing requirements for installing and running Red Hat Developer Hub, including Developer Hub application, database components, and Operator.
+Table 2 lists recommended sizing requirements for external PostgreSQL deployment based on the deployment scale.
+
+
+
+
+
+# Red Hat Developer Hub support
+
+If you experience difficulty with a procedure described in this documentation, visit the Red Hat Customer Portal.
+You can use the Red Hat Customer Portal for the following purposes:
+
+* To search or browse through the Red Hat Knowledgebase of technical support articles about Red Hat products.
+* To create a support case for Red Hat Global Support Services (GSS), select Red Hat Developer Hub as the product and select the appropriate product version.
+
+* Red Hat Customer Portal
+* Create a support case for Red Hat Global Support Services (GSS)
+* Red Hat Developer Hub Life Cycle
+
+* Installing Red Hat Developer Hub on Amazon Elastic Kubernetes Service
+* Installing Red Hat Developer Hub on Google Cloud on Google Cloud
+* Installing Red Hat Developer Hub on Google Kubernetes Engine
+* Installing Red Hat Developer Hub on Microsoft Azure Kubernetes Service
+* Installing Red Hat Developer Hub on OpenShift Container Platform

@@ -1,0 +1,242 @@
+# Dynamic plugins reference
+
+The dynamic plugin support is based on the backend plugin manager package, which is a service that scans a configured root directory (dynamicPlugins.rootDirectory in the app config) for dynamic plugin packages and loads them dynamically.
+You can use the dynamic plugins that come preinstalled with Red Hat Developer Hub or install external dynamic plugins from a public NPM registry.
+
+# Preinstalled dynamic plugins
+
+Red Hat Developer Hub is preinstalled with a selection of dynamic plugins.
+
+The following 15 preinstalled dynamic plugins are enabled by default:
+
+* @red-hat-developer-hub/backstage-plugin-analytics-module-adoption-insights
+* @red-hat-developer-hub/backstage-plugin-adoption-insights
+* @red-hat-developer-hub/backstage-plugin-adoption-insights-backend
+* @backstage-community/plugin-analytics-provider-segment
+* @backstage/plugin-techdocs
+* @backstage/plugin-techdocs-module-addons-contrib
+* @backstage/plugin-techdocs-backend
+* @red-hat-developer-hub/backstage-plugin-extensions
+* @red-hat-developer-hub/backstage-plugin-extensions-backend
+* @red-hat-developer-hub/backstage-plugin-catalog-backend-module-extensions
+* @red-hat-developer-hub/backstage-plugin-global-floating-action-button
+* @red-hat-developer-hub/backstage-plugin-global-header
+* @red-hat-developer-hub/backstage-plugin-dynamic-home-page
+* @red-hat-developer-hub/backstage-plugin-quickstart
+* @backstage-community/plugin-scaffolder-backend-module-regex
+
+The dynamic plugins that require custom configuration are disabled by default.
+
+Upon application startup, for each plugin that is disabled by default, the install-dynamic-plugins init container within the Developer Hub pod log displays a message similar to the following:
+
+
+```yaml
+======= Skipping disabled dynamic plugin ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github-dynamic
+```
+
+
+To enable this plugin, add a package with the same name to the Helm chart and change the value in the disabled field to ‘false’. For example:
+
+
+```java
+global:
+  dynamic:
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github-dynamic
+        disabled: false
+```
+
+
+
+[NOTE]
+----
+The default configuration for a plugin is extracted from the dynamic-plugins.default.yaml file, however, you can use a pluginConfig entry to override the default configuration.
+----
+
+### Red Hat supported plugins
+
+Red Hat supports the following 30 plugins:
+
+
+
+
+[NOTE]
+----
+* For more information about configuring KeyCloak, see Configuring dynamic plugins.
+* For more information about configuring TechDocs, see Configuring TechDocs.
+----
+
+### Technology Preview plugins
+
+
+[IMPORTANT]
+----
+Red Hat Developer Hub includes a select number of Technology Preview plugins, available for customers to configure and enable. These plugins are provided with support scoped per Technical Preview terms, might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+#### Red Hat Technology Preview plugins
+
+Red Hat provides Technology Preview support for the following 17 plugins:
+
+
+
+# Community plugins migration to the GitHub Container Registry
+
+
+[IMPORTANT]
+----
+Breaking Change in RHDH 1.9
+Starting with Red Hat Developer Hub 1.9, community-supported plugins are no longer distributed as bundled wrappers in the Developer Hub container image. These plugins are now built using GitHub Actions and published exclusively to the GitHub Container Registry (ghcr.io).
+If you use the plugins listed in this section, you must update your dynamic plugins configuration (in dynamic-plugins-default.yaml, your ConfigMap or CustomResource) to use the new oci://ghcr.io/&#8230;&#8203; paths.
+----
+
+## What changed
+
+In Developer Hub 1.8 and earlier, community plugins were:
+
+* Wrapped and bundled in the Developer Hub container image.
+* Referenced by using local paths, such as ./dynamic-plugins/dist/<plugin-name>.
+
+Starting with Developer Hub 1.9, community plugins are:
+
+* Built using GitHub Actions from the rhdh-plugin-export-overlays repository.
+* Published to ghcr.io/redhat-developer/rhdh-plugin-export-overlays.
+* Referenced by using OCI registry paths, such as oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/<oci-artifact-name>:<tag>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests
+----
+
+## Migration steps
+
+To migrate your configuration:
+
+1. Identify plugins in your ConfigMap or CustomResource that use local paths starting with ./dynamic-plugins/dist/.
+2. Find the corresponding ghcr.io path in the following migration table:
+
+```yaml
+# Before (RHDH 1.8 and earlier)
+plugins:
+  - package: ./dynamic-plugins/dist/backstage-community-plugin-jenkins
+    disabled: false
+
+# After (RHDH 1.9+)
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-jenkins:bs_1.45.3__0.26.0
+    disabled: false
+```
+
+3. Update your configuration to use the new OCI registry path.
+
+## Understanding the tag format
+
+The ghcr.io image tags use the following format: bs_<backstage-version>__<plugin-version>
+
+For example, the image tag bs_1.45.3__0.26.0 uses the following structure:
+
+* bs_1.45.3: Built against Backstage version 1.45.3
+* 0.26.0: Nodejs-packaged Backstage plugin, version 0.26.0
+
+See Determining Tag Values.
+
+## Community plugins migration table
+
+The following table lists all 36 community-supported plugins that have been migrated from bundled wrappers to ghcr.io.
+
+
+[NOTE]
+----
+Replace <tag> with the version tag corresponding to your Developer Hub version. See Determining Tag Values
+----
+
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests
+----
+
+
+
+## Plugins remaining bundled in RHDH 1.9
+
+The following plugins remain bundled in 1.9 while transitioning to ghcr.io distribution in a future release:
+
+
+
+## Troubleshooting
+
+### Plugin not loading after migration
+
+If a plugin fails to load, perform the following checks:
+
+1. Verify the ghcr.io path is correct and the image tag or digest exists.
+2. Confirm your cluster has network access to ghcr.io.
+3. Review Developer Hub logs for OCI pull errors.
+
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests
+----
+
+### Determining tag values
+
+The <tag> variable is your RHDH application&#39;s version of Backstage and the plugin version, in the format: bs_<backstage-version>__<plugin-version> (note the double underscore delimiter). This format is only applicable for Community supported plugins.
+
+* To find the correct image tag for <tag>:
+1. Look in the RHDH release notes preface for your Backstage version.
+2. Locate the plugin version for paths starting with oci://ghcr.io within one of the tables provided in the Dynamic plugins reference.
+
+For example, because RHDH 1.9 is based on Backstage 1.45.3, the tag will have the format bs_1.45.3__<plugin-version>
+
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests
+----
+
+### Determining SHA256 digests
+
+You can look up the SHA256 digest using the Skopeo CLI or by searching in the RHDH Plugin Export Overlays repository
+
+Skopeo CLI
+
+Ensure you have skopeo and jq installed
+
+1. Locate the plugin path in the Dynamic plugins reference
+2. Run the following command, replacing the plugin path prefix oci:// with docker://
+
+
+```bash
+skopeo inspect docker://<plugin-path>:<tag> | jq '.Digest'
+```
+
+
+RHDH Plugin Export Overlays Repo
+
+Go to the plugin packages list in the rhdh-plugin-export-overlays repository. Search for your plugin and select the tag that is associated with this release.
+
+## Additional resources
+
+* RHDH Plugin Export Overlays GitHub repository
+
+#### Deprecated plugins
+
+
+[IMPORTANT]
+----
+Red Hat Developer Hub (RHDH) includes a number of deprecated plugins, which are no longer being actively developed. It is recommended that if you depend on any of these plugins, you migrate to an alternative solution as soon as possible, as these plugins will be removed in a future release.
+----
+
+RHDH includes the following 2 deprecated plugins:
+
+
+
+# Other installable plugins
+
+The following Technology Preview plugins are not preinstalled and must be installed from an external source:
+
