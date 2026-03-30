@@ -1,0 +1,2629 @@
+LSC Evaluation Framework - Summary Report
+==================================================
+
+Generated: 2026-03-18 17:31:39
+Total Evaluations: 2505
+
+Overall Statistics:
+--------------------
+Pass: 2005 (80.0%)
+Fail: 481 (19.2%)
+Error: 19 (0.8%)
+Skipped: 0 (0.0%)
+
+Token Usage (Judge LLM):
+--------------------
+Input Tokens: 3,571,655
+Output Tokens: 5,613,035
+Total Tokens: 9,184,690
+
+Token Usage (API Calls):
+--------------------
+Input Tokens: 0
+Output Tokens: 0
+Total Tokens: 0
+
+By Metric:
+---------
+ragas:faithfulness:
+  Pass: 192 (38.3%)
+  Fail: 293 (58.5%)
+  Error: 16 (3.2%)
+  Score Statistics:
+    Mean: 0.630
+    Median: 0.684
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.307
+
+ragas:context_recall:
+  Pass: 498 (99.4%)
+  Fail: 0 (0.0%)
+  Error: 3 (0.6%)
+  Score Statistics:
+    Mean: 1.000
+    Median: 1.000
+    Min: 1.000, Max: 1.000
+    Std Dev: 0.000
+
+ragas:context_relevance:
+  Pass: 489 (97.6%)
+  Fail: 12 (2.4%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.981
+    Median: 1.000
+    Min: 0.500, Max: 1.000
+    Std Dev: 0.087
+
+ragas:context_precision_without_reference:
+  Pass: 454 (90.6%)
+  Fail: 47 (9.4%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.906
+    Median: 1.000
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.292
+
+custom:answer_correctness:
+  Pass: 372 (74.3%)
+  Fail: 129 (25.7%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.833
+    Median: 1.000
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.284
+
+By Conversation:
+---------------
+rbac-431:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-197:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-439:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-198:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-12:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-312:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-80:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-18:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-74:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-199:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-320:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-196:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-20:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-440:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+rbac-432:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-192:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-77:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-315:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-319:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-311:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-193:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-438:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+rbac-433:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+configuration-191:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-76:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-436:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-194:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-71:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+catalog-318:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-317:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-15:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-11:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-13:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-200:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-441:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-79:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-314:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-313:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-434:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-321:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-16:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-435:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-201:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-202:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-75:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-81:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-72:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-14:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-23:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-21:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-22:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-24:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-195:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-17:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-443:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-85:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-442:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-25:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-326:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-322:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-88:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-203:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-204:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-26:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-437:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+configuration-84:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-323:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-19:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-206:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-205:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-325:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-73:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-446:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-87:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-324:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-78:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+rbac-447:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-327:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-28:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-83:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-448:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-29:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-449:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-82:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-86:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-33:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-208:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-30:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-329:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-211:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-450:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-328:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-207:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+rbac-330:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-89:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-91:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-444:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-316:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+installation-451:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-31:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-210:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-92:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-452:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-32:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-213:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-94:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-331:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-90:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-212:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+installation-456:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-95:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-445:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-39:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-337:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-338:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-99:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-339:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-41:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-38:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-97:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-455:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-333:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-96:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-334:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-34:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-453:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-218:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-215:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-458:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-335:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-100:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-459:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-219:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-98:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-36:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-220:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-454:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-40:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-35:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-209:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-342:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-341:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-340:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-37:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-101:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-102:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-43:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-460:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-104:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-222:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-217:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-343:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-224:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-336:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-346:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-344:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-466:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-463:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-223:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-461:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-44:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+installation-48:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-103:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-465:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-348:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-457:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+plugins-345:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-464:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-226:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-45:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+installation-467:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-225:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-349:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-221:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-105:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-107:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-42:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-47:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-347:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-109:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-462:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-46:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-469:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-111:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-214:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+rbac-227:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-228:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-232:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-114:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-51:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-470:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-108:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-115:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-354:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-473:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-93:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+catalog-113:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-468:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-233:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-230:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-116:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-112:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-50:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-49:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-234:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-353:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-352:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-229:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-52:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+authentication-476:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-53:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-54:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-471:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-55:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-60:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-355:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+installation-332:
+  Pass: 3 (60.0%)
+  Fail: 1 (20.0%)
+  Error: 1 (20.0%)
+
+configuration-106:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-216:
+  Pass: 3 (60.0%)
+  Fail: 1 (20.0%)
+  Error: 1 (20.0%)
+
+authentication-475:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+catalog-57:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-351:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-474:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-61:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-231:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-56:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-356:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-117:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-27:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+installation-121:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-238:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-235:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-237:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-477:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-358:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-242:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-120:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-58:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-359:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-118:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-360:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-245:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-110:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+configuration-119:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-240:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-241:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-478:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-123:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-361:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-357:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-122:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-124:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-65:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-244:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-59:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-239:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-365:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-364:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+configuration-63:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-485:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-366:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-64:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-482:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-481:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-125:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-363:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+installation-243:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-67:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-362:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+catalog-236:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-246:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+authentication-247:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-66:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-472:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+authentication-479:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-367:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-488:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-483:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-126:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-248:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-370:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-490:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-249:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-372:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-69:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+kubernetes-68:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-371:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-368:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-484:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-491:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-495:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-487:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-133:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-252:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-132:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-254:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-250:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-373:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-127:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-369:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+configuration-62:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+plugins-128:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-138:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-374:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-131:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-486:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-492:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-130:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-375:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+authentication-489:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-497:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-251:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-134:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-376:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-253:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-135:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-494:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-137:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-258:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-256:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-378:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-136:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-498:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-377:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-265:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+installation-139:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-493:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-266:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-140:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-255:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-263:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-145:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-70:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-387:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-382:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-261:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-499:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-381:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-388:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-268:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-500:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-264:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-267:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-385:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-141:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-147:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-496:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-146:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-379:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-380:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-262:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-129:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+authentication-259:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-384:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-269:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-144:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-143:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-273:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-1:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+authentication-260:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-350:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+configuration-257:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-149:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+ci_cd-270:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-151:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-399:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-392:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-154:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-0:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-152:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-150:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-390:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-276:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-386:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-274:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-391:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-400:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-155:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-279:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-148:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-396:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+installation-393:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-398:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-275:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-395:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-272:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-159:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-280:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-161:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-156:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-277:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-401:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-162:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-284:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-285:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-290:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-281:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-142:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-282:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-283:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-271:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-403:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-286:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-153:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-170:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-402:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-408:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-169:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-160:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-480:
+  Pass: 3 (60.0%)
+  Fail: 1 (20.0%)
+  Error: 1 (20.0%)
+
+installation-289:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-383:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-163:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-397:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+installation-294:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-287:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-288:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-292:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-394:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-166:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-173:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-174:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-167:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-411:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-414:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-291:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-293:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-415:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-413:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-409:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-172:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-298:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+installation-295:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-297:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-177:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-389:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-165:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-164:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-406:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-420:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-405:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-301:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-300:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-407:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-299:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-179:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-303:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-418:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-178:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-424:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-422:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+rbac-419:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-184:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+ci_cd-4:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-302:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-417:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-171:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-182:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-421:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-296:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-423:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+ci_cd-410:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+ci_cd-3:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-425:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+plugins-2:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-176:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-158:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-181:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-416:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-304:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-186:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-5:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-187:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-180:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-307:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-305:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-310:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+authentication-189:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-157:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+plugins-188:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-7:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-308:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-427:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-168:
+  Pass: 3 (60.0%)
+  Fail: 1 (20.0%)
+  Error: 1 (20.0%)
+
+plugins-175:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-309:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-429:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-9:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+rbac-430:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+catalog-278:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-428:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+configuration-190:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-426:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-8:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-412:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-306:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-6:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+plugins-10:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+kubernetes-183:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+configuration-404:
+  Pass: 4 (80.0%)
+  Fail: 0 (0.0%)
+  Error: 1 (20.0%)
+
+kubernetes-185:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+By Tag:
+------
+eval:
+  Pass: 2005 (80.0%)
+  Fail: 481 (19.2%)
+  Error: 19 (0.8%)
+  Score Statistics:
+    Mean: 0.871
+    Median: 1.000
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.266
+
+Configuration Parameters:
+-------------------------
+
+Llm:
+  Provider: gemini
+  Model: gemini-2.5-pro
+  Ssl Verify: True
+  Ssl Cert File: None
+  Temperature: 0.0
+  Max Tokens: 30000
+  Timeout: 300
+  Num Retries: 3
+  Cache Enabled: True
+
+Embedding:
+  Provider: huggingface
+  Model: sentence-transformers/all-mpnet-base-v2
+  Provider Kwargs: {'model_kwargs': {'device': 'cpu'}}
+  Cache Enabled: True
+
+Api:
+  Enabled: False
+  Api Base: http://localhost:8080
+  Version: v1
+  Endpoint Type: streaming
+  Timeout: 300
+  Provider: openai
+  Model: gpt-4o-mini
+  No Tools: None
+  System Prompt: None
+  Cache Enabled: True
+  Num Retries: 3
+

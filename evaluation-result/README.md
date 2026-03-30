@@ -22,9 +22,9 @@ Detailed logs, CSVs, and specific metric breakdowns can be found in the respecti
 
 * **[📁 gemini-2.5-flash-lite](./gemini-2.5-flash-lite)**
 * **[📁 gemini-2.5-pro](./gemini-2.5-pro)**
-* **[📁 gpt-oss-120b](./gpt-oss-120b)**
+* **[📁 gpt-4o-mini](./gpt-4o-mini)**
+* **[📁 gpt-5.2](./gpt-5.2)**
 * **[📁 llama31-8b](./llama31-8b)**
-* **[📁 llama4-scout](./llama4-scout)**
 
 ---
 
