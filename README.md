@@ -18,9 +18,11 @@ This branch contains the evaluation resources for **Developer Lightspeed 1.8**, 
 For the Developer Lightspeed 1.8 release, we ran evaluation against five distinct models.
 
 **Models Evaluated:**
-* **Gemini:** `Gemini-2.5-pro`, `Gemini-2.5-flash-lite`
+* **Gemini:** `gemini-2.5-pro`, `gemini-2.5-flash-lite`
 * **GPT:** `gpt-oss-120b`
 * **Llama:** `llama3.1:8b`, `llama4:scout`
+
+**Judge Model being used:** `gemini-2.5-pro`
 
 > 📊 **View Results:** For a deep dive into the performance metrics, please refer to the **[Evaluation Results](./evaluation-result)** directory.
 
