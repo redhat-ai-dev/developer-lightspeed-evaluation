@@ -1,0 +1,9 @@
+[allowlist]
+  description = "Allowlist for known false positives in evaluation dataset"
+
+  # Allow the dummy/placeholder secret used throughout the evaluation dataset.
+  # Matching on the value itself rather than file paths to keep this as
+  # targeted as possible per allowlist best practices.
+  regexes = [
+    "3E2/rIPuZNFCtYHoxVP8wjriffnN1q/z",
+  ]
