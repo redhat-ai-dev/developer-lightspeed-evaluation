@@ -1,0 +1,1836 @@
+{
+  "timestamp": "2026-04-24T15:29:46.509173",
+  "total_evaluations": 45,
+  "summary_stats": {
+    "overall": {
+      "TOTAL": 45,
+      "PASS": 43,
+      "FAIL": 2,
+      "ERROR": 0,
+      "SKIPPED": 0,
+      "pass_rate": 95.55555555555556,
+      "fail_rate": 4.444444444444445,
+      "error_rate": 0.0,
+      "skipped_rate": 0.0,
+      "total_judge_llm_input_tokens": 236384,
+      "total_judge_llm_output_tokens": 126802,
+      "total_judge_llm_tokens": 363186,
+      "total_embedding_tokens": 0,
+      "total_api_input_tokens": 0,
+      "total_api_output_tokens": 0,
+      "total_api_tokens": 0,
+      "total_tokens": 363186
+    },
+    "by_metric": {
+      "custom:answer_correctness": {
+        "pass": 9,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 9,
+          "mean": 0.9222222222222223,
+          "median": 0.9,
+          "std": 0.08333333333333331,
+          "min": 0.8,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 0.877777777777778,
+            "mean": 0.9222222222222223,
+            "high": 0.9777777777777779,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:context_precision_without_reference": {
+        "pass": 9,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 9,
+          "mean": 0.9999999999,
+          "median": 0.9999999999,
+          "std": 0.0,
+          "min": 0.9999999999,
+          "max": 0.9999999999,
+          "confidence_interval": {
+            "low": 0.9999999999,
+            "mean": 0.9999999999,
+            "high": 0.9999999999,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:context_recall": {
+        "pass": 9,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 9,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:context_relevance": {
+        "pass": 9,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 9,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:faithfulness": {
+        "pass": 7,
+        "fail": 2,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 77.77777777777779,
+        "fail_rate": 22.22222222222222,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 9,
+          "mean": 0.8323176597566841,
+          "median": 0.9,
+          "std": 0.19317566902047262,
+          "min": 0.375,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 0.7307599807599808,
+            "mean": 0.8387991412381656,
+            "high": 0.9638367194007438,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    },
+    "by_conversation": {
+      "installation-9": {
+        "pass": 4,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 80.0,
+        "fail_rate": 20.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-0": {
+        "pass": 4,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 80.0,
+        "fail_rate": 20.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-1": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-4": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-5": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-6": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-7": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "plugins-8": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "rbac-3": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      }
+    },
+    "by_tag": {
+      "eval": {
+        "pass": 43,
+        "fail": 2,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 95.55555555555556,
+        "fail_rate": 4.444444444444445,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 45,
+          "mean": 0.9509079763757813,
+          "median": 1.0,
+          "std": 0.11212207355245518,
+          "min": 0.375,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 0.9231361231142897,
+            "mean": 0.9520190874857812,
+            "high": 0.987064782528254,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    }
+  },
+  "configuration": {
+    "core": {
+      "max_threads": 50,
+      "fail_on_invalid_data": true,
+      "skip_on_failure": false
+    },
+    "llm_pool": {
+      "defaults": {
+        "cache_enabled": true,
+        "cache_dir": ".caches/llm_cache",
+        "timeout": 300,
+        "num_retries": 3,
+        "parameters": {
+          "temperature": 0.0,
+          "max_completion_tokens": 16384
+        }
+      },
+      "models": {
+        "judge_gpt_4o_mini": {
+          "provider": "openai",
+          "model": "gpt-4o-mini",
+          "ssl_verify": null,
+          "ssl_cert_file": null,
+          "api_base": null,
+          "api_key_path": null,
+          "parameters": {
+            "temperature": null,
+            "max_completion_tokens": null
+          },
+          "timeout": null
+        },
+        "judge_gemini_2_5_pro": {
+          "provider": "gemini",
+          "model": "gemini-2.5-pro",
+          "ssl_verify": null,
+          "ssl_cert_file": null,
+          "api_base": null,
+          "api_key_path": null,
+          "parameters": {
+            "temperature": null,
+            "max_completion_tokens": null
+          },
+          "timeout": null
+        }
+      }
+    },
+    "judge_panel": {
+      "judges": [
+        "judge_gpt_4o_mini",
+        "judge_gemini_2_5_pro"
+      ],
+      "enabled_metrics": null,
+      "aggregation_strategy": "max"
+    },
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "provider_kwargs": {},
+      "cache_enabled": true
+    },
+    "api": {
+      "enabled": false,
+      "api_base": "http://localhost:8080",
+      "version": "v1",
+      "endpoint_type": "streaming",
+      "timeout": 300,
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "no_tools": null,
+      "system_prompt": null,
+      "extra_request_params": null,
+      "cache_enabled": true,
+      "mcp_headers": {
+        "enabled": false,
+        "servers": {
+          "filesystem-tools": {
+            "env_var": "API_KEY",
+            "header_name": null
+          }
+        }
+      },
+      "num_retries": 3
+    }
+  },
+  "results": [
+    {
+      "conversation_group_id": "plugins-5",
+      "tag": "eval",
+      "turn_id": "9c880e19-0338-4aa1-875b-4e4d64daf8d1",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 46.569,
+      "judge_llm_input_tokens": 4396,
+      "judge_llm_output_tokens": 6672,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas faithfulness: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.36363636363636365,
+          "reason": "Ragas faithfulness: 0.36",
+          "judge_input_tokens": 4396,
+          "judge_output_tokens": 6672,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-5",
+      "tag": "eval",
+      "turn_id": "9c880e19-0338-4aa1-875b-4e4d64daf8d1",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 13.92,
+      "judge_llm_input_tokens": 6510,
+      "judge_llm_output_tokens": 1458,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3171,
+          "judge_output_tokens": 270,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3339,
+          "judge_output_tokens": 1188,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-5",
+      "tag": "eval",
+      "turn_id": "9c880e19-0338-4aa1-875b-4e4d64daf8d1",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 10.142,
+      "judge_llm_input_tokens": 8424,
+      "judge_llm_output_tokens": 910,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4149,
+          "judge_output_tokens": 18,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4275,
+          "judge_output_tokens": 892,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-5",
+      "tag": "eval",
+      "turn_id": "9c880e19-0338-4aa1-875b-4e4d64daf8d1",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 9.828,
+      "judge_llm_input_tokens": 6585,
+      "judge_llm_output_tokens": 919,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3222,
+          "judge_output_tokens": 58,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3363,
+          "judge_output_tokens": 861,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-5",
+      "tag": "eval",
+      "turn_id": "9c880e19-0338-4aa1-875b-4e4d64daf8d1",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 0.9,
+      "threshold": 0.75,
+      "execution_time": 20.352,
+      "judge_llm_input_tokens": 1804,
+      "judge_llm_output_tokens": 1889,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9,
+          "reason": "Custom answer correctness: 0.90 - The provided response is largely accurate and detailed, covering the necessary steps to enable the Bulk Import feature in Red Hat Developer Hub (RHDH). It correctly identifies the prerequisites, the need to configure the `dynamic-plugins.yaml`, and the necessary RBAC permissions. The inclusion of troubleshooting tips adds value and completeness to the response.",
+          "judge_input_tokens": 871,
+          "judge_output_tokens": 280,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.8,
+          "reason": "Custom answer correctness: 0.80 - The provided response is factually correct in its overall approach and provides a comprehensive, helpful guide. It correctly identifies the two main steps required: enabling the dynamic plugins and configuring RBAC permissions. The additional information, such as prerequisites, UI navigation, and troubleshooting, adds significant value.",
+          "judge_input_tokens": 933,
+          "judge_output_tokens": 1609,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 0.8181818181818182,
+      "threshold": 0.8,
+      "execution_time": 42.066,
+      "judge_llm_input_tokens": 4920,
+      "judge_llm_output_tokens": 5729,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.8181818181818182,
+          "reason": "Ragas faithfulness: 0.82",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.6666666666666666,
+          "reason": "Ragas faithfulness: 0.67",
+          "judge_input_tokens": 4920,
+          "judge_output_tokens": 5729,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 11.594,
+      "judge_llm_input_tokens": 6807,
+      "judge_llm_output_tokens": 1139,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3300,
+          "judge_output_tokens": 264,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3507,
+          "judge_output_tokens": 875,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 18.189,
+      "judge_llm_input_tokens": 8794,
+      "judge_llm_output_tokens": 1891,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4285,
+          "judge_output_tokens": 18,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4509,
+          "judge_output_tokens": 1873,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 9.071,
+      "judge_llm_input_tokens": 7806,
+      "judge_llm_output_tokens": 873,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3771,
+          "judge_output_tokens": 74,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 4035,
+          "judge_output_tokens": 799,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 0.9,
+      "threshold": 0.75,
+      "execution_time": 21.473,
+      "judge_llm_input_tokens": 2944,
+      "judge_llm_output_tokens": 2208,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9,
+          "reason": "Custom answer correctness: 0.90 - The provided response is largely correct and covers the necessary steps to enable visibility of Tekton resources within the Red Hat Developer Hub (RHDH). It accurately details the RBAC configuration required to grant read access to Tekton resources, including the creation of a `ClusterRole` and `ClusterRoleBinding`. The response also correctly outlines the modifications needed in the `app-config.yaml` file to include the Tekton custom resources, ensuring that the RHDH can fetch and display them.",
+          "judge_input_tokens": 1407,
+          "judge_output_tokens": 284,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.6,
+          "reason": "Custom answer correctness: 0.60 - The provided response is comprehensive, well-structured, and covers more ground than the expected response, which is highly valuable for a platform engineer. It correctly identifies the three main areas of configuration: RBAC, `app-config.yaml`, and the crucial catalog entity annotations, the last of which is completely missing from the expected response. The inclusion of full YAML examples and verification steps makes it a very practical guide.",
+          "judge_input_tokens": 1537,
+          "judge_output_tokens": 1924,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 0.9523809523809523,
+      "threshold": 0.8,
+      "execution_time": 50.875,
+      "judge_llm_input_tokens": 4305,
+      "judge_llm_output_tokens": 7089,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9523809523809523,
+          "reason": "Ragas faithfulness: 0.95",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.15,
+          "reason": "Ragas faithfulness: 0.15",
+          "judge_input_tokens": 4305,
+          "judge_output_tokens": 7089,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 10.75,
+      "judge_llm_input_tokens": 6817,
+      "judge_llm_output_tokens": 1040,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3298,
+          "judge_output_tokens": 295,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3519,
+          "judge_output_tokens": 745,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 14.964,
+      "judge_llm_input_tokens": 8904,
+      "judge_llm_output_tokens": 1416,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4339,
+          "judge_output_tokens": 18,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4565,
+          "judge_output_tokens": 1398,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 8.141,
+      "judge_llm_input_tokens": 6585,
+      "judge_llm_output_tokens": 761,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3205,
+          "judge_output_tokens": 55,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3380,
+          "judge_output_tokens": 706,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.75,
+      "execution_time": 18.253,
+      "judge_llm_input_tokens": 1589,
+      "judge_llm_output_tokens": 1798,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.6,
+          "reason": "Custom answer correctness: 0.60 - The provided response accurately describes multiple methods to view OpenShift routes, including using the OpenShift CLI, the Web Console, and the Red Hat Developer Hub (RHDH). It offers practical commands and steps for each method, which is helpful for users looking to access route information.",
+          "judge_input_tokens": 768,
+          "judge_output_tokens": 211,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The provided response is excellent and far superior to the expected response for the general question asked.",
+          "judge_input_tokens": 821,
+          "judge_output_tokens": 1587,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-7",
+      "tag": "eval",
+      "turn_id": "e33ecd74-1d69-4e6e-85a9-c6b8242c7d28",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 58.544,
+      "judge_llm_input_tokens": 4337,
+      "judge_llm_output_tokens": 8261,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas faithfulness: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.10526315789473684,
+          "reason": "Ragas faithfulness: 0.11",
+          "judge_input_tokens": 4337,
+          "judge_output_tokens": 8261,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-7",
+      "tag": "eval",
+      "turn_id": "e33ecd74-1d69-4e6e-85a9-c6b8242c7d28",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 15.256,
+      "judge_llm_input_tokens": 6342,
+      "judge_llm_output_tokens": 1276,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3098,
+          "judge_output_tokens": 215,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3244,
+          "judge_output_tokens": 1061,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-7",
+      "tag": "eval",
+      "turn_id": "e33ecd74-1d69-4e6e-85a9-c6b8242c7d28",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 12.776,
+      "judge_llm_input_tokens": 8288,
+      "judge_llm_output_tokens": 1271,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4089,
+          "judge_output_tokens": 14,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4199,
+          "judge_output_tokens": 1257,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-7",
+      "tag": "eval",
+      "turn_id": "e33ecd74-1d69-4e6e-85a9-c6b8242c7d28",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 10.515,
+      "judge_llm_input_tokens": 6663,
+      "judge_llm_output_tokens": 987,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3263,
+          "judge_output_tokens": 57,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3400,
+          "judge_output_tokens": 930,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-7",
+      "tag": "eval",
+      "turn_id": "e33ecd74-1d69-4e6e-85a9-c6b8242c7d28",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.75,
+      "execution_time": 15.73,
+      "judge_llm_input_tokens": 1837,
+      "judge_llm_output_tokens": 1501,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.8,
+          "reason": "Custom answer correctness: 0.80 - The provided response is largely accurate and detailed in explaining how to enable custom actions plugins in Red Hat Developer Hub (RHDH) using the Helm chart. It correctly identifies the need to modify the `values.yaml` file to include the desired plugins in the `global.dynamicPlugins` section and provides examples for both existing plugins and custom-coded actions. The steps for configuration and verification are also well laid out.",
+          "judge_input_tokens": 894,
+          "judge_output_tokens": 255,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The provided response is excellent and more comprehensive than the expected response. It correctly identifies the primary mechanism for enabling plugins in Red Hat Developer Hub via the Helm chart, which is the `global.dynamicPlugins` section in `values.yaml`.",
+          "judge_input_tokens": 943,
+          "judge_output_tokens": 1246,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "installation-9",
+      "tag": "eval",
+      "turn_id": "77c4eaf5-787d-4693-a0cb-bfe58671d7ba",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "FAIL",
+      "score": 0.375,
+      "threshold": 0.8,
+      "execution_time": 54.629,
+      "judge_llm_input_tokens": 3455,
+      "judge_llm_output_tokens": 7668,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.375,
+          "reason": "Ragas faithfulness: 0.38",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.08,
+          "reason": "Ragas faithfulness: 0.08",
+          "judge_input_tokens": 3455,
+          "judge_output_tokens": 7668,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "installation-9",
+      "tag": "eval",
+      "turn_id": "77c4eaf5-787d-4693-a0cb-bfe58671d7ba",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 10.77,
+      "judge_llm_input_tokens": 3680,
+      "judge_llm_output_tokens": 1248,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 1767,
+          "judge_output_tokens": 153,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 1913,
+          "judge_output_tokens": 1095,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "installation-9",
+      "tag": "eval",
+      "turn_id": "77c4eaf5-787d-4693-a0cb-bfe58671d7ba",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 28.418,
+      "judge_llm_input_tokens": 3102,
+      "judge_llm_output_tokens": 3069,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 1501,
+          "judge_output_tokens": 14,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 1601,
+          "judge_output_tokens": 3055,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "installation-9",
+      "tag": "eval",
+      "turn_id": "77c4eaf5-787d-4693-a0cb-bfe58671d7ba",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 8.351,
+      "judge_llm_input_tokens": 4673,
+      "judge_llm_output_tokens": 783,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 2274,
+          "judge_output_tokens": 59,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 2399,
+          "judge_output_tokens": 724,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "installation-9",
+      "tag": "eval",
+      "turn_id": "77c4eaf5-787d-4693-a0cb-bfe58671d7ba",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.75,
+      "execution_time": 12.384,
+      "judge_llm_input_tokens": 2389,
+      "judge_llm_output_tokens": 1170,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The response provides a comprehensive and accurate guide for installing the Red Hat Developer Hub (RHDH) in an air-gapped environment. It covers all necessary steps, including image mirroring, operator installation, dynamic plugin configuration, deployment of the custom resource, handling external integrations, and security hardening measures. Each step is detailed and aligns well with the expected response, ensuring that the installation process is secure and compliant with the requirements of an air-gapped setup. There is no contradictory information, and the response is complete, addressing potential challenges and solutions effectively. Overall, it meets the criteria for factual accuracy, completeness, and alignment with the expected response.",
+          "judge_input_tokens": 1166,
+          "judge_output_tokens": 139,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The provided response is exceptionally detailed, factually accurate, and provides a comprehensive, step-by-step guide that directly addresses the user's question. It goes far beyond the simplistic \"expected response\" by explaining the *how* and *why* of each critical step.",
+          "judge_input_tokens": 1223,
+          "judge_output_tokens": 1031,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-1",
+      "tag": "eval",
+      "turn_id": "4677462e-aa75-4e20-b876-2ded060a71bd",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 0.9,
+      "threshold": 0.8,
+      "execution_time": 58.952,
+      "judge_llm_input_tokens": 4820,
+      "judge_llm_output_tokens": 8195,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9,
+          "reason": "Ragas faithfulness: 0.90",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.43478260869565216,
+          "reason": "Ragas faithfulness: 0.43",
+          "judge_input_tokens": 4820,
+          "judge_output_tokens": 8195,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-1",
+      "tag": "eval",
+      "turn_id": "4677462e-aa75-4e20-b876-2ded060a71bd",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 17.033,
+      "judge_llm_input_tokens": 6852,
+      "judge_llm_output_tokens": 1800,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3319,
+          "judge_output_tokens": 361,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3533,
+          "judge_output_tokens": 1439,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-1",
+      "tag": "eval",
+      "turn_id": "4677462e-aa75-4e20-b876-2ded060a71bd",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 8.809,
+      "judge_llm_input_tokens": 8812,
+      "judge_llm_output_tokens": 721,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4303,
+          "judge_output_tokens": 18,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4509,
+          "judge_output_tokens": 703,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-1",
+      "tag": "eval",
+      "turn_id": "4677462e-aa75-4e20-b876-2ded060a71bd",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 9.324,
+      "judge_llm_input_tokens": 7307,
+      "judge_llm_output_tokens": 835,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3551,
+          "judge_output_tokens": 66,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3756,
+          "judge_output_tokens": 769,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-1",
+      "tag": "eval",
+      "turn_id": "4677462e-aa75-4e20-b876-2ded060a71bd",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 0.9,
+      "threshold": 0.75,
+      "execution_time": 20.664,
+      "judge_llm_input_tokens": 2512,
+      "judge_llm_output_tokens": 2049,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9,
+          "reason": "Custom answer correctness: 0.90 - The provided response is largely accurate and covers the essential steps needed to enable the Argo CD plugin in the Red Hat Developer Hub (RHDH). It includes the necessary configuration for the `app-config.yaml`, enabling the plugin in the `dynamic-plugins.yaml`, and updating the `catalog-info.yaml` with appropriate annotations.",
+          "judge_input_tokens": 1210,
+          "judge_output_tokens": 240,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.5,
+          "reason": "Custom answer correctness: 0.50 - The provided response is partially correct but contains a critical error and omits a key piece of information specific to Red Hat Developer Hub (RHDH), making the instructions incomplete and likely to fail.",
+          "judge_input_tokens": 1302,
+          "judge_output_tokens": 1809,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-0",
+      "tag": "eval",
+      "turn_id": "0b5e23c9-e62c-4e35-83f1-5eb7280c1d77",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "FAIL",
+      "score": 0.7428571428571429,
+      "threshold": 0.8,
+      "execution_time": 73.202,
+      "judge_llm_input_tokens": 3290,
+      "judge_llm_output_tokens": 11075,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.7428571428571429,
+          "reason": "Ragas faithfulness: 0.74",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.0,
+          "reason": "Ragas faithfulness: 0.00",
+          "judge_input_tokens": 3290,
+          "judge_output_tokens": 11075,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-0",
+      "tag": "eval",
+      "turn_id": "0b5e23c9-e62c-4e35-83f1-5eb7280c1d77",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 19.705,
+      "judge_llm_input_tokens": 3492,
+      "judge_llm_output_tokens": 905,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 1676,
+          "judge_output_tokens": 102,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 1816,
+          "judge_output_tokens": 803,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-0",
+      "tag": "eval",
+      "turn_id": "0b5e23c9-e62c-4e35-83f1-5eb7280c1d77",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 9.632,
+      "judge_llm_input_tokens": 2742,
+      "judge_llm_output_tokens": 747,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 1329,
+          "judge_output_tokens": 14,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 1413,
+          "judge_output_tokens": 733,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-0",
+      "tag": "eval",
+      "turn_id": "0b5e23c9-e62c-4e35-83f1-5eb7280c1d77",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 9.449,
+      "judge_llm_input_tokens": 4198,
+      "judge_llm_output_tokens": 1006,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 2065,
+          "judge_output_tokens": 60,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 2133,
+          "judge_output_tokens": 946,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-0",
+      "tag": "eval",
+      "turn_id": "0b5e23c9-e62c-4e35-83f1-5eb7280c1d77",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.75,
+      "execution_time": 18.542,
+      "judge_llm_input_tokens": 2104,
+      "judge_llm_output_tokens": 1686,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9,
+          "reason": "Custom answer correctness: 0.90 - The provided response is largely accurate and detailed, offering a comprehensive overview of the benefits and resources delivered by installing the Ansible plug-ins for the Red Hat Developer Hub (RHDH). It effectively describes the enhanced portal experience, specific resources, and key use cases for developers, aligning well with the expected response's focus on the Ansible-specific portal experience.",
+          "judge_input_tokens": 1046,
+          "judge_output_tokens": 206,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The provided response is factually accurate, comprehensive, and significantly more detailed than the expected response. It correctly identifies the core functionalities and benefits of integrating Ansible plugins with Red Hat Developer Hub.",
+          "judge_input_tokens": 1058,
+          "judge_output_tokens": 1480,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-6",
+      "tag": "eval",
+      "turn_id": "b15af708-8edd-4653-933d-0c0f4fb6cf64",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 0.8,
+      "threshold": 0.8,
+      "execution_time": 60.758,
+      "judge_llm_input_tokens": 5002,
+      "judge_llm_output_tokens": 8608,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.8,
+          "reason": "Ragas faithfulness: 0.80",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.24,
+          "reason": "Ragas faithfulness: 0.24",
+          "judge_input_tokens": 5002,
+          "judge_output_tokens": 8608,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-6",
+      "tag": "eval",
+      "turn_id": "b15af708-8edd-4653-933d-0c0f4fb6cf64",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 29.263,
+      "judge_llm_input_tokens": 6540,
+      "judge_llm_output_tokens": 3660,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3190,
+          "judge_output_tokens": 384,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3350,
+          "judge_output_tokens": 3276,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-6",
+      "tag": "eval",
+      "turn_id": "b15af708-8edd-4653-933d-0c0f4fb6cf64",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 13.38,
+      "judge_llm_input_tokens": 8240,
+      "judge_llm_output_tokens": 983,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4057,
+          "judge_output_tokens": 18,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 4183,
+          "judge_output_tokens": 965,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-6",
+      "tag": "eval",
+      "turn_id": "b15af708-8edd-4653-933d-0c0f4fb6cf64",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 7.946,
+      "judge_llm_input_tokens": 7596,
+      "judge_llm_output_tokens": 809,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3702,
+          "judge_output_tokens": 62,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3894,
+          "judge_output_tokens": 747,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-6",
+      "tag": "eval",
+      "turn_id": "b15af708-8edd-4653-933d-0c0f4fb6cf64",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 0.8,
+      "threshold": 0.75,
+      "execution_time": 23.793,
+      "judge_llm_input_tokens": 2984,
+      "judge_llm_output_tokens": 2405,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.8,
+          "reason": "Custom answer correctness: 0.80 - The provided response is mostly accurate and covers the essential steps for configuring the Bulk Import plugin to use a custom scaffolder workflow. It correctly outlines the need to register a custom template and update the `app-config.yaml` file. However, there are some discrepancies and omissions when compared to the expected response.",
+          "judge_input_tokens": 1437,
+          "judge_output_tokens": 325,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.2,
+          "reason": "Custom answer correctness: 0.20 - The provided response is factually incorrect on the two most critical parts of the user's question: the configuration syntax and the specific input parameters.",
+          "judge_input_tokens": 1547,
+          "judge_output_tokens": 2080,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-8",
+      "tag": "eval",
+      "turn_id": "bd7e32fa-057f-4e29-a843-d21fe7d712fe",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 0.9024390243902439,
+      "threshold": 0.8,
+      "execution_time": 77.878,
+      "judge_llm_input_tokens": 4786,
+      "judge_llm_output_tokens": 10856,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9024390243902439,
+          "reason": "Ragas faithfulness: 0.90",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.17857142857142858,
+          "reason": "Ragas faithfulness: 0.18",
+          "judge_input_tokens": 4786,
+          "judge_output_tokens": 10856,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-8",
+      "tag": "eval",
+      "turn_id": "bd7e32fa-057f-4e29-a843-d21fe7d712fe",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 26.546,
+      "judge_llm_input_tokens": 6109,
+      "judge_llm_output_tokens": 2796,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 2922,
+          "judge_output_tokens": 559,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 3187,
+          "judge_output_tokens": 2237,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-8",
+      "tag": "eval",
+      "turn_id": "bd7e32fa-057f-4e29-a843-d21fe7d712fe",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 8.895,
+      "judge_llm_input_tokens": 6908,
+      "judge_llm_output_tokens": 716,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 3319,
+          "judge_output_tokens": 18,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 3589,
+          "judge_output_tokens": 698,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-8",
+      "tag": "eval",
+      "turn_id": "bd7e32fa-057f-4e29-a843-d21fe7d712fe",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 12.0,
+      "judge_llm_input_tokens": 6907,
+      "judge_llm_output_tokens": 1116,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3345,
+          "judge_output_tokens": 66,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3562,
+          "judge_output_tokens": 1050,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-8",
+      "tag": "eval",
+      "turn_id": "bd7e32fa-057f-4e29-a843-d21fe7d712fe",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 0.8,
+      "threshold": 0.75,
+      "execution_time": 27.111,
+      "judge_llm_input_tokens": 3227,
+      "judge_llm_output_tokens": 2808,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.8,
+          "reason": "Custom answer correctness: 0.80 - The response provides a comprehensive and detailed guide on configuring the GitHub Events Module within the Red Hat Developer Hub (RHDH). It covers essential steps such as configuring the GitHub webhook, setting up RHDH secrets, and modifying the `app-config.yaml` file, which aligns well with the expected response.",
+          "judge_input_tokens": 1563,
+          "judge_output_tokens": 346,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.7,
+          "reason": "Custom answer correctness: 0.70 - The provided response is a well-structured, comprehensive, and mostly accurate guide that would be very helpful for a platform engineer. It correctly identifies the necessary webhook configurations, the required GitHub events, the `app-config.yaml` structure for the events module, and provides excellent verification and troubleshooting steps.",
+          "judge_input_tokens": 1664,
+          "judge_output_tokens": 2462,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    }
+  ]
+}

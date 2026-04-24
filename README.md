@@ -7,7 +7,7 @@ This branch contains the evaluation resources for **Developer Lightspeed 1.9**, 
 
 | Path                                                           | Description                                                                                                          |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **[📂 rhdh-product-docs](./rhdh-product-docs-1.9-Mar11-2026)** | The Red Hat Developer Hub (RHDH) product documentation (v1.9) used as the source knowledge base for this evaluation. |
+| **[📂 rhdh-product-docs](./rhdh-product-docs-1.9-Apr24-2026)** | The Red Hat Developer Hub (RHDH) product documentation (v1.9) used as the source knowledge base for this evaluation. |
 | **[📂 dataset](./dataset)**                                    | Contains raw and processed Q&A pairs, formatted specifically for the `lightspeed-evaluation` tool.                   |
 | **[📂 evaluation-result](./evaluation-result)**                | Detailed metrics and outcome reports from the model evaluations.                                                     |
 | **[📄 categories_rhdh.yaml](categories_rhdh.yaml)**            | Manually defined topic groups used to classify and organize the Q&A pairs.                                           |
@@ -17,15 +17,13 @@ This branch contains the evaluation resources for **Developer Lightspeed 1.9**, 
 
 ## 🧪 Evaluation Overview
 
-For the Developer Lightspeed 1.9 release, we ran evaluation against five distinct models.
+For the Developer Lightspeed 1.9 release, we ran evaluation against the following models.
 
 **Models Evaluated:**
 
-- **Gemini:** `gemini-2.5-pro`, `gemini-2.5-flash-lite`
-- **GPT:** `gpt-4o-mini`, `gpt-5.2`
-- **Llama:** `llama3.1:8b`
+- **Gemini:** `models-gemini-3-flash-preview`, `models-gemini-3.1-pro-preview`
 
-**Judge Model being used:** `gemini-2.5-pro`
+**Judge Models being used:** `gpt-4o-mini`, `gemini-2.5-pro` (judge panel, aggregation: max)
 
 > 📊 **View Results:** For a deep dive into the performance metrics, please refer to the **[Evaluation Results](./evaluation-result)** directory.
 
@@ -35,7 +33,7 @@ For the Developer Lightspeed 1.9 release, we ran evaluation against five distinc
 
 The dataset in this repository was constructed using a synthetic generation pipeline to ensure comprehensive coverage of the documentation.
 
-- **Source Material:** The dataset is derived entirely from the [RHDH 1.9 Product Docs](./rhdh-product-docs-1.9-Mar11-2026).
+- **Source Material:** The dataset is derived entirely from the [RHDH 1.9 Product Docs](./rhdh-product-docs-1.9-Apr24-2026).
 - **Generation Tool:** We used **[Ragas](https://docs.ragas.io/en/stable/concepts/test_data_generation/rag/)** (Testset Generation for RAG) to generate diverse Q&A pairs.
 - **Evaluation Tool:** The evaluation was executed using the **[lightspeed-evaluation](https://github.com/lightspeed-core/lightspeed-evaluation)** tool, which consumes the dataset and calculates performance metrics.
 

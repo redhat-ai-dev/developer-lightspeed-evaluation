@@ -1,0 +1,611 @@
+{
+  "timestamp": "2026-04-24T15:32:24.746972",
+  "total_evaluations": 10,
+  "summary_stats": {
+    "overall": {
+      "TOTAL": 10,
+      "PASS": 8,
+      "FAIL": 2,
+      "ERROR": 0,
+      "SKIPPED": 0,
+      "pass_rate": 80.0,
+      "fail_rate": 20.0,
+      "error_rate": 0.0,
+      "skipped_rate": 0.0,
+      "total_judge_llm_input_tokens": 38534,
+      "total_judge_llm_output_tokens": 25402,
+      "total_judge_llm_tokens": 63936,
+      "total_embedding_tokens": 0,
+      "total_api_input_tokens": 0,
+      "total_api_output_tokens": 0,
+      "total_api_tokens": 0,
+      "total_tokens": 63936
+    },
+    "by_metric": {
+      "custom:answer_correctness": {
+        "pass": 1,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 50.0,
+        "fail_rate": 50.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 0.85,
+          "median": 0.85,
+          "std": 0.21213203435596428,
+          "min": 0.7,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 0.7,
+            "mean": 0.85,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:context_precision_without_reference": {
+        "pass": 2,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 0.9999999999,
+          "median": 0.9999999999,
+          "std": 0.0,
+          "min": 0.9999999999,
+          "max": 0.9999999999,
+          "confidence_interval": {
+            "low": 0.9999999999,
+            "mean": 0.9999999999,
+            "high": 0.9999999999,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:context_recall": {
+        "pass": 2,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:context_relevance": {
+        "pass": 2,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 100.0,
+        "fail_rate": 0.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 1.0,
+          "median": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 1.0,
+            "mean": 1.0,
+            "high": 1.0,
+            "confidence_level": 95.0
+          }
+        }
+      },
+      "ragas:faithfulness": {
+        "pass": 1,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 50.0,
+        "fail_rate": 50.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 2,
+          "mean": 0.7378378378378379,
+          "median": 0.7378378378378379,
+          "std": 0.08791057279616542,
+          "min": 0.6756756756756757,
+          "max": 0.8,
+          "confidence_interval": {
+            "low": 0.6756756756756757,
+            "mean": 0.7378378378378379,
+            "high": 0.8,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    },
+    "by_conversation": {
+      "plugins-4": {
+        "pass": 4,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 80.0,
+        "fail_rate": 20.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      },
+      "rbac-3": {
+        "pass": 4,
+        "fail": 1,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 80.0,
+        "fail_rate": 20.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0
+      }
+    },
+    "by_tag": {
+      "eval": {
+        "pass": 8,
+        "fail": 2,
+        "error": 0,
+        "skipped": 0,
+        "pass_rate": 80.0,
+        "fail_rate": 20.0,
+        "error_rate": 0.0,
+        "skipped_rate": 0.0,
+        "score_statistics": {
+          "count": 10,
+          "mean": 0.9175675675475675,
+          "median": 0.99999999995,
+          "std": 0.13631467196983,
+          "min": 0.6756756756756757,
+          "max": 1.0,
+          "confidence_interval": {
+            "low": 0.835135135135135,
+            "mean": 0.9175675675575675,
+            "high": 1.0024324324024323,
+            "confidence_level": 95.0
+          }
+        }
+      }
+    }
+  },
+  "configuration": {
+    "core": {
+      "max_threads": 50,
+      "fail_on_invalid_data": true,
+      "skip_on_failure": false
+    },
+    "llm_pool": {
+      "defaults": {
+        "cache_enabled": true,
+        "cache_dir": ".caches/llm_cache",
+        "timeout": 300,
+        "num_retries": 3,
+        "parameters": {
+          "temperature": 0.0,
+          "max_completion_tokens": 16384
+        }
+      },
+      "models": {
+        "judge_gpt_4o_mini": {
+          "provider": "openai",
+          "model": "gpt-4o-mini",
+          "ssl_verify": null,
+          "ssl_cert_file": null,
+          "api_base": null,
+          "api_key_path": null,
+          "parameters": {
+            "temperature": null,
+            "max_completion_tokens": null
+          },
+          "timeout": null
+        },
+        "judge_gemini_2_5_pro": {
+          "provider": "gemini",
+          "model": "gemini-2.5-pro",
+          "ssl_verify": null,
+          "ssl_cert_file": null,
+          "api_base": null,
+          "api_key_path": null,
+          "parameters": {
+            "temperature": null,
+            "max_completion_tokens": null
+          },
+          "timeout": null
+        }
+      }
+    },
+    "judge_panel": {
+      "judges": [
+        "judge_gpt_4o_mini",
+        "judge_gemini_2_5_pro"
+      ],
+      "enabled_metrics": null,
+      "aggregation_strategy": "max"
+    },
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-small",
+      "provider_kwargs": {},
+      "cache_enabled": true
+    },
+    "api": {
+      "enabled": false,
+      "api_base": "http://localhost:8080",
+      "version": "v1",
+      "endpoint_type": "streaming",
+      "timeout": 300,
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "no_tools": null,
+      "system_prompt": null,
+      "extra_request_params": null,
+      "cache_enabled": true,
+      "mcp_headers": {
+        "enabled": false,
+        "servers": {
+          "filesystem-tools": {
+            "env_var": "API_KEY",
+            "header_name": null
+          }
+        }
+      },
+      "num_retries": 3
+    }
+  },
+  "results": [
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "PASS",
+      "score": 0.8,
+      "threshold": 0.8,
+      "execution_time": 77.786,
+      "judge_llm_input_tokens": 8258,
+      "judge_llm_output_tokens": 8630,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.8,
+          "reason": "Ragas faithfulness: 0.80",
+          "judge_input_tokens": 4067,
+          "judge_output_tokens": 2003,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.0625,
+          "reason": "Ragas faithfulness: 0.06",
+          "judge_input_tokens": 4191,
+          "judge_output_tokens": 6627,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 0.021,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 0.012,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 8.835,
+      "judge_llm_input_tokens": 6456,
+      "judge_llm_output_tokens": 819,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3146,
+          "judge_output_tokens": 50,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 3310,
+          "judge_output_tokens": 769,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "rbac-3",
+      "tag": "eval",
+      "turn_id": "a6af5aa9-ca1a-47fe-9570-636452c0d986",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "FAIL",
+      "score": 0.7,
+      "threshold": 0.75,
+      "execution_time": 20.248,
+      "judge_llm_input_tokens": 1481,
+      "judge_llm_output_tokens": 2035,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.7,
+          "reason": "Custom answer correctness: 0.70 - The provided response accurately describes multiple methods to view OpenShift routes, including using the OpenShift CLI, the OpenShift Web Console, and the Red Hat Developer Hub. It offers practical commands and steps for each method, which is helpful for users with different preferences for interacting with OpenShift.",
+          "judge_input_tokens": 722,
+          "judge_output_tokens": 190,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.1,
+          "reason": "Custom answer correctness: 0.10 - The provided response is factually correct for a general user asking how to view OpenShift routes using standard tools like the `oc` CLI and the Web Console. However, it completely misses the specific context and technical details outlined in the expected response.",
+          "judge_input_tokens": 759,
+          "judge_output_tokens": 1845,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:faithfulness",
+      "result": "FAIL",
+      "score": 0.6756756756756757,
+      "threshold": 0.8,
+      "execution_time": 98.288,
+      "judge_llm_input_tokens": 10521,
+      "judge_llm_output_tokens": 10714,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.6756756756756757,
+          "reason": "Ragas faithfulness: 0.68",
+          "judge_input_tokens": 5122,
+          "judge_output_tokens": 2656,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.4782608695652174,
+          "reason": "Ragas faithfulness: 0.48",
+          "judge_input_tokens": 5399,
+          "judge_output_tokens": 8058,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:context_recall",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.8,
+      "execution_time": 0.013,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context recall: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:context_relevance",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.7,
+      "execution_time": 0.013,
+      "judge_llm_input_tokens": 0,
+      "judge_llm_output_tokens": 0,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Ragas context relevance: 1.00",
+          "judge_input_tokens": 0,
+          "judge_output_tokens": 0,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "ragas:context_precision_without_reference",
+      "result": "PASS",
+      "score": 0.9999999999,
+      "threshold": 0.7,
+      "execution_time": 10.741,
+      "judge_llm_input_tokens": 8366,
+      "judge_llm_output_tokens": 1037,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 4044,
+          "judge_output_tokens": 69,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 0.9999999999,
+          "reason": "Ragas context precision without reference: 1.00",
+          "judge_input_tokens": 4322,
+          "judge_output_tokens": 968,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    },
+    {
+      "conversation_group_id": "plugins-4",
+      "tag": "eval",
+      "turn_id": "d3c9ce66-c3e4-402d-93ae-daed5b387ea6",
+      "metric_identifier": "custom:answer_correctness",
+      "result": "PASS",
+      "score": 1.0,
+      "threshold": 0.75,
+      "execution_time": 22.214,
+      "judge_llm_input_tokens": 3452,
+      "judge_llm_output_tokens": 2167,
+      "judge_scores": [
+        {
+          "judge_id": "judge_gpt_4o_mini",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The response provides a comprehensive and accurate set of steps for integrating Tekton with the Red Hat Developer Hub (RHDH) to enable visibility of Tekton resources like `PipelineRuns`. It covers the necessary Kubernetes RBAC configuration, including the creation of a `ServiceAccount`, `ClusterRole`, and `ClusterRoleBinding`, which aligns with the expected response regarding granting read access to Tekton resources.",
+          "judge_input_tokens": 1654,
+          "judge_output_tokens": 267,
+          "embedding_tokens": 0
+        },
+        {
+          "judge_id": "judge_gemini_2_5_pro",
+          "score": 1.0,
+          "reason": "Custom answer correctness: 1.00 - The provided response is exceptionally accurate, comprehensive, and practical. It not only covers all the points mentioned in the expected response but also includes critical details that are essential for a successful implementation, which the expected response omits.",
+          "judge_input_tokens": 1798,
+          "judge_output_tokens": 1900,
+          "embedding_tokens": 0
+        }
+      ],
+      "time_to_first_token": null,
+      "streaming_duration": null,
+      "tokens_per_second": null
+    }
+  ]
+}

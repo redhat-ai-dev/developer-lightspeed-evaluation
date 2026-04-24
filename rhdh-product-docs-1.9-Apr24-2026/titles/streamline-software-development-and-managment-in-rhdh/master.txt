@@ -1,0 +1,348 @@
+# Streamline software development and management in Red Hat Developer Hub
+
+# Importing your team's codebase from Git
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+Red Hat Developer Hub can automate GitHub repositories onboarding and track their import status.
+
+## Enabling and authorizing Bulk Import capabilities in Red Hat Developer Hub
+
+You can enable the Bulk Import feature for users and give them the necessary permissions to access it.
+This feature is available for GitHub repositories and GitLab projects.
+
+* For GitHub only: You have enabled GitHub repository discovery.
+
+1. The Bulk Import plugins are installed but disabled by default.
+To enable the ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import-backend-dynamic and ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import plugins, edit your dynamic-plugins.yaml with the following content:
+
+```yaml
+plugins:
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import-backend-dynamic
+    disabled: false
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import
+    disabled: false
+```
+
+
+See Installing and viewing plugins in Red Hat Developer Hub.
+2. Configure the required bulk.import RBAC permission for the users who are not administrators as shown in the following code:
+rbac-policy.csv fragment
+
+```csv
+p, role:default/bulk-import, bulk.import, use, allow
+g, user:default/<your_user>, role:default/bulk-import
+```
+
+
+Note that only Developer Hub administrators or users with the bulk.import permission can use the Bulk Import feature.
+See Permission policies in Red Hat Developer Hub.
+
+* The sidebar displays a Bulk Import option.
+* The Bulk Import page shows a list of added GitHub repositories and GitLab projects.
+
+## Importing multiple GitHub repositories
+
+In Red Hat Developer Hub, you can select your GitHub repositories and automate their onboarding to the Developer Hub catalog.
+
+* You have enabled the Bulk Import feature and gave access to it.
+
+1. Click Bulk Import in Developer Hub left sidebar.
+2. If your RHDH instance has multiple source control tools configured, select GitHub from the Source control tool list.
+3. Select the repositories to import, and validate.
+
+Developer Hub creates a pull request in each selected repository to add the required catalog-info.yaml file.
+4. For each repository to import, click on the PR link to review and merge the changes in GitHub.
+
+1. Click Bulk Import in Developer Hub left sidebar.
+2. Verify that each imported GitHub repository in the Selected repositories list has the status Waiting for approval or Imported.
+3. For each Waiting for approval repository, click the pull request link to review and merge the catalog-info.yaml file in the corresponding repository.
+
+## Managing the added Git repositories
+
+You can oversee and manage the Git repositories that are imported to the Developer Hub.
+
+* You have imported GitHub repositories.
+
+* Click Bulk Import in the left sidebar to display all the current GitHub repositories and GitLab projects that are being tracked as Import jobs, along with their status.
+Added:: The Git repository is added to the Developer Hub catalog after the import pull request is merged or if the Git repository already contained a catalog-info.yaml file during the bulk import.
+It can take a few minutes for the entities to be available in the catalog.
+Waiting for approval:: There is an open pull request or merge request adding a catalog-info.yaml file to the GitHub repository or GitLab project.
+You can:
+* Click pencil icon on the right to see details about the pull request or merge request. You can use the detailed view to edit the request content right from Developer Hub.
+* Delete the Import job, this action closes the import pull request or merge request as well.
+* To transition the Import job to the Added state, merge the import pull request or merge request from the Git repository.
+Empty:: Developer Hub is unable to determine the import job status because the Git repository is imported from other sources but does not have a catalog-info.yaml file and lacks any import pull or merge request adding it.
+
+
+[NOTE]
+----
+* After an import pull request or merge request is merged, the import status is marked as Added in the list of Added entities, but it might take a few seconds for the corresponding entities to appear in the Developer Hub Catalog.
+* A location added through other sources (for example, statically in an app-config.yaml file, dynamically when enabling GitHub discovery, or registered manually using the "Register an existing component" page) might show up in the Bulk Import list of Added Repositories if the following conditions are met:
+* The location URL points to a catalog-info.yaml file at the root of the Git repository default branch.
+* For GitHub only: The target repository is accessible from the configured GitHub integrations.
+----
+
+## Monitoring Bulk Import actions using audit logs
+
+The Bulk Import backend plugin adds the following events to the Developer Hub audit logs.
+See Audit logs in Red Hat Developer Hub for more information on how to configure and view audit logs.
+
+Bulk Import Events:
+
+BulkImportUnknownEndpoint:: Tracks requests to unknown endpoints.
+BulkImportPing:: Tracks GET requests to the /ping endpoint, which allows us to make sure the bulk import backend is up and running.
+BulkImportFindAllOrganizations:: Tracks GET requests to the /organizations endpoint, which returns the list of organizations accessible from all configured GitHub Integrations.
+BulkImportFindRepositoriesByOrganization:: Tracks GET requests to the /organizations/:orgName/repositories endpoint, which returns the list of repositories for the specified organization (accessible from any of the configured GitHub Integrations).
+BulkImportFindAllRepositories:: Tracks GET requests to the /repositories endpoint, which returns the list of repositories accessible from all configured GitHub Integrations.
+BulkImportFindAllImports:: Tracks GET requests to the /imports endpoint, which returns the list of existing import jobs along with their statuses.
+BulkImportCreateImportJobs:: Tracks POST requests to the /imports endpoint, which allows to submit requests to bulk-import one or many repositories into the Developer Hub catalog, by eventually creating import pull requests in the target repositories.
+BulkImportFindImportStatusByRepo:: Tracks GET requests to the /import/by-repo endpoint, which fetches details about the import job for the specified repository.
+BulkImportDeleteImportByRepo:: Tracks DELETE requests to the /import/by-repo endpoint, which deletes any existing import job for the specified repository, by closing any open import pull request that could have been created.
+
+
+```json
+{
+  "actor": {
+    "actorId": "user:default/myuser",
+    "hostname": "localhost",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+  },
+  "eventName": "BulkImportFindAllOrganizations",
+  "isAuditLog": true,
+  "level": "info",
+  "message": "'get /organizations' endpoint hit by user:default/myuser",
+  "meta": {},
+  "plugin": "bulk-import",
+  "request": {
+    "body": {},
+    "method": "GET",
+    "params": {},
+    "query": {
+      "pagePerIntegration": "1",
+      "sizePerIntegration": "5"
+    },
+    "url": "/api/bulk-import/organizations?pagePerIntegration=1&sizePerIntegration=5"
+  },
+  "response": {
+    "status": 200
+  },
+  "service": "backstage",
+  "stage": "completion",
+  "status": "succeeded",
+  "timestamp": "2024-08-26 16:41:02"
+}
+```
+
+
+# Centralizing your software components in the Red Hat Developer Hub catalog for easier access
+
+The Red Hat Developer Hub Software Catalog is a centralized system that gives you visibility into all the software across your ecosystem, including services, websites, libraries, and data pipelines. You can use it to view ownership details and metadata for each component in one place.
+
+The metadata for the components in your Software Catalog is stored as YAML files that live alongside your code in your version control system. The version control repositories can include one or many metadata files. Software Catalog organizes items as entities, which include Components, Resources, and APIs, and other related types. Each entity includes associated metadata such as its owner, type, and other relevant details.
+
+By storing metadata in YAML files alongside the code, you allow Red Hat Developer Hub to process and display this information through a clear, visual interface. With the Software Catalog, you can manage and maintain your software, stay aware of all software available in your ecosystem, and take ownership of your services and tools.
+
+The Overview page for a component provides key information such as links to the source code, documentation, dependencies, and ownership details. You can customize this page with plugins to suit specific needs.
+
+## Adding new components to your Red Hat Developer Hub instance to expand your catalog
+
+* You have installed and configured the Red Hat Developer Hub instance.
+* You have the required permissions. See Authorization in Red Hat Developer Hub.
+
+You can add components to your RHDH instance using the following methods:
+
+* Register components manually using the GUI or by using your app-config.yaml with the required permissions.
+* Create new components by using Software Templates.
+* Use the bulk import plugin with the required permissions. For more information, see Bulk importing GitHub repositories.
+
+### Creating new components in your Red Hat Developer Hub instance
+
+You can create new components in the Software Catalog in your RHDH instance. Red Hat Developer Hub automatically registers all components that developers or platform engineers create using Templates in the Software Catalog.
+
+* You have installed and configured the Red Hat Developer Hub instance.
+* You have the required permissions. See Authorization in Red Hat Developer Hub.
+
+1. In your Red Hat Developer Hub navigation menu, click Catalog.
+2. On the Catalog page, click Self-service.
+
+### Registering components manually in your RHDH instance
+
+To manually register components in your RHDH instance, create a catalog-info.yaml file and register it with your Red Hat Developer Hub instance. The catalog-info.yaml file contains the metadata you wish to register for your software component.
+
+* You have installed and configured the Red Hat Developer Hub instance.
+* You have the required permissions. See Authorization in Red Hat Developer Hub.
+
+1. In the root directory of your software project, create a file named catalog-info.yaml.
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+    name: _<your_software_component>_
+    description: _<software_component_brief_description>_
+    tags:
+         - example
+         - service
+    annotations:
+         github.com/project-slug: _<repo_link_of_your_component_to_register>_
+spec:
+    type: _<your_service>_
+    owner: _<your_team_name>_
+    lifecycle: _<your_lifecycle>_
+```
+
+2. Commit the catalog-info.yaml file to the root of your project source code repository.
+3. In your Red Hat Developer Hub navigation menu, go to Catalog > Self-service.
+4. On the Self-service page, click Register Existing Component.
+5. On the Register an existing component page, enter the full URL of the catalog-info.yaml file in your repository. For example: Artist lookup component.
+6. Complete the wizard instructions.
+
+* Your software component is listed in the Software Catalog. You can view its details and ensure all the metadata is accurate.
+
+## Updating existing component in your Red Hat Developer Hub catalog
+
+You can update components in the Software Catalog in your Red Hat Developer Hub instance.
+
+* You have installed and configured the Red Hat Developer Hub instance.
+* You have the required permissions. See Authorization in Red Hat Developer Hub.
+
+To update components in the Software Catalog in your Red Hat Developer Hub instance, complete the following steps:
+
+1. In your Red Hat Developer Hub navigation menu, click Catalog.
+2. Find the software component that you want to edit, under Actions, click the Edit icon.
+
+[NOTE]
+----
+This action redirects you to the YAML file on GitHub.
+----
+3. On your remote repository UI, update your YAML file.
+
+[NOTE]
+----
+After you merge your changes, the updated metadata in the Software Catalog appears after some time.
+----
+
+## Finding components by Kind in the Red Hat Developer Hub catalog
+
+Use this procedure to filter the Software Catalog to display components by their type.
+
+* You are logged in to the RHDH instance.
+
+1. In your Red Hat Developer Hub navigation menu, click Catalog.
+2. On the Catalog page, click the Kind drop-down list.
+3. Select the Kind you want to filter by, such as Component, API, or Template.
+
+[NOTE]
+----
+The available filter lists change based on the Kind you select, showing options relevant to that entity type.
+----
+
+* The Catalog updates to list only the components matching the selected Kind.
+
+## Filtering components by text in the Red Hat Developer Hub Catalog
+
+Use this procedure to search and filter components by text in the Software Catalog.
+
+1. In your Red Hat Developer Hub navigation menu, click Catalog.
+2. In the Search field, enter a component name, description, or keyword that you are looking for.
+
+* The Catalog list updates to display only components matching your search criteria.
+
+## Reviewing the YAML configuration of your Red Hat Developer Hub Software Catalog
+
+You can view the Software Catalog YAML file in your Red Hat Developer Hub instance. The YAML file displays the metadata for the components in your Software Catalog.
+
+To view the Software Catalog YAML file in your Red Hat Developer Hub instance, complete the following steps:
+
+1. In your Red Hat Developer Hub navigation menu, click Catalog.
+2. Find the software component that you want to view, under Actions, click the View icon.
+
+[NOTE]
+----
+These steps redirect you to the YAML file on your remote repository.
+----
+
+## Starring key components in the Software Catalog
+
+You can add frequently used components to the Your Starred Entities card for quick access.
+
+1. In the Red Hat Developer Hub navigation menu, select Catalog.
+2. Locate the components you want to add as a favorite.
+3. In the Actions column for that component, click the Add to favorites (star) icon.
+
+* Navigate to the Home page and verify the component is listed in the Your Starred Entities card.
+
+# Import and use an existing Software Template for faster development
+
+To standardize and accelerate the creation of new software, use Software Templates in Red Hat Developer Hub (RHDH). You can generate consistent software components, publish them to Git repositories, and register them in the Software Catalog to make sure they are discoverable across your organization.
+
+Each template uses a YAML definition to present a functional interface for inputting project metadata. Software Templates run a sequential series of actions, such as scaffolding code or creating repositories, which you can configure to run conditionally based on user input.
+
+## Creating a software component using Software Templates
+
+To ensure project consistency and reduce manual configuration time, use Software Templates to create new components. These templates automate the scaffolding process, providing a pre-configured project structure directly from your Red Hat Developer Hub portal.
+
+* You are logged in to the Red Hat Developer Hub instance.
+
+1. On the Red Hat Developer Hub navigation menu, click Catalog > Self-service or in the Global Header, click Create (+).
+2. On the Self-service page, locate the Templates you want to use and click Choose to start the scaffolding process.
+3. Follow the wizard instructions to enter the required project details.
+4. In the Review step, verify your parameters and click Create.
+
+The scaffolding process begins. You can monitor the progress in the logs or click Cancel to stop the operation.
+
+* If the component is created successfully, a success page appears.
+![template-creation-successful]
+
+* If the creation process fails, you must review the logs on the error page for specific failure details.
+* To retry, click Start Over; the system retains your previously entered values on the Self-service page.
+![template-creation-not-successful]
+
+## Searching and filtering Software Templates in your Red Hat Developer Hub instance
+
+To quickly locate the correct configuration for your project and reduce time spent browsing the catalog, search and filter the available Software Templates. Narrowing your search ensures you select the specific template that meets your development requirements.
+
+1. In the Red Hat Developer Hub navigation menu, click Catalog > Self-service.
+2. In the Search field, enter the name for the Software Template.
+3. Optional: To refine the results, select a category from the Category list.
+
+## Importing an existing Software Template
+
+You can use the Catalog Processor to import an existing Software Template into your Red Hat Developer Hub instance.
+
+* You have created a directory or repository that contains at least one template YAML file.
+* Optional: To use a template stored in GitHub, you have configured Developer Hub integration with GitHub.
+
+1. Open your RHDH app-config.yaml configuration file.
+2. In the catalog.rules section, add a rule to allow Templates kinds, as shown in the following example:
+
+```yaml
+# ...
+catalog:
+  rules:
+    - allow: [Template]
+  locations:
+    - type: url
+      target: https://<repository_url/template-name>.yaml
+# ...
+```
+
+
+where:
+catalog.rules.allow:: Specify the Template rule to allow new Software Templates in the catalog.
+catalog.locations.type:: Specify the url type when importing templates from a repository (for example, GitHub or GitLab).
+catalog.locations.target:: Specify the full URL to the template file.
+
+1. In the Red Hat Developer Hub navigation menu, click Catalog.
+2. From the Kind list, select Template.
+3. Verify that your template appears in the Template list.
+
+* About Red Hat Developer Hub
+* Customizing Red Hat Developer Hub

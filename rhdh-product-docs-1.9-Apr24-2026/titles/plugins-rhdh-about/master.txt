@@ -1,0 +1,520 @@
+# Develop and deploy dynamic plugins in Red Hat Developer Hub
+
+# Overview of dynamic plugins
+
+## Dynamic Plugins
+
+Red Hat Developer Hub implements a dynamic plugin system. You can install, configure, and load plugins at runtime without changing or rebuilding the application. You only need a restart. You can load these plugins from NPM, tarballs, or OCI compliant container images.
+
+With dynamic plugins, instead of modifying the Backstage application itself, you create a dynamic-plugins.yaml file to specify the plugins that Red Hat Developer Hub will install and enable at startup. For example, the following configuration loads a plugin named plugin-name, which is stored in a Quay.io container image at quay.io/account-name/image-name:
+
+
+```yaml
+plugins:
+  - package: oci://quay.io/account-name/image-name:tag!plugin-name
+    disabled: false
+    pluginConfig: {}
+```
+
+
+# Prepare your development environment
+
+Before creating or converting plugins for Red Hat Developer Hub (RHDH), you must establish a specific local development toolchain. This toolchain allows you to write standard Backstage code, convert it into a dynamic format, and package it for deployment without rebuilding the core RHDH platform.
+
+To develop dynamic plugins, you must have experience with the following:
+
+JavaScript and TypeScript:: Used for Backstage frontend and backend development.
+React:: Used for building frontend plugin components.
+Node.js ecosystem:: Includes package management (NPM/Yarn) and module handling.
+
+## The development toolchain
+
+The following tools are required to initialize, build, and package your plugins:
+
+Node.js (via NVM):: Node.js is the engine that runs JavaScript on your computer.
+
+RHDH requires Node v22. Use Node Version Manager (NVM) to switch between Node versions and ensure compatibility with the RHDH backend system.
+Yarn 4:: Yarn is a package manager that handles all the library dependencies that your application needs.
+
+The Backstage project structure is optimized for Yarn (specifically Yarn Classic 1.x) to manage workspaces and dependencies efficiently.
+Containerization tools (Docker or Podman):: These tools used to run containers and package applications.
+* Packaging: Dynamic plugins are distributed as OCI images. Use Docker or Podman to package your derived plugin assets into an image that can be pushed to a registry, for example, Quay.io and sideloaded into RHDH.
+RHDH plugin tools:: These specialized tools convert standard plugins into the dynamic architecture required by RHDH.
+* RHDH Plugin Factory and RHDH-cli: These tools assist converting existing standard Backstage plugins into the RHDH dynamic plugin format.
+* RHDH-cli (@red-hat-developer-hub/cli): This command-line tool is critical for the export process. It allows you to run commands like export-dynamic-plugin, which repackages your code into a derived package containing the necessary configuration (like Scalprum for frontend) and dependency handling (bundling private dependencies vs. sharing platform dependencies)
+
+# Develop a new plugin
+
+## Determine RHDH version
+
+To ensure your plugin uses dependencies compatible with the RHDH instance that it will run on, check the target RHDH version and identify the compatible Backstage version.
+
+
+
+## Create a new Backstage application
+
+To ensure that you use the compatible version of the Backstage CLI to create your plugin, create a new Backstage application in your workspace by using the create-app command.
+
+* Determine the create-app version based on the RHDH compatibility matrix.
+
+1. Create a directory for your workspace:
+
+```terminal
+$ mkdir rhdh-plugin-dev
+$ cd rhdh-plugin-dev
+```
+
+2. Initialize the Backstage application:
+
+```terminal
+$ npx @backstage/create-app@0.7.6 --path .
+```
+
+
+Your workspace should contain the following:
+
+* packages/app/ folder
+* packages/backend/ folder
+* plugins/ folder
+* package.json file containing the Backstage dependencies.
+
+## Create a new plugin
+
+* You have created a Backstage application.
+
+1. In your Backstage application root folder, create a new plugin by using the yarn new command, for example:
+
+```terminal
+$ cd rhdh-plugin-dev
+$ yarn new
+```
+
+Output from the yarn new command
+
+```terminal
+? What do you want to create? (Use arrow keys)
+❯ frontend-plugin - A new frontend plugin
+  backend-plugin - A new backend plugin
+  backend-plugin-module - A new backend module that extends an existing backend plugin
+  plugin-web-library - A new web library plugin package
+  plugin-node-library - A new Node.js library plugin package
+  plugin-common-library - A new isomorphic common plugin package
+  web-library - A library package, exporting shared functionality for web environments
+```
+
+2. Select the type of plugin to create, for example, frontend-plugin.
+3. Enter the ID of the plugin, for example:
+
+```terminal
+? What do you want to create? frontend-plugin - A new frontend plugin
+? Enter the ID of the plugin [required] simple-example
+```
+
+4. (Optional) To preview your plugin with RHDH styling, configure the RHDH theme package in the plugin:
+
+```terminal
+$ cd plugins/simple-example
+$ yarn add --dev @red-hat-developer-hub/backstage-plugin-theme
+```
+
+
+Update dev/index.tsx file, as follows, to use RHDH themes:
+
+```javascript
+// Import the RHDH themes from the plugin
+import { getAllThemes } from '@red-hat-developer-hub/backstage-plugin-theme';
+// ...
+// ...
+createDevApp()
+  // ...
+  // ...
+  // Add RHDH themes to the development harness
+  .addThemes(getAllThemes())
+  .render();
+```
+
+
+[NOTE]
+----
+This configuration is only for the local development harness (dev/index.tsx). When deployed to RHDH, the application provides theming automatically.
+----
+
+The system generates a new Backstage plugin using your provided ID, then automatically builds and integrates it into the application. The plugins/simple-example/ directory should exist with src/, dev/ folders, and a package.json file.
+
+You can also serve the plugin in isolation by running yarn start in the plugin directory, for example:
+
+
+```terminal
+$ cd plugins/simple-example
+$ yarn start
+```
+
+
+## Implement a plugin component
+
+By default, the frontend plugin already has a sample page component defined in src/components/ExampleComponent/. This page is automatically registered in src/plugin.ts as SimpleExamplePage.
+
+One of the common extensions is to create a new entity card component.
+
+1. In the src/components/ directory create an ExampleCard sub-directory.
+2. Create an ExampleCard.tsx file, as follows:
+
+```javascript
+import React from 'react';
+import { InfoCard } from '@backstage/core-components';
+import { useEntity } from '@backstage/plugin-catalog-react';
+
+export const ExampleCard = () => {
+  const { entity } = useEntity();
+  return (
+    <InfoCard title="Simple Example Info">
+      <p>Entity: {entity.metadata.name}</p>
+    </InfoCard>
+  );
+};
+```
+
+3. In the src/components/ExampleCard directory, create and edit the index.ts file, as follows:
+
+```javascript
+export { ExampleCard } from './ExampleCard';
+```
+
+4. To register the new entity card component, edit the src/plugin.ts file to add the new component to the plugin, as follows:
+
+```javascript
+import { createComponentExtension } from '@backstage/core-plugin-api';
+
+// ...
+// ...
+export const ExampleCard = simpleExamplePlugin.provide(
+  createComponentExtension({
+    name: 'ExampleCard',
+    component: {
+      lazy: () =>
+        import('./components/ExampleCard').then(m => m.ExampleCard),
+    },
+  }),
+);
+```
+
+5. Export all components in src/index.ts so they can be loaded dynamically:
+
+```javascript
+export { simpleExamplePlugin, SimpleExamplePage, ExampleCard } from './plugin';
+```
+
+
+Your plugin should have the following new files:
+
+* src/components/ExampleCard/ExampleCard.tsx
+* src/components/ExampleCard/index.ts.
+
+The src/plugin.ts should export ExampleCard, and src/index.ts should re-export it.
+
+## Test a plugin locally
+
+You can test a plugin locally by using your Backstage application.
+
+
+[NOTE]
+----
+You can also use RHDH Local to test your plugins by copying the generated dist-dynamic/ folder contents to the RHDH Local local-plugins folder. For more details, see Verify plugins locally.
+----
+
+For example, to test your component card locally in your Backstage application by using the development harness, update the dev/index.tsx file to include the new component card.
+
+This file is the entry point for the Local Development Sandbox, it serves as a testing harness.
+
+When you are developing a plugin, you do not need to boot up an entire Backstage (or RHDH) production-grade instance just to see a UI change. Instead, you use the Dev App which is a lightweight, stripped-down version of the Backstage frontend.
+
+Plugin isolation:: It allows you to run your plugin in a standalone wrapper. This is what loads when you run yarn start from within the plugin directory.
+Mocking the environment:: Since the plugin usually expects to live inside a Backstage App, dev/index.tsx provides the necessary context:
+Identity mocks:: Simulating a logged-in user.
+API mocks:: Registering test versions of APIs (similar to a mock CatalogApi) so the plugin doesn't try to call a real backend that isn't there.
+Route registration:: It defines how the plugin is mounted within this mini-dev-app, usually using createDevApp().
+
+1. Add Backstage dependencies:
+
+```terminal
+$ yarn add @backstage/catalog-model @backstage/plugin-catalog-react
+```
+
+2. Edit your dev/index.tsx file, as follows:
+
+```javascript
+// ...
+// ...
+import { Entity } from '@backstage/catalog-model';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
+import { Page, Header, Content } from '@backstage/core-components';
+import { Grid } from '@material-ui/core';
+import { ExampleCard } from '../src/plugin';
+
+
+// Mock entity for the component card
+const mockEntity: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'example-service',
+    description: 'An example service component for plugin development.',
+    annotations: {
+      'backstage.io/techdocs-ref': 'dir:.',
+    },
+  },
+  spec: {
+    type: 'service',
+    lifecycle: 'production',
+    owner: 'team-platform',
+  },
+};
+
+// Create a page with the mock entity and the component card
+const entityPage = (
+  <EntityProvider entity={mockEntity}>
+    <Page themeId="service">
+      <Header
+        title={mockEntity.metadata.name}
+        subtitle={`${mockEntity.kind} · ${mockEntity.spec?.type}`}
+      />
+      <Content>
+        <Grid container spacing={3} alignItems="stretch">
+          <Grid item md={6} xs={12}>
+            <ExampleCard />
+          </Grid>
+        </Grid>
+      </Content>
+    </Page>
+  </EntityProvider>
+);
+
+createDevApp()
+  // ...
+  // ...
+  .addPage({
+    element: entityPage,
+    title: 'Entity Page',
+    path: '/simple-example/entity',
+  })
+  // ...
+  // ...
+  .render();
+```
+
+3. Run the development server:
+
+```terminal
+$ yarn start
+```
+
+
+Navigate to http://localhost:3000/simple-example/entity in your browser. You should see the Entity Page with your ExampleCard component displaying "Entity: example-service".
+
+## Configure frontend plugin wiring
+
+Front-end plugin wiring integrates dynamic front-end plugin components, such as new pages, UI extensions, icons, and APIs, into Red Hat Developer Hub.
+
+Because the dynamic plugins load at runtime, the core application must discover and connect the exported assets of the plugin to the appropriate user interface systems and locations.
+
+Dynamic frontend plugins are registered and configured in the dynamic-plugins.yaml file.
+
+
+[IMPORTANT]
+----
+If you are using RHDH Local for development and testing, use dynamic-plugins.override.yaml instead.
+----
+
+This configuration determines how the plugin is integrated with the RHDH interface, such as adding routes, sidebar menu items, and mount points.
+
+
+```yaml
+plugins:
+  # Option 1: Load from an OCI image
+  - package: oci://quay.io/<namespace>/simple-example:v0.1.0!backstage-plugin-simple-example
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          # The package name must match package.json
+          internal.backstage-plugin-simple-example:
+            dynamicRoutes:
+              - path: /simple-example
+                # Must match the export in src/index.ts
+                importName: SimpleExamplePage
+                menuItem:
+                  icon: extension
+                  text: Simple Example
+            mountPoints:
+              - mountPoint: entity.page.overview/cards
+                # Must match the export in src/index.ts
+                importName: ExampleCard
+                config:
+                  layout:
+                    gridColumnEnd: 'span 4'
+                  if:
+                    allOf:
+                      - isKind: component
+
+  # Option 2: Load from local directory (for local RHDH testing)
+  # - package: ./local-plugins/simple-example
+  #   disabled: false
+  #   pluginConfig: ... (same as above)
+```
+
+
+After restarting RHDH, confirm that Simple Example appears in the sidebar menu. Click Simple Example and verify that the plugin page displays correctly. Navigate to a Component entity page and verify that the ExampleCard appears in the Overview tab.
+
+Frontend Plugin Wiring
+
+# Convert a custom plugin into a dynamic plugin
+
+1. Use the RHDH CLI to prepare the plugin you want to export. The following command uses the plugin files in the dist folder that was generated by the yarn build:all command, and creates a dist-dynamic folder containing a dist-scalprum sub-folder that contains the necessary configuration and source files to enable dynamic loading:
+
+```terminal
+cd plugins/simple-example
+npx @red-hat-developer-hub/cli@latest plugin export
+```
+
+
+When this command packages a frontend plugin, it uses a default Scalprum configuration if one is not found. The Scalprum configuration is used to specify the plugin entry point and exports, and then to build a dist-scalprum folder that contains the dynamic plugin. The default Scalprum configuration is suitable for most plugins.
+2. Package the plugin into a container image and publish it to Quay.io.
+
+```terminal
+export QUAY_USER=_<username>_
+export PLUGIN_NAME=simple-example
+export VERSION=$(cat package.json | jq .version -r)
+npx @red-hat-developer-hub/cli@latest plugin package --tag quay.io/$QUAY_USER/$PLUGIN_NAME:$VERSION
+```
+
+3. Push to Quay.io
+
+```terminal
+podman push quay.io/$QUAY_USER/$PLUGIN_NAME:$VERSION
+```
+
+
+## Using the Dynamic Plugin Factory to convert plugins into dynamic plugins
+
+You can automate the conversion and packaging of standard Backstage plugins into RHDH dynamic plugins by using the RHDH Dynamic Plugin Factory tool.
+
+
+[IMPORTANT]
+----
+The Dynamic Plugin Factory is maintained as an open-source project by Red Hat, but is not supported or subject to any service level agreement (SLA).
+----
+
+The core function of the Dynamic Plugin Factory tool is to streamline the dynamic plugin build process, offering the following capabilities:
+
+Source Code Handling:: Manages cloning, checking out, and applying custom patches to the plugin source.
+Dependency Management:: Handles yarn installation and TypeScript compilation.
+Packaging:: Uses the RHDH CLI to build, export, and package the final dynamic plugin.
+Deployment:: Offers an option to push the resulting container image to registries like Quay or OpenShift.
+
+The Dynamic Plugin Factory tool provides a simplified, reproducible method for developers and platform engineers to create and test dynamic plugins using a pre-configured dynamic plugin factory container and documentation, significantly easing migration and testing.
+
+For more information, see RHDH Dynamic Plugin Factory.
+
+# Deployment configurations
+
+## Adding a dynamic plugin to Red Hat Developer Hub
+
+To add a custom dynamic plugin to Red Hat Developer Hub, you must update the dynamic-plugins.yaml file by using the following configuration that is generated from the npx @red-hat-developer-hub/cli@latest plugin package command:
+
+
+```yaml
+plugins:
+  - package: oci://quay.io/<account-name>/<image-name>:_<tag>_!<plugin-name>
+    disabled: false
+    pluginConfig: {}
+```
+
+
+
+[NOTE]
+----
+If you are using RHDH Local for development and testing, use the dynamic-plugins.override.yaml file instead.
+----
+
+The following example integrates a plugin named simple-example with RHDH and includes the plugin-config that you must add to display a frontend plugin:
+
+
+```yaml
+plugins:
+  # Option 1: Load from an OCI image
+  - package: oci://quay.io/<namespace>/simple-example:v0.1.0!backstage-plugin-simple-example
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          # The package name must match package.json (usually internal.backstage-plugin-<id>)
+          internal.backstage-plugin-simple-example:
+            dynamicRoutes:
+              - path: /simple-example
+                # Must match the export in src/index.ts
+                importName: SimpleExamplePage
+                menuItem:
+                  icon: extension
+                  text: Simple Example
+            mountPoints:
+              - mountPoint: entity.page.overview/cards
+                # Must match the export in src/index.ts
+                importName: ExampleCard
+                config:
+                  layout:
+                    gridColumnEnd: 'span 4'
+                  if:
+                    allOf:
+                      - isKind: component
+
+  # Option 2: Load from local directory (for local RHDH testing)
+  # - package: ./local-plugins/simple-example
+  #   disabled: false
+  #   pluginConfig: ... (same as above)
+```
+
+
+where
+
+frontend:dynamic-routes:: Contains the sidebar menu item and the plugin route.
+frontend:mountPoints:: Defines the configuration to mount components exposed by the plugin.
+
+
+[NOTE]
+----
+Ensure that your container images are publicly accessible, or that you have configured a pull secret in your environment. A pull secret provides Red Hat Developer Hub with credentials to authenticate pulling your plugin container images from a container registry. For more details, see Loading a plugin packaged as an OCI image.
+----
+
+# Verify plugins locally
+
+RHDH Local enables you to test a dynamic plugin that you have built before publishing it to a registry.
+
+During boot, the install-dynamic-plugins container reads the contents of the plugin configuration file and activates, configures, or downloads any plugins listed. RHDH Local supports two ways of specifying dynamic plugin configuration:
+
+* Default path: configs/dynamic-plugins/dynamic-plugins.yaml
+* User override path: configs/dynamic-plugins/dynamic-plugins.override.yaml
+
+The dynamic-plugins.override.yaml configuration takes precedence over the dynamic-plugins.yaml configuration. You should not modify the default dynamic-plugins.yaml file, use the dynamic-plugins.override.yaml to override the default file settings.
+
+In addition, the local-plugins directory is mounted into the install-dynamic-plugins container at /opt/app-root/src/local-plugins. Any plugins placed there can be activated or configured the same way without downloading.
+
+* You have exported a custom plugin by using the npx @red-hat-developer-hub/cli@latest plugin export command that has generated a dist-dynamic directory containing the following:
+* dist-scalprum: A directory that contains the Webpack federated modules.
+* package.json: A modified version of your package.json file optimized for dynamic loading.
+
+1. Copy the dist-dynamic directory directly into the local-plugins folder, for example:
+
+```terminal
+# Copy the dynamic distribution to RHDH Local
+$ cp -r dist-dynamic/ <RHDH_LOCAL_PATH>/local-plugins/example-plugin
+```
+
+
+[NOTE]
+----
+The local-plugins/simple-example/ directory in your RHDH Local installation should contain the plugin files from dist-dynamic directory, including the dist-scalprum directory and the package.json file
+----
+2. Ensure that permissions allow the container to read the files.
+3. Configure your plugin in the configs/dynamic-plugins/dynamic-plugins.override.yaml file.
+
+* See RHDH Local Configuration for more information about updating and reloading configurations.

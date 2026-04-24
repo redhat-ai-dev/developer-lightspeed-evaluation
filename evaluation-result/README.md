@@ -21,11 +21,8 @@ The following graphs provide a summary of performance across all evaluated model
 
 Detailed logs, CSVs, and specific metric breakdowns can be found in the respective folder for each model:
 
-* **[📁 gemini-2.5-flash-lite](./gemini-2.5-flash-lite)**
-* **[📁 gemini-2.5-pro](./gemini-2.5-pro)**
-* **[📁 gpt-4o-mini](./gpt-4o-mini)**
-* **[📁 gpt-5.2](./gpt-5.2)**
-* **[📁 llama-31-8b](./llama-31-8b)**
+* **[📁 models-gemini-3-flash-preview](./models-gemini-3-flash-preview)**
+* **[📁 models-gemini-3.1-pro-preview](./models-gemini-3.1-pro-preview)**
 
 ---
 

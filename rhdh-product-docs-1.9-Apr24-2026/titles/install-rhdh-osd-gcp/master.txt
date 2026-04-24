@@ -1,0 +1,150 @@
+# Installing Red Hat Developer Hub on OpenShift Dedicated on Google Cloud
+
+You can install Developer Hub on OpenShift Dedicated on Google Cloud (Google Cloud) using one of the following methods:
+* The Red Hat Developer Hub Operator
+* The Red Hat Developer Hub Helm chart
+
+[IMPORTANT]
+----
+You must set the baseUrl in app-config.yaml to match the external URL of your Developer Hub instance. This value is required for the Red Hat Developer Hub to function correctly. If it is not set, frontend and backend services cannot communicate properly, and features may not work as expected.
+----
+
+# Installing Red Hat Developer Hub on OpenShift Dedicated on Google Cloud using the Operator
+
+You can install Developer Hub on OpenShift Dedicated on Google Cloud using the Red Hat Developer Hub Operator.
+
+* You have a valid Google Cloud account.
+* Your OpenShift Dedicated cluster is running on Google Cloud. For more information, seeCreating a cluster on GCP in Red Hat OpenShift Dedicated documentation.
+* You have administrator access to OpenShift Dedicated cluster and Google Cloud project.
+* Make sure that your system meets the minimum sizing requirements. See Sizing requirements for Red Hat Developer Hub.
+
+1. In the OpenShift Container Platform web console menu, go to Operators > OperatorHub.
+2. In the Filter by keyword field, enter Developer Hub and click the Red Hat Developer Hub Operator card.
+3. On the Red Hat Developer Hub Operator page, click Install.
+4. After the installation completes, navigate to Installed Operators and select Red Hat Developer Hub Operator.
+5. Provision your custom configuration:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config-rhdh
+data:
+  "app-config.yaml": |
+    app:
+      title: Red Hat Developer Hub
+      baseUrl: https://__<my_developer_hub_domain>__
+    backend:
+      auth:
+        externalAccess:
+            - type: legacy
+              options:
+                subject: legacy-default-config
+                secret: "${BACKEND_SECRET}"
+      baseUrl: https://__<my_developer_hub_domain>__
+      cors:
+        origin: https://__<my_developer_hub_domain>__
+```
+
+You must create a config map named app-config-rhdh and a Kubernetes Secret containing the BACKEND_SECRET. These resources are used by the Developer Hub instance for authentication and application settings.
+
+For further steps, see Provisioning your custom Red Hat Developer Hub configuration.
+6. Create a config map named app-config-rhdh that includes your app-config.yaml as shown:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config-rhdh
+data:
+  "app-config.yaml": |
+    app:
+      title: Red Hat Developer Hub
+      baseUrl: https://__<my_developer_hub_domain>__
+    backend:
+      auth:
+        externalAccess:
+            - type: legacy
+              options:
+                subject: legacy-default-config
+                secret: "${BACKEND_SECRET}"
+      baseUrl: https://__<my_developer_hub_domain>__
+      cors:
+        origin: https://__<my_developer_hub_domain>__
+```
+7. Create a secret named my-rhdh-secrets and add a key named BACKEND_SECRET with a Base64-encoded string as value:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-rhdh-secrets
+stringData:
+  # TODO: Add the necessary auth secrets for service-to-service auth setup
+  BACKEND_SECRET: "xxx" # Replace with your Base64-encoded secret
+```
+8. Return to the Developer Hub Operator page and click Create New Instance.
+9. Specify the name and target namespace for the Developer Hub deployment.
+10. Configure required options such as Git integration, secrets, and user permissions.
+11. Review the configuration, select deployment options, and click Create.
+
+* To access the Developer Hub, navigate to the Developer Hub URL provided in the OpenShift Container Platform web console.
+
+* Configuring Red Hat Developer Hub
+* Customizing Red Hat Developer Hub
+
+# Installing Red Hat Developer Hub on OpenShift Dedicated on Google Cloud using the Helm Chart
+
+You can install Developer Hub on OpenShift Dedicated on Google Cloud using the Red Hat Developer Hub Helm Chart.
+
+* You have a valid Google Cloud account.
+* Your OpenShift Dedicated cluster is running on Google Cloud. For more information, seeCreating a cluster on Google Cloud in Red Hat OpenShift Dedicated documentation.
+* You have installed Helm 3 or the latest.
+* Make sure that your system meets the minimum sizing requirements. See Sizing requirements for Red Hat Developer Hub.
+
+1. From the Developer perspective on the Developer Hub web console, click +Add.
+2. From the Developer Catalog panel, click Helm Chart.
+3. In the Filter by keyword box, enter Developer Hub and click the Red Hat Developer Hub card.
+4. From the Red Hat Developer Hub page, click Create.
+5. From your cluster, copy the OpenShift Container Platform router host (for example: apps.<clusterName>.com).
+6. Select the radio button to configure the Developer Hub instance with either the form view or YAML view.
+
+[IMPORTANT]
+----
+Before deploying Developer Hub using the Helm chart, you must define custom configuration settings such as the public baseUrl for your instance. Without setting baseUrl, the application cannot function correctly. You can define this configuration either through the Form view or the YAML view in the Helm install wizard.
+To configure the baseUrl, set the following values in your Helm configuration:
+
+```yaml
+global:
+  app:
+    baseUrl: https://<your-developer-hub-link>
+  backend:
+    baseUrl: https://<your-developer-hub-link>
+    cors:
+      origin: https://<your-developer-hub-link>
+```
+
+You can also define additional secrets, plugins, and advanced configuration in your values.yaml file. For full instructions, see:
+Provisioning your custom Red Hat Developer Hub configuration.
+----
+
+The Form view is selected by default.
+1. Using Form view
+1. To configure the instance with the Form view, go to Root Schema → global → Enable service authentication within Backstage instance and paste your OpenShift Container Platform router host into the field on the form.
+2. Using YAML view
+1. To configure the instance with the YAML view, paste your OpenShift Container Platform router hostname in the global.clusterRouterBase parameter value as shown in the following example:
+
+```yaml
+global:
+  auth:
+    backend:
+      enabled: true
+  clusterRouterBase: apps.<clusterName>.com
+  # other Red Hat Developer Hub Helm Chart configurations
+```
+7. Edit the other values if needed, then click Create and wait for the database and Developer Hub to start.
+
+* To access the the Developer Hub, click the Open URL icon.
+
+* Configuring Red Hat Developer Hub
+* Customizing Red Hat Developer Hub

@@ -1,0 +1,1021 @@
+conversation_group_id,turn_id,metric_identifier,metric_metadata,result,score,threshold,reason,execution_time,query,response,api_input_tokens,api_output_tokens,time_to_first_token,streaming_duration,tokens_per_second,judge_llm_input_tokens,judge_llm_output_tokens,embedding_tokens,judge_scores,tool_calls,contexts,expected_response,expected_intent,expected_keywords,expected_tool_calls
+rbac-3,a6af5aa9-ca1a-47fe-9570-636452c0d986,ragas:faithfulness,"{""description"": ""How faithful the response is to the provided context"", ""default"": false}",PASS,0.8,0.8,Max of 2 judges: 0.800,77.786,how to view OpenShift routes,"You can view OpenShift routes using several methods, depending on your preferred workflow: the OpenShift CLI (`oc`), the OpenShift Web Console, or directly within Red Hat Developer Hub (if configured). 
+
+Here is how you can do it using each method:
+
+### 1. Using the OpenShift CLI (`oc`)
+The command-line interface is often the fastest way to check your routes. Open your terminal and ensure you are logged into your cluster.
+
+*   **List all routes in your current project/namespace:**
+    ```bash
+    oc get routes
+    ```
+    *This will display the route name, host/port, path, the service it points to, and the TLS termination type.*
+
+*   **View detailed information about a specific route:**
+    ```bash
+    oc describe route <route-name>
+    ```
+
+*   **List routes across all projects** *(requires cluster admin privileges)*:
+    ```bash
+    oc get routes --all-namespaces
+    ```
+
+### 2. Using the OpenShift Web Console
+If you prefer a graphical interface, you can easily find routes in the OpenShift Web Console.
+
+**From the Developer Perspective:**
+1. Navigate to the **Topology** view.
+2. Click on the application or workload you want to inspect.
+3. In the side panel that opens, look under the **Resources** tab. You will see the **Routes** section, which includes a direct link to the exposed URL.
+
+**From the Administrator Perspective:**
+1. In the left-hand navigation menu, expand the **Networking** section.
+2. Click on **Routes**.
+3. Select your desired Project from the dropdown at the top to filter the list of routes.
+
+### 3. Using Red Hat Developer Hub (RHDH)
+If your organization has integrated the **Kubernetes plugin** into Red Hat Developer Hub, you can view your OpenShift routes directly from your software catalog without logging into the OpenShift console.
+
+1. Navigate to your specific component/service in the RHDH **Catalog**.
+2. Go to the **Kubernetes** tab.
+3. If your component is properly labeled and running, you will see your deployment resources, including **Ingresses/Routes**, displaying the live URL for your application.
+
+Let me know if you need help creating a new route or troubleshooting one that isn't working!",0,0,,,,8258,8630,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 0.8, ""reason"": ""Ragas faithfulness: 0.80"", ""judge_input_tokens"": 4067, ""judge_output_tokens"": 2003, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 0.0625, ""reason"": ""Ragas faithfulness: 0.06"", ""judge_input_tokens"": 4191, ""judge_output_tokens"": 6627, ""embedding_tokens"": 0}]",,"[""Enabling and configuring the Nexus Repository Manager plugin The Nexus Repository Manager plugin displays the information about your build artifacts in your Developer Hub application. The build artifacts are available in the Nexus Repository Manager. ## Enabling the Nexus Repository Manager plugin The Nexus Repository Manager plugin is pre-loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: oci://ghcr.io/redhat developer/rhdh plugin export overlays/backstage community plugin nexus repository manager:<tag> disabled: false ``` The <tag> variable is your RHDH application&#39;s version of Backstage and the plugin version, in the format: bs_<backstage-version>__<plugin-version> (note the double underscore delimiter). This format is only applicable for Community supported plugins. To find the correct image tag for <tag>: 1. Look in the RHDH release notes preface for your Backstage version. 2. Locate the plugin version for paths starting with oci://ghcr.io within one of the tables provided in the Dynamic plugins reference. For example, because RHDH 1.9 is based on Backstage 1.45.3, the tag will have the format bs_1.45.3__<plugin-version> [TIP] ---- To ensure environment stability, use a SHA256 digest instead of a version tag. See Determining SHA256 Digests ---- ## Configuring the Nexus Repository Manager plugin 1. Set the proxy to the desired Nexus Repository Manager server in the app-config.yaml file as follows: ```yaml proxy: '/nexus-repository-manager': target: 'https://<NEXUS_REPOSITORY_MANAGER_URL>' headers: X-Requested-With: 'XMLHttpRequest' # Uncomment the following line to access a private Nexus Repository Manager using a token # Authorization: 'Bearer <YOUR TOKEN>' changeOrigin: true # Change to \""false\"" in case of using self hosted Nexus Repository Manager instance with a self-signed certificate secure: true ``` 2. Optional: Change the base URL of Nexus Repository Manager proxy as follows: ```yaml nexusRepositoryManager: # default path is `/nexus-repository-manager` proxyPath: /custom-path ``` 3. Optional: Enable the following experimental annotations: ```yaml nexusRepositoryManager: experimentalAnnotations: true ``` 4. Annotate your entity using the following annotations: ```yaml metadata: annotations: # insert the chosen annotations here # example nexus-repository-manager/docker.image-name: `<ORGANIZATION>/<REPOSITORY>`, ``` # Enabling the Tekton plugin You can use the Tekton plugin to visualize the results of CI/CD pipeline runs on your Kubernetes or OpenShift clusters. The plugin allows users to visually see high level status of all associated tasks in the pipeline for their applications. You have installed and configured the @backstage/plugin kubernetes and @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted for custom resources (PipelineRuns and TaskRuns) to the ServiceAccount accessing the cluster. [NOTE] ---- If you have the RHDH Kubernetes plugin configured, then the ClusterRole is already granted. ---- * To view the pod logs, you have granted permissions for pods/log. * You can use the following code to grant the ClusterRole for custom resources and pod logs: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: apiGroups: \""\"" resources: pods/log verbs: get list watch ... apiGroups: tekton.dev resources: pipelineruns taskruns verbs: get list ``` You can use the prepared manifest for a read-only ClusterRole, which provides access for both Kubernetes plugin and Tekton plugin. * Add the following annotation to the entity's catalog-info.yaml file to identify whether an entity contains the Kubernetes resources: ```yaml annotations: ... backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME> ``` * You can also add the backstage.io/kubernetes-namespace annotation to identify the Kubernetes resources using the defined namespace. ```yaml annotations: ... backstage.io/kubernetes-namespace: <RESOURCE_NS> ``` * Add the following annotation to the catalog-info.yaml file of the entity to enable the Tekton related features in RHDH. The value of the annotation identifies the name of the RHDH entity: ```yaml annotations: ... janus-idp.io/tekton : <BACKSTAGE_ENTITY_NAME> ``` * Add a custom label selector, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations. ```yaml annotations: ... backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end' ``` * Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: ... backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` [NOTE] ---- When you use the label selector, the mentioned labels must be present on the resource. ---- The Tekton plugin is pre loaded in RHDH with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin tekton disabled: false ``` # Installing the Topology plugin ### Installing the Topology plugin The Topology plugin enables you to visualize the workloads such as Deployment, Job, Daemonset, Statefulset, CronJob, Pods and Virtual Machines powering any service on your Kubernetes cluster. You have installed and configured the @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted to ServiceAccount accessing the cluster. [NOTE] ---- If you have the Developer Hub Kubernetes plugin configured, then the ClusterRole is already granted. ---- The Topology plugin is pre loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: app config.yaml fragment ```yaml auth: global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin topology disabled: false ``` ## Configuring the Topology plugin ### Viewing OpenShift routes 1. To view OpenShift routes, grant read access to the routes resource in the Cluster Role: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: route.openshift.io resources: routes verbs: get list ``` 2. Also add the following in kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'route.openshift.io' apiVersion: 'v1' plural: 'routes' ``` ### Viewing pod logs To view pod logs, you must grant the following permission to the ClusterRole: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: '' resources: pods pods/log verbs: get list watch ``` ### Viewing Tekton PipelineRuns 1. To view the Tekton PipelineRuns, grant read access to the pipelines, pipelinesruns, and taskruns resources in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole""]","To view OpenShift routes, you must first grant read access to the routes resource in the Cluster Role. This is done by adding the following configuration: ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage read only
+rules:
+  ...
+  apiGroups: route.openshift.io
+  resources: routes
+  verbs: get list
+```. Additionally, you need to add the corresponding custom resource property in your app-config.yaml file like so: ```yaml
+kubernetes:
+  ...
+  customResources:
+    group: 'route.openshift.io'
+    apiVersion: 'v1'
+    plural: 'routes'
+```",,,
+rbac-3,a6af5aa9-ca1a-47fe-9570-636452c0d986,ragas:context_recall,"{""description"": ""Did we fetch every fact the answer needs?""}",PASS,1.0,0.8,Max of 2 judges: 1.000,0.021,how to view OpenShift routes,"You can view OpenShift routes using several methods, depending on your preferred workflow: the OpenShift CLI (`oc`), the OpenShift Web Console, or directly within Red Hat Developer Hub (if configured). 
+
+Here is how you can do it using each method:
+
+### 1. Using the OpenShift CLI (`oc`)
+The command-line interface is often the fastest way to check your routes. Open your terminal and ensure you are logged into your cluster.
+
+*   **List all routes in your current project/namespace:**
+    ```bash
+    oc get routes
+    ```
+    *This will display the route name, host/port, path, the service it points to, and the TLS termination type.*
+
+*   **View detailed information about a specific route:**
+    ```bash
+    oc describe route <route-name>
+    ```
+
+*   **List routes across all projects** *(requires cluster admin privileges)*:
+    ```bash
+    oc get routes --all-namespaces
+    ```
+
+### 2. Using the OpenShift Web Console
+If you prefer a graphical interface, you can easily find routes in the OpenShift Web Console.
+
+**From the Developer Perspective:**
+1. Navigate to the **Topology** view.
+2. Click on the application or workload you want to inspect.
+3. In the side panel that opens, look under the **Resources** tab. You will see the **Routes** section, which includes a direct link to the exposed URL.
+
+**From the Administrator Perspective:**
+1. In the left-hand navigation menu, expand the **Networking** section.
+2. Click on **Routes**.
+3. Select your desired Project from the dropdown at the top to filter the list of routes.
+
+### 3. Using Red Hat Developer Hub (RHDH)
+If your organization has integrated the **Kubernetes plugin** into Red Hat Developer Hub, you can view your OpenShift routes directly from your software catalog without logging into the OpenShift console.
+
+1. Navigate to your specific component/service in the RHDH **Catalog**.
+2. Go to the **Kubernetes** tab.
+3. If your component is properly labeled and running, you will see your deployment resources, including **Ingresses/Routes**, displaying the live URL for your application.
+
+Let me know if you need help creating a new route or troubleshooting one that isn't working!",0,0,,,,0,0,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 1.0, ""reason"": ""Ragas context recall: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 1.0, ""reason"": ""Ragas context recall: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}]",,"[""Enabling and configuring the Nexus Repository Manager plugin The Nexus Repository Manager plugin displays the information about your build artifacts in your Developer Hub application. The build artifacts are available in the Nexus Repository Manager. ## Enabling the Nexus Repository Manager plugin The Nexus Repository Manager plugin is pre-loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: oci://ghcr.io/redhat developer/rhdh plugin export overlays/backstage community plugin nexus repository manager:<tag> disabled: false ``` The <tag> variable is your RHDH application&#39;s version of Backstage and the plugin version, in the format: bs_<backstage-version>__<plugin-version> (note the double underscore delimiter). This format is only applicable for Community supported plugins. To find the correct image tag for <tag>: 1. Look in the RHDH release notes preface for your Backstage version. 2. Locate the plugin version for paths starting with oci://ghcr.io within one of the tables provided in the Dynamic plugins reference. For example, because RHDH 1.9 is based on Backstage 1.45.3, the tag will have the format bs_1.45.3__<plugin-version> [TIP] ---- To ensure environment stability, use a SHA256 digest instead of a version tag. See Determining SHA256 Digests ---- ## Configuring the Nexus Repository Manager plugin 1. Set the proxy to the desired Nexus Repository Manager server in the app-config.yaml file as follows: ```yaml proxy: '/nexus-repository-manager': target: 'https://<NEXUS_REPOSITORY_MANAGER_URL>' headers: X-Requested-With: 'XMLHttpRequest' # Uncomment the following line to access a private Nexus Repository Manager using a token # Authorization: 'Bearer <YOUR TOKEN>' changeOrigin: true # Change to \""false\"" in case of using self hosted Nexus Repository Manager instance with a self-signed certificate secure: true ``` 2. Optional: Change the base URL of Nexus Repository Manager proxy as follows: ```yaml nexusRepositoryManager: # default path is `/nexus-repository-manager` proxyPath: /custom-path ``` 3. Optional: Enable the following experimental annotations: ```yaml nexusRepositoryManager: experimentalAnnotations: true ``` 4. Annotate your entity using the following annotations: ```yaml metadata: annotations: # insert the chosen annotations here # example nexus-repository-manager/docker.image-name: `<ORGANIZATION>/<REPOSITORY>`, ``` # Enabling the Tekton plugin You can use the Tekton plugin to visualize the results of CI/CD pipeline runs on your Kubernetes or OpenShift clusters. The plugin allows users to visually see high level status of all associated tasks in the pipeline for their applications. You have installed and configured the @backstage/plugin kubernetes and @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted for custom resources (PipelineRuns and TaskRuns) to the ServiceAccount accessing the cluster. [NOTE] ---- If you have the RHDH Kubernetes plugin configured, then the ClusterRole is already granted. ---- * To view the pod logs, you have granted permissions for pods/log. * You can use the following code to grant the ClusterRole for custom resources and pod logs: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: apiGroups: \""\"" resources: pods/log verbs: get list watch ... apiGroups: tekton.dev resources: pipelineruns taskruns verbs: get list ``` You can use the prepared manifest for a read-only ClusterRole, which provides access for both Kubernetes plugin and Tekton plugin. * Add the following annotation to the entity's catalog-info.yaml file to identify whether an entity contains the Kubernetes resources: ```yaml annotations: ... backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME> ``` * You can also add the backstage.io/kubernetes-namespace annotation to identify the Kubernetes resources using the defined namespace. ```yaml annotations: ... backstage.io/kubernetes-namespace: <RESOURCE_NS> ``` * Add the following annotation to the catalog-info.yaml file of the entity to enable the Tekton related features in RHDH. The value of the annotation identifies the name of the RHDH entity: ```yaml annotations: ... janus-idp.io/tekton : <BACKSTAGE_ENTITY_NAME> ``` * Add a custom label selector, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations. ```yaml annotations: ... backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end' ``` * Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: ... backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` [NOTE] ---- When you use the label selector, the mentioned labels must be present on the resource. ---- The Tekton plugin is pre loaded in RHDH with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin tekton disabled: false ``` # Installing the Topology plugin ### Installing the Topology plugin The Topology plugin enables you to visualize the workloads such as Deployment, Job, Daemonset, Statefulset, CronJob, Pods and Virtual Machines powering any service on your Kubernetes cluster. You have installed and configured the @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted to ServiceAccount accessing the cluster. [NOTE] ---- If you have the Developer Hub Kubernetes plugin configured, then the ClusterRole is already granted. ---- The Topology plugin is pre loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: app config.yaml fragment ```yaml auth: global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin topology disabled: false ``` ## Configuring the Topology plugin ### Viewing OpenShift routes 1. To view OpenShift routes, grant read access to the routes resource in the Cluster Role: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: route.openshift.io resources: routes verbs: get list ``` 2. Also add the following in kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'route.openshift.io' apiVersion: 'v1' plural: 'routes' ``` ### Viewing pod logs To view pod logs, you must grant the following permission to the ClusterRole: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: '' resources: pods pods/log verbs: get list watch ``` ### Viewing Tekton PipelineRuns 1. To view the Tekton PipelineRuns, grant read access to the pipelines, pipelinesruns, and taskruns resources in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole""]","To view OpenShift routes, you must first grant read access to the routes resource in the Cluster Role. This is done by adding the following configuration: ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage read only
+rules:
+  ...
+  apiGroups: route.openshift.io
+  resources: routes
+  verbs: get list
+```. Additionally, you need to add the corresponding custom resource property in your app-config.yaml file like so: ```yaml
+kubernetes:
+  ...
+  customResources:
+    group: 'route.openshift.io'
+    apiVersion: 'v1'
+    plural: 'routes'
+```",,,
+rbac-3,a6af5aa9-ca1a-47fe-9570-636452c0d986,ragas:context_relevance,"{""description"": ""Is what we retrieved actually relevant to user query?""}",PASS,1.0,0.7,Max of 2 judges: 1.000,0.012,how to view OpenShift routes,"You can view OpenShift routes using several methods, depending on your preferred workflow: the OpenShift CLI (`oc`), the OpenShift Web Console, or directly within Red Hat Developer Hub (if configured). 
+
+Here is how you can do it using each method:
+
+### 1. Using the OpenShift CLI (`oc`)
+The command-line interface is often the fastest way to check your routes. Open your terminal and ensure you are logged into your cluster.
+
+*   **List all routes in your current project/namespace:**
+    ```bash
+    oc get routes
+    ```
+    *This will display the route name, host/port, path, the service it points to, and the TLS termination type.*
+
+*   **View detailed information about a specific route:**
+    ```bash
+    oc describe route <route-name>
+    ```
+
+*   **List routes across all projects** *(requires cluster admin privileges)*:
+    ```bash
+    oc get routes --all-namespaces
+    ```
+
+### 2. Using the OpenShift Web Console
+If you prefer a graphical interface, you can easily find routes in the OpenShift Web Console.
+
+**From the Developer Perspective:**
+1. Navigate to the **Topology** view.
+2. Click on the application or workload you want to inspect.
+3. In the side panel that opens, look under the **Resources** tab. You will see the **Routes** section, which includes a direct link to the exposed URL.
+
+**From the Administrator Perspective:**
+1. In the left-hand navigation menu, expand the **Networking** section.
+2. Click on **Routes**.
+3. Select your desired Project from the dropdown at the top to filter the list of routes.
+
+### 3. Using Red Hat Developer Hub (RHDH)
+If your organization has integrated the **Kubernetes plugin** into Red Hat Developer Hub, you can view your OpenShift routes directly from your software catalog without logging into the OpenShift console.
+
+1. Navigate to your specific component/service in the RHDH **Catalog**.
+2. Go to the **Kubernetes** tab.
+3. If your component is properly labeled and running, you will see your deployment resources, including **Ingresses/Routes**, displaying the live URL for your application.
+
+Let me know if you need help creating a new route or troubleshooting one that isn't working!",0,0,,,,0,0,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 1.0, ""reason"": ""Ragas context relevance: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 1.0, ""reason"": ""Ragas context relevance: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}]",,"[""Enabling and configuring the Nexus Repository Manager plugin The Nexus Repository Manager plugin displays the information about your build artifacts in your Developer Hub application. The build artifacts are available in the Nexus Repository Manager. ## Enabling the Nexus Repository Manager plugin The Nexus Repository Manager plugin is pre-loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: oci://ghcr.io/redhat developer/rhdh plugin export overlays/backstage community plugin nexus repository manager:<tag> disabled: false ``` The <tag> variable is your RHDH application&#39;s version of Backstage and the plugin version, in the format: bs_<backstage-version>__<plugin-version> (note the double underscore delimiter). This format is only applicable for Community supported plugins. To find the correct image tag for <tag>: 1. Look in the RHDH release notes preface for your Backstage version. 2. Locate the plugin version for paths starting with oci://ghcr.io within one of the tables provided in the Dynamic plugins reference. For example, because RHDH 1.9 is based on Backstage 1.45.3, the tag will have the format bs_1.45.3__<plugin-version> [TIP] ---- To ensure environment stability, use a SHA256 digest instead of a version tag. See Determining SHA256 Digests ---- ## Configuring the Nexus Repository Manager plugin 1. Set the proxy to the desired Nexus Repository Manager server in the app-config.yaml file as follows: ```yaml proxy: '/nexus-repository-manager': target: 'https://<NEXUS_REPOSITORY_MANAGER_URL>' headers: X-Requested-With: 'XMLHttpRequest' # Uncomment the following line to access a private Nexus Repository Manager using a token # Authorization: 'Bearer <YOUR TOKEN>' changeOrigin: true # Change to \""false\"" in case of using self hosted Nexus Repository Manager instance with a self-signed certificate secure: true ``` 2. Optional: Change the base URL of Nexus Repository Manager proxy as follows: ```yaml nexusRepositoryManager: # default path is `/nexus-repository-manager` proxyPath: /custom-path ``` 3. Optional: Enable the following experimental annotations: ```yaml nexusRepositoryManager: experimentalAnnotations: true ``` 4. Annotate your entity using the following annotations: ```yaml metadata: annotations: # insert the chosen annotations here # example nexus-repository-manager/docker.image-name: `<ORGANIZATION>/<REPOSITORY>`, ``` # Enabling the Tekton plugin You can use the Tekton plugin to visualize the results of CI/CD pipeline runs on your Kubernetes or OpenShift clusters. The plugin allows users to visually see high level status of all associated tasks in the pipeline for their applications. You have installed and configured the @backstage/plugin kubernetes and @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted for custom resources (PipelineRuns and TaskRuns) to the ServiceAccount accessing the cluster. [NOTE] ---- If you have the RHDH Kubernetes plugin configured, then the ClusterRole is already granted. ---- * To view the pod logs, you have granted permissions for pods/log. * You can use the following code to grant the ClusterRole for custom resources and pod logs: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: apiGroups: \""\"" resources: pods/log verbs: get list watch ... apiGroups: tekton.dev resources: pipelineruns taskruns verbs: get list ``` You can use the prepared manifest for a read-only ClusterRole, which provides access for both Kubernetes plugin and Tekton plugin. * Add the following annotation to the entity's catalog-info.yaml file to identify whether an entity contains the Kubernetes resources: ```yaml annotations: ... backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME> ``` * You can also add the backstage.io/kubernetes-namespace annotation to identify the Kubernetes resources using the defined namespace. ```yaml annotations: ... backstage.io/kubernetes-namespace: <RESOURCE_NS> ``` * Add the following annotation to the catalog-info.yaml file of the entity to enable the Tekton related features in RHDH. The value of the annotation identifies the name of the RHDH entity: ```yaml annotations: ... janus-idp.io/tekton : <BACKSTAGE_ENTITY_NAME> ``` * Add a custom label selector, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations. ```yaml annotations: ... backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end' ``` * Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: ... backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` [NOTE] ---- When you use the label selector, the mentioned labels must be present on the resource. ---- The Tekton plugin is pre loaded in RHDH with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin tekton disabled: false ``` # Installing the Topology plugin ### Installing the Topology plugin The Topology plugin enables you to visualize the workloads such as Deployment, Job, Daemonset, Statefulset, CronJob, Pods and Virtual Machines powering any service on your Kubernetes cluster. You have installed and configured the @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted to ServiceAccount accessing the cluster. [NOTE] ---- If you have the Developer Hub Kubernetes plugin configured, then the ClusterRole is already granted. ---- The Topology plugin is pre loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: app config.yaml fragment ```yaml auth: global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin topology disabled: false ``` ## Configuring the Topology plugin ### Viewing OpenShift routes 1. To view OpenShift routes, grant read access to the routes resource in the Cluster Role: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: route.openshift.io resources: routes verbs: get list ``` 2. Also add the following in kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'route.openshift.io' apiVersion: 'v1' plural: 'routes' ``` ### Viewing pod logs To view pod logs, you must grant the following permission to the ClusterRole: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: '' resources: pods pods/log verbs: get list watch ``` ### Viewing Tekton PipelineRuns 1. To view the Tekton PipelineRuns, grant read access to the pipelines, pipelinesruns, and taskruns resources in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole""]","To view OpenShift routes, you must first grant read access to the routes resource in the Cluster Role. This is done by adding the following configuration: ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage read only
+rules:
+  ...
+  apiGroups: route.openshift.io
+  resources: routes
+  verbs: get list
+```. Additionally, you need to add the corresponding custom resource property in your app-config.yaml file like so: ```yaml
+kubernetes:
+  ...
+  customResources:
+    group: 'route.openshift.io'
+    apiVersion: 'v1'
+    plural: 'routes'
+```",,,
+rbac-3,a6af5aa9-ca1a-47fe-9570-636452c0d986,ragas:context_precision_without_reference,"{""description"": ""How precise the retrieved context is (without reference)""}",PASS,0.9999999999,0.7,Max of 2 judges: 1.000,8.835,how to view OpenShift routes,"You can view OpenShift routes using several methods, depending on your preferred workflow: the OpenShift CLI (`oc`), the OpenShift Web Console, or directly within Red Hat Developer Hub (if configured). 
+
+Here is how you can do it using each method:
+
+### 1. Using the OpenShift CLI (`oc`)
+The command-line interface is often the fastest way to check your routes. Open your terminal and ensure you are logged into your cluster.
+
+*   **List all routes in your current project/namespace:**
+    ```bash
+    oc get routes
+    ```
+    *This will display the route name, host/port, path, the service it points to, and the TLS termination type.*
+
+*   **View detailed information about a specific route:**
+    ```bash
+    oc describe route <route-name>
+    ```
+
+*   **List routes across all projects** *(requires cluster admin privileges)*:
+    ```bash
+    oc get routes --all-namespaces
+    ```
+
+### 2. Using the OpenShift Web Console
+If you prefer a graphical interface, you can easily find routes in the OpenShift Web Console.
+
+**From the Developer Perspective:**
+1. Navigate to the **Topology** view.
+2. Click on the application or workload you want to inspect.
+3. In the side panel that opens, look under the **Resources** tab. You will see the **Routes** section, which includes a direct link to the exposed URL.
+
+**From the Administrator Perspective:**
+1. In the left-hand navigation menu, expand the **Networking** section.
+2. Click on **Routes**.
+3. Select your desired Project from the dropdown at the top to filter the list of routes.
+
+### 3. Using Red Hat Developer Hub (RHDH)
+If your organization has integrated the **Kubernetes plugin** into Red Hat Developer Hub, you can view your OpenShift routes directly from your software catalog without logging into the OpenShift console.
+
+1. Navigate to your specific component/service in the RHDH **Catalog**.
+2. Go to the **Kubernetes** tab.
+3. If your component is properly labeled and running, you will see your deployment resources, including **Ingresses/Routes**, displaying the live URL for your application.
+
+Let me know if you need help creating a new route or troubleshooting one that isn't working!",0,0,,,,6456,819,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 0.9999999999, ""reason"": ""Ragas context precision without reference: 1.00"", ""judge_input_tokens"": 3146, ""judge_output_tokens"": 50, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 0.9999999999, ""reason"": ""Ragas context precision without reference: 1.00"", ""judge_input_tokens"": 3310, ""judge_output_tokens"": 769, ""embedding_tokens"": 0}]",,"[""Enabling and configuring the Nexus Repository Manager plugin The Nexus Repository Manager plugin displays the information about your build artifacts in your Developer Hub application. The build artifacts are available in the Nexus Repository Manager. ## Enabling the Nexus Repository Manager plugin The Nexus Repository Manager plugin is pre-loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: oci://ghcr.io/redhat developer/rhdh plugin export overlays/backstage community plugin nexus repository manager:<tag> disabled: false ``` The <tag> variable is your RHDH application&#39;s version of Backstage and the plugin version, in the format: bs_<backstage-version>__<plugin-version> (note the double underscore delimiter). This format is only applicable for Community supported plugins. To find the correct image tag for <tag>: 1. Look in the RHDH release notes preface for your Backstage version. 2. Locate the plugin version for paths starting with oci://ghcr.io within one of the tables provided in the Dynamic plugins reference. For example, because RHDH 1.9 is based on Backstage 1.45.3, the tag will have the format bs_1.45.3__<plugin-version> [TIP] ---- To ensure environment stability, use a SHA256 digest instead of a version tag. See Determining SHA256 Digests ---- ## Configuring the Nexus Repository Manager plugin 1. Set the proxy to the desired Nexus Repository Manager server in the app-config.yaml file as follows: ```yaml proxy: '/nexus-repository-manager': target: 'https://<NEXUS_REPOSITORY_MANAGER_URL>' headers: X-Requested-With: 'XMLHttpRequest' # Uncomment the following line to access a private Nexus Repository Manager using a token # Authorization: 'Bearer <YOUR TOKEN>' changeOrigin: true # Change to \""false\"" in case of using self hosted Nexus Repository Manager instance with a self-signed certificate secure: true ``` 2. Optional: Change the base URL of Nexus Repository Manager proxy as follows: ```yaml nexusRepositoryManager: # default path is `/nexus-repository-manager` proxyPath: /custom-path ``` 3. Optional: Enable the following experimental annotations: ```yaml nexusRepositoryManager: experimentalAnnotations: true ``` 4. Annotate your entity using the following annotations: ```yaml metadata: annotations: # insert the chosen annotations here # example nexus-repository-manager/docker.image-name: `<ORGANIZATION>/<REPOSITORY>`, ``` # Enabling the Tekton plugin You can use the Tekton plugin to visualize the results of CI/CD pipeline runs on your Kubernetes or OpenShift clusters. The plugin allows users to visually see high level status of all associated tasks in the pipeline for their applications. You have installed and configured the @backstage/plugin kubernetes and @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted for custom resources (PipelineRuns and TaskRuns) to the ServiceAccount accessing the cluster. [NOTE] ---- If you have the RHDH Kubernetes plugin configured, then the ClusterRole is already granted. ---- * To view the pod logs, you have granted permissions for pods/log. * You can use the following code to grant the ClusterRole for custom resources and pod logs: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: apiGroups: \""\"" resources: pods/log verbs: get list watch ... apiGroups: tekton.dev resources: pipelineruns taskruns verbs: get list ``` You can use the prepared manifest for a read-only ClusterRole, which provides access for both Kubernetes plugin and Tekton plugin. * Add the following annotation to the entity's catalog-info.yaml file to identify whether an entity contains the Kubernetes resources: ```yaml annotations: ... backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME> ``` * You can also add the backstage.io/kubernetes-namespace annotation to identify the Kubernetes resources using the defined namespace. ```yaml annotations: ... backstage.io/kubernetes-namespace: <RESOURCE_NS> ``` * Add the following annotation to the catalog-info.yaml file of the entity to enable the Tekton related features in RHDH. The value of the annotation identifies the name of the RHDH entity: ```yaml annotations: ... janus-idp.io/tekton : <BACKSTAGE_ENTITY_NAME> ``` * Add a custom label selector, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations. ```yaml annotations: ... backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end' ``` * Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: ... backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` [NOTE] ---- When you use the label selector, the mentioned labels must be present on the resource. ---- The Tekton plugin is pre loaded in RHDH with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin tekton disabled: false ``` # Installing the Topology plugin ### Installing the Topology plugin The Topology plugin enables you to visualize the workloads such as Deployment, Job, Daemonset, Statefulset, CronJob, Pods and Virtual Machines powering any service on your Kubernetes cluster. You have installed and configured the @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted to ServiceAccount accessing the cluster. [NOTE] ---- If you have the Developer Hub Kubernetes plugin configured, then the ClusterRole is already granted. ---- The Topology plugin is pre loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: app config.yaml fragment ```yaml auth: global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin topology disabled: false ``` ## Configuring the Topology plugin ### Viewing OpenShift routes 1. To view OpenShift routes, grant read access to the routes resource in the Cluster Role: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: route.openshift.io resources: routes verbs: get list ``` 2. Also add the following in kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'route.openshift.io' apiVersion: 'v1' plural: 'routes' ``` ### Viewing pod logs To view pod logs, you must grant the following permission to the ClusterRole: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: '' resources: pods pods/log verbs: get list watch ``` ### Viewing Tekton PipelineRuns 1. To view the Tekton PipelineRuns, grant read access to the pipelines, pipelinesruns, and taskruns resources in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole""]","To view OpenShift routes, you must first grant read access to the routes resource in the Cluster Role. This is done by adding the following configuration: ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage read only
+rules:
+  ...
+  apiGroups: route.openshift.io
+  resources: routes
+  verbs: get list
+```. Additionally, you need to add the corresponding custom resource property in your app-config.yaml file like so: ```yaml
+kubernetes:
+  ...
+  customResources:
+    group: 'route.openshift.io'
+    apiVersion: 'v1'
+    plural: 'routes'
+```",,,
+rbac-3,a6af5aa9-ca1a-47fe-9570-636452c0d986,custom:answer_correctness,"{""description"": ""Correctness vs expected answer using custom LLM evaluation""}",FAIL,0.7,0.75,Max of 2 judges: 0.700,20.248,how to view OpenShift routes,"You can view OpenShift routes using several methods, depending on your preferred workflow: the OpenShift CLI (`oc`), the OpenShift Web Console, or directly within Red Hat Developer Hub (if configured). 
+
+Here is how you can do it using each method:
+
+### 1. Using the OpenShift CLI (`oc`)
+The command-line interface is often the fastest way to check your routes. Open your terminal and ensure you are logged into your cluster.
+
+*   **List all routes in your current project/namespace:**
+    ```bash
+    oc get routes
+    ```
+    *This will display the route name, host/port, path, the service it points to, and the TLS termination type.*
+
+*   **View detailed information about a specific route:**
+    ```bash
+    oc describe route <route-name>
+    ```
+
+*   **List routes across all projects** *(requires cluster admin privileges)*:
+    ```bash
+    oc get routes --all-namespaces
+    ```
+
+### 2. Using the OpenShift Web Console
+If you prefer a graphical interface, you can easily find routes in the OpenShift Web Console.
+
+**From the Developer Perspective:**
+1. Navigate to the **Topology** view.
+2. Click on the application or workload you want to inspect.
+3. In the side panel that opens, look under the **Resources** tab. You will see the **Routes** section, which includes a direct link to the exposed URL.
+
+**From the Administrator Perspective:**
+1. In the left-hand navigation menu, expand the **Networking** section.
+2. Click on **Routes**.
+3. Select your desired Project from the dropdown at the top to filter the list of routes.
+
+### 3. Using Red Hat Developer Hub (RHDH)
+If your organization has integrated the **Kubernetes plugin** into Red Hat Developer Hub, you can view your OpenShift routes directly from your software catalog without logging into the OpenShift console.
+
+1. Navigate to your specific component/service in the RHDH **Catalog**.
+2. Go to the **Kubernetes** tab.
+3. If your component is properly labeled and running, you will see your deployment resources, including **Ingresses/Routes**, displaying the live URL for your application.
+
+Let me know if you need help creating a new route or troubleshooting one that isn't working!",0,0,,,,1481,2035,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 0.7, ""reason"": ""Custom answer correctness: 0.70 - The provided response accurately describes multiple methods to view OpenShift routes, including using the OpenShift CLI, the OpenShift Web Console, and the Red Hat Developer Hub. It offers practical commands and steps for each method, which is helpful for users with different preferences for interacting with OpenShift."", ""judge_input_tokens"": 722, ""judge_output_tokens"": 190, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 0.1, ""reason"": ""Custom answer correctness: 0.10 - The provided response is factually correct for a general user asking how to view OpenShift routes using standard tools like the `oc` CLI and the Web Console. However, it completely misses the specific context and technical details outlined in the expected response."", ""judge_input_tokens"": 759, ""judge_output_tokens"": 1845, ""embedding_tokens"": 0}]",,"[""Enabling and configuring the Nexus Repository Manager plugin The Nexus Repository Manager plugin displays the information about your build artifacts in your Developer Hub application. The build artifacts are available in the Nexus Repository Manager. ## Enabling the Nexus Repository Manager plugin The Nexus Repository Manager plugin is pre-loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: oci://ghcr.io/redhat developer/rhdh plugin export overlays/backstage community plugin nexus repository manager:<tag> disabled: false ``` The <tag> variable is your RHDH application&#39;s version of Backstage and the plugin version, in the format: bs_<backstage-version>__<plugin-version> (note the double underscore delimiter). This format is only applicable for Community supported plugins. To find the correct image tag for <tag>: 1. Look in the RHDH release notes preface for your Backstage version. 2. Locate the plugin version for paths starting with oci://ghcr.io within one of the tables provided in the Dynamic plugins reference. For example, because RHDH 1.9 is based on Backstage 1.45.3, the tag will have the format bs_1.45.3__<plugin-version> [TIP] ---- To ensure environment stability, use a SHA256 digest instead of a version tag. See Determining SHA256 Digests ---- ## Configuring the Nexus Repository Manager plugin 1. Set the proxy to the desired Nexus Repository Manager server in the app-config.yaml file as follows: ```yaml proxy: '/nexus-repository-manager': target: 'https://<NEXUS_REPOSITORY_MANAGER_URL>' headers: X-Requested-With: 'XMLHttpRequest' # Uncomment the following line to access a private Nexus Repository Manager using a token # Authorization: 'Bearer <YOUR TOKEN>' changeOrigin: true # Change to \""false\"" in case of using self hosted Nexus Repository Manager instance with a self-signed certificate secure: true ``` 2. Optional: Change the base URL of Nexus Repository Manager proxy as follows: ```yaml nexusRepositoryManager: # default path is `/nexus-repository-manager` proxyPath: /custom-path ``` 3. Optional: Enable the following experimental annotations: ```yaml nexusRepositoryManager: experimentalAnnotations: true ``` 4. Annotate your entity using the following annotations: ```yaml metadata: annotations: # insert the chosen annotations here # example nexus-repository-manager/docker.image-name: `<ORGANIZATION>/<REPOSITORY>`, ``` # Enabling the Tekton plugin You can use the Tekton plugin to visualize the results of CI/CD pipeline runs on your Kubernetes or OpenShift clusters. The plugin allows users to visually see high level status of all associated tasks in the pipeline for their applications. You have installed and configured the @backstage/plugin kubernetes and @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted for custom resources (PipelineRuns and TaskRuns) to the ServiceAccount accessing the cluster. [NOTE] ---- If you have the RHDH Kubernetes plugin configured, then the ClusterRole is already granted. ---- * To view the pod logs, you have granted permissions for pods/log. * You can use the following code to grant the ClusterRole for custom resources and pod logs: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: apiGroups: \""\"" resources: pods/log verbs: get list watch ... apiGroups: tekton.dev resources: pipelineruns taskruns verbs: get list ``` You can use the prepared manifest for a read-only ClusterRole, which provides access for both Kubernetes plugin and Tekton plugin. * Add the following annotation to the entity's catalog-info.yaml file to identify whether an entity contains the Kubernetes resources: ```yaml annotations: ... backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME> ``` * You can also add the backstage.io/kubernetes-namespace annotation to identify the Kubernetes resources using the defined namespace. ```yaml annotations: ... backstage.io/kubernetes-namespace: <RESOURCE_NS> ``` * Add the following annotation to the catalog-info.yaml file of the entity to enable the Tekton related features in RHDH. The value of the annotation identifies the name of the RHDH entity: ```yaml annotations: ... janus-idp.io/tekton : <BACKSTAGE_ENTITY_NAME> ``` * Add a custom label selector, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations. ```yaml annotations: ... backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end' ``` * Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: ... backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` [NOTE] ---- When you use the label selector, the mentioned labels must be present on the resource. ---- The Tekton plugin is pre loaded in RHDH with basic configuration properties. To enable it, set the disabled property to false as follows: ```yaml global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin tekton disabled: false ``` # Installing the Topology plugin ### Installing the Topology plugin The Topology plugin enables you to visualize the workloads such as Deployment, Job, Daemonset, Statefulset, CronJob, Pods and Virtual Machines powering any service on your Kubernetes cluster. You have installed and configured the @backstage/plugin kubernetes backend dynamic plugins. You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount. The ClusterRole must be granted to ServiceAccount accessing the cluster. [NOTE] ---- If you have the Developer Hub Kubernetes plugin configured, then the ClusterRole is already granted. ---- The Topology plugin is pre loaded in Developer Hub with basic configuration properties. To enable it, set the disabled property to false as follows: app config.yaml fragment ```yaml auth: global: dynamic: includes: dynamic plugins.default.yaml plugins: package: ./dynamic plugins/dist/backstage community plugin topology disabled: false ``` ## Configuring the Topology plugin ### Viewing OpenShift routes 1. To view OpenShift routes, grant read access to the routes resource in the Cluster Role: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: route.openshift.io resources: routes verbs: get list ``` 2. Also add the following in kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'route.openshift.io' apiVersion: 'v1' plural: 'routes' ``` ### Viewing pod logs To view pod logs, you must grant the following permission to the ClusterRole: ```yaml apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: '' resources: pods pods/log verbs: get list watch ``` ### Viewing Tekton PipelineRuns 1. To view the Tekton PipelineRuns, grant read access to the pipelines, pipelinesruns, and taskruns resources in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole""]","To view OpenShift routes, you must first grant read access to the routes resource in the Cluster Role. This is done by adding the following configuration: ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage read only
+rules:
+  ...
+  apiGroups: route.openshift.io
+  resources: routes
+  verbs: get list
+```. Additionally, you need to add the corresponding custom resource property in your app-config.yaml file like so: ```yaml
+kubernetes:
+  ...
+  customResources:
+    group: 'route.openshift.io'
+    apiVersion: 'v1'
+    plural: 'routes'
+```",,,
+plugins-4,d3c9ce66-c3e4-402d-93ae-daed5b387ea6,ragas:faithfulness,"{""description"": ""How faithful the response is to the provided context"", ""default"": false}",FAIL,0.6756756756756757,0.8,Max of 2 judges: 0.676,98.288,"As a platform engineer responsible for integrating CI/CD tooling, what are the precise configuration steps, including both RBAC rules and `app-config.yaml` modifications, that are necessary to enable the visibility of Tekton resources like PipelineRuns within the developer platform's user interface?","To integrate Tekton into Red Hat Developer Hub (RHDH) and surface resources like `PipelineRuns` in the UI, you need to configure the **Kubernetes backend** to fetch Tekton Custom Resource Definitions (CRDs). RHDH uses the Kubernetes API to securely pull this data, which requires explicit RBAC permissions on the cluster and specific configurations in your `app-config.yaml`.
+
+Here are the precise steps to achieve this.
+
+---
+
+### Phase 1: Kubernetes RBAC Configuration
+
+RHDH requires a `ServiceAccount` with read-only access to Tekton resources and Pod logs (essential for viewing pipeline step outputs).
+
+**1. Create the ServiceAccount, ClusterRole, and RoleBinding**
+Apply the following YAML to your Kubernetes/OpenShift cluster where Tekton is running:
+
+```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-tekton-viewer
+  namespace: rhdh-backend # Replace with the namespace where RHDH is deployed or your auth namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-tekton-viewer-role
+rules:
+  # Permissions for Tekton resources
+  - apiGroups: [""tekton.dev""]
+    resources: [""pipelines"", ""pipelineruns"", ""taskruns"", ""tasks""]
+    verbs: [""get"", ""list"", ""watch""]
+  # Permissions to view Pods and fetch logs for PipelineRun steps
+  - apiGroups: [""""]
+    resources: [""pods"", ""pods/log""]
+    verbs: [""get"", ""list"", ""watch""]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-tekton-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: rhdh-tekton-viewer
+    namespace: rhdh-backend # Must match the ServiceAccount namespace
+roleRef:
+  kind: ClusterRole
+  name: rhdh-tekton-viewer-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+**2. Extract the ServiceAccount Token**
+You will need a long-lived token for this `ServiceAccount` to authenticate RHDH against the cluster API. Extract it using:
+```bash
+kubectl create token rhdh-tekton-viewer -n rhdh-backend --duration=8760h
+```
+*(Note: Securely store this token as a secret/environment variable, e.g., `K8S_TEKTON_TOKEN`, for your `app-config.yaml`).*
+
+---
+
+### Phase 2: `app-config.yaml` Modifications
+
+The Tekton frontend plugin relies on the Backstage Kubernetes backend. You must configure the cluster connection and explicitly declare Tekton CRDs so the backend knows to scrape them.
+
+Add or update the `kubernetes` section in your `app-config.yaml`:
+
+```yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_CLUSTER_URL} # e.g., https://api.my-cluster.com:6443
+          name: my-tekton-cluster
+          authProvider: 'serviceAccount'
+          skipTLSVerify: false
+          # Ensure you map the token you generated in Phase 1 here:
+          serviceAccountToken: ${K8S_TEKTON_TOKEN}
+          
+          # Optional: Define standard labels RHDH should use to match resources to entities
+          customResources:
+            # Tekton PipelineRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1' # Use 'v1beta1' if you are on an older Tekton version
+              plural: 'pipelineruns'
+            # Tekton TaskRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'taskruns'
+            # Tekton Pipelines
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'pipelines'
+```
+
+---
+
+### Phase 3: Catalog Entity Annotations and Labels
+
+For RHDH to correlate a specific `PipelineRun` in the cluster with a `Component` in the software catalog, the Kubernetes resources and the `catalog-info.yaml` must be properly labeled and annotated.
+
+**1. Update the `catalog-info.yaml`**
+Developers must add the Kubernetes annotation to their component definition so RHDH knows how to filter the cluster resources:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-node-service
+  annotations:
+    # Standard Kubernetes plugin annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+    # Optional: Scope the search to a specific namespace for performance
+    backstage.io/kubernetes-namespace: ""my-app-namespace""
+spec:
+  type: service
+  lifecycle: experimental
+  owner: team-alpha
+```
+
+**2. Label the Tekton PipelineRuns**
+When your CI/CD system creates the `PipelineRun`, it **must** include the matching Kubernetes label. Without this label, RHDH will not link the `PipelineRun` to the catalog entity.
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: my-node-service-run-
+  labels:
+    # This label MUST match the backstage.io/kubernetes-id annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+spec:
+  pipelineRef:
+    name: my-node-service-pipeline
+  # ...
+```
+
+*(Note: Depending on the specific Tekton plugin version configured in RHDH, you can alternatively use the label `app.kubernetes.io/part-of: ""my-node-service""`. The Backstage Kubernetes label selector looks for either by default).*
+
+### Summary of Validation
+Once these configurations are applied and RHDH is restarted:
+1. Navigate to your specific Component in the RHDH catalog.
+2. Click on the **CI/CD** or **Tekton** tab.
+3. RHDH will use the `K8S_TEKTON_TOKEN` to hit the cluster API, query the `tekton.dev/v1` resources filtered by the `backstage.io/kubernetes-id` label, and render the pipeline topology, status, and step logs.",0,0,,,,10521,10714,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 0.6756756756756757, ""reason"": ""Ragas faithfulness: 0.68"", ""judge_input_tokens"": 5122, ""judge_output_tokens"": 2656, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 0.4782608695652174, ""reason"": ""Ragas faithfulness: 0.48"", ""judge_input_tokens"": 5399, ""judge_output_tokens"": 8058, ""embedding_tokens"": 0}]",,"[""metadata: name: backstage read only rules: ... apiGroups: tekton.dev resources: pipelines pipelineruns taskruns verbs: get list ``` 2. To view the Tekton PipelineRuns list in the side panel and the latest PipelineRuns status in the Topology node decorator, add the following code to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelines' group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' plural: 'taskruns' ``` ### Viewing virtual machines 1. The OpenShift Virtualization operator is installed and configured on a Kubernetes cluster. .Procedure 2. Grant read access to the VirtualMachines resource in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: kubevirt.io resources: virtualmachines virtualmachineinstances verbs: get list ``` 3. To view the virtual machine nodes on the topology plugin, add the following code to the kubernetes.customResources property in the app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachines' group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachineinstances' ``` ### Enabling the source code editor To enable the source code editor, you must grant read access to the CheClusters resource in the ClusterRole as shown in the following example code: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: org.eclipse.che resources: checlusters verbs: get list ``` To use the source code editor, you must add the following configuration to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'org.eclipse.che' apiVersion: 'v2' plural: 'checlusters' ``` ## Managing labels and annotations for Topology plugins ### Linking to the source code editor or the source Add the following annotations to workload resources, such as Deployments to navigate to the Git repository of the associated application using the source code editor: ```yaml annotations: app.openshift.io/vcs uri: <GIT_REPO_URL> ``` Add the following annotation to navigate to a specific branch: ```yaml annotations: app.openshift.io/vcs ref: <GIT_REPO_BRANCH> ``` [NOTE] ---- If Red Hat OpenShift Dev Spaces is installed and configured and Git URL annotations are also added to the workload YAML file, then clicking on the edit code decorator redirects you to the Red Hat OpenShift Dev Spaces instance. ---- [NOTE] ---- When you deploy your application using the OCP Git import flows, then you do not need to add the labels as import flows do that. Otherwise, you need to add the labels manually to the workload YAML file. ---- You can also add the app.openshift.io/edit-link annotation with the edit URL that you want to access using the decorator. ### Entity annotation/label For RHDH to detect that an entity has Kubernetes components, add the following annotation to the catalog-info.yaml file of the entity: ```yaml annotations: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME>` ``` [NOTE] ---- When using the label selector, the mentioned labels must be present on the resource. ---- ### Namespace annotation To identify the Kubernetes resources using the defined namespace, add the backstage.io/kubernetes namespace annotation: ```yaml annotations: backstage.io/kubernetes namespace: <RESOURCE_NS> ``` The Red Hat OpenShift Dev Spaces instance is not accessible using the source code editor if the backstage.io/kubernetes-namespace annotation is added to the catalog-info.yaml file. To retrieve the instance URL, you require the CheCluster custom resource (CR). As the CheCluster CR is created in the openshift-devspaces namespace, the instance URL is not retrieved if the namespace annotation value is not openshift-devspaces. ### Label selector query annotation You can write your own custom label, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations: ```yaml annotations: backstage.io/kubernetes label selector: 'app=my app,component=front end' ``` If you have multiple entities while Red Hat Dev Spaces is configured and want multiple entities to support the edit code decorator that redirects to the Red Hat Dev Spaces instance, you can add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file for each entity. ```yaml annotations: backstage.io/kubernetes label selector: 'component in (<BACKSTAGE_ENTITY_NAME>,che)' ``` If you are using the previous label selector, you must add the following labels to your resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: component: che # add this label to your che cluster instance labels: component: <BACKSTAGE_ENTITY_NAME> # add this label to the other resources associated with your entity ``` You can also write your own custom query for the label selector with unique labels to differentiate your entities. However, you need to ensure that you add those labels to the resources associated with your entities including your CheCluster instance. ### Displaying icon in the node To display a runtime icon in the topology nodes, add the following label to workload resources, such as Deployments: ```yaml labels: app.openshift.io/runtime: <RUNTIME_NAME> ``` Alternatively, you can include the following label to display the runtime icon: ```yaml labels: app.kubernetes.io/name: <RUNTIME_NAME> ``` Supported values of <RUNTIME_NAME> include: django dotnet drupal go gopher golang grails jboss jruby js nginx nodejs openjdk perl phalcon php python quarkus rails redis rh spring boot rust java rh openjdk ruby spring spring boot [NOTE] ---- Other values result in icons not being rendered for the node. ---- ### App grouping To display workload resources such as deployments or pods in a visual group, add the following label: ```yaml labels: app.kubernetes.io/part of: <GROUP_NAME> ``` ### Node connector To display the workload resources such as deployments or pods with a visual connector, add the following annotation: ```yaml annotations: app.openshift.io/connects-to: '[{\""apiVersion\"": <RESOURCE_APIVERSION>,\""kind\"": <RESOURCE_KIND>,\""name\"": <RESOURCE_NAME>}]' ``` For more information about the labels and annotations, see Guidelines for labels and annotations for OpenShift applications. # Bulk importing in Red Hat Developer Hub [IMPORTANT] ---- These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process. For more information""]","To enable visibility for Tekton, you must first grant read access in the `ClusterRole` for the `tekton.dev` apiGroup, allowing `get` and `list` verbs for the `pipelines`, `pipelineruns`, and `taskruns` resources. Following that, to make the Tekton PipelineRuns list appear in the side panel and to show the latest PipelineRuns status in the Topology node decorator, you need to add the following configurations to the `kubernetes.customResources` property in your `app-config.yaml` file: `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelines'`, `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelineruns'`, and `group: 'tekton.dev', apiVersion: 'v1', plural: 'taskruns'`.",,,
+plugins-4,d3c9ce66-c3e4-402d-93ae-daed5b387ea6,ragas:context_recall,"{""description"": ""Did we fetch every fact the answer needs?""}",PASS,1.0,0.8,Max of 2 judges: 1.000,0.013,"As a platform engineer responsible for integrating CI/CD tooling, what are the precise configuration steps, including both RBAC rules and `app-config.yaml` modifications, that are necessary to enable the visibility of Tekton resources like PipelineRuns within the developer platform's user interface?","To integrate Tekton into Red Hat Developer Hub (RHDH) and surface resources like `PipelineRuns` in the UI, you need to configure the **Kubernetes backend** to fetch Tekton Custom Resource Definitions (CRDs). RHDH uses the Kubernetes API to securely pull this data, which requires explicit RBAC permissions on the cluster and specific configurations in your `app-config.yaml`.
+
+Here are the precise steps to achieve this.
+
+---
+
+### Phase 1: Kubernetes RBAC Configuration
+
+RHDH requires a `ServiceAccount` with read-only access to Tekton resources and Pod logs (essential for viewing pipeline step outputs).
+
+**1. Create the ServiceAccount, ClusterRole, and RoleBinding**
+Apply the following YAML to your Kubernetes/OpenShift cluster where Tekton is running:
+
+```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-tekton-viewer
+  namespace: rhdh-backend # Replace with the namespace where RHDH is deployed or your auth namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-tekton-viewer-role
+rules:
+  # Permissions for Tekton resources
+  - apiGroups: [""tekton.dev""]
+    resources: [""pipelines"", ""pipelineruns"", ""taskruns"", ""tasks""]
+    verbs: [""get"", ""list"", ""watch""]
+  # Permissions to view Pods and fetch logs for PipelineRun steps
+  - apiGroups: [""""]
+    resources: [""pods"", ""pods/log""]
+    verbs: [""get"", ""list"", ""watch""]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-tekton-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: rhdh-tekton-viewer
+    namespace: rhdh-backend # Must match the ServiceAccount namespace
+roleRef:
+  kind: ClusterRole
+  name: rhdh-tekton-viewer-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+**2. Extract the ServiceAccount Token**
+You will need a long-lived token for this `ServiceAccount` to authenticate RHDH against the cluster API. Extract it using:
+```bash
+kubectl create token rhdh-tekton-viewer -n rhdh-backend --duration=8760h
+```
+*(Note: Securely store this token as a secret/environment variable, e.g., `K8S_TEKTON_TOKEN`, for your `app-config.yaml`).*
+
+---
+
+### Phase 2: `app-config.yaml` Modifications
+
+The Tekton frontend plugin relies on the Backstage Kubernetes backend. You must configure the cluster connection and explicitly declare Tekton CRDs so the backend knows to scrape them.
+
+Add or update the `kubernetes` section in your `app-config.yaml`:
+
+```yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_CLUSTER_URL} # e.g., https://api.my-cluster.com:6443
+          name: my-tekton-cluster
+          authProvider: 'serviceAccount'
+          skipTLSVerify: false
+          # Ensure you map the token you generated in Phase 1 here:
+          serviceAccountToken: ${K8S_TEKTON_TOKEN}
+          
+          # Optional: Define standard labels RHDH should use to match resources to entities
+          customResources:
+            # Tekton PipelineRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1' # Use 'v1beta1' if you are on an older Tekton version
+              plural: 'pipelineruns'
+            # Tekton TaskRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'taskruns'
+            # Tekton Pipelines
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'pipelines'
+```
+
+---
+
+### Phase 3: Catalog Entity Annotations and Labels
+
+For RHDH to correlate a specific `PipelineRun` in the cluster with a `Component` in the software catalog, the Kubernetes resources and the `catalog-info.yaml` must be properly labeled and annotated.
+
+**1. Update the `catalog-info.yaml`**
+Developers must add the Kubernetes annotation to their component definition so RHDH knows how to filter the cluster resources:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-node-service
+  annotations:
+    # Standard Kubernetes plugin annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+    # Optional: Scope the search to a specific namespace for performance
+    backstage.io/kubernetes-namespace: ""my-app-namespace""
+spec:
+  type: service
+  lifecycle: experimental
+  owner: team-alpha
+```
+
+**2. Label the Tekton PipelineRuns**
+When your CI/CD system creates the `PipelineRun`, it **must** include the matching Kubernetes label. Without this label, RHDH will not link the `PipelineRun` to the catalog entity.
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: my-node-service-run-
+  labels:
+    # This label MUST match the backstage.io/kubernetes-id annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+spec:
+  pipelineRef:
+    name: my-node-service-pipeline
+  # ...
+```
+
+*(Note: Depending on the specific Tekton plugin version configured in RHDH, you can alternatively use the label `app.kubernetes.io/part-of: ""my-node-service""`. The Backstage Kubernetes label selector looks for either by default).*
+
+### Summary of Validation
+Once these configurations are applied and RHDH is restarted:
+1. Navigate to your specific Component in the RHDH catalog.
+2. Click on the **CI/CD** or **Tekton** tab.
+3. RHDH will use the `K8S_TEKTON_TOKEN` to hit the cluster API, query the `tekton.dev/v1` resources filtered by the `backstage.io/kubernetes-id` label, and render the pipeline topology, status, and step logs.",0,0,,,,0,0,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 1.0, ""reason"": ""Ragas context recall: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 1.0, ""reason"": ""Ragas context recall: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}]",,"[""metadata: name: backstage read only rules: ... apiGroups: tekton.dev resources: pipelines pipelineruns taskruns verbs: get list ``` 2. To view the Tekton PipelineRuns list in the side panel and the latest PipelineRuns status in the Topology node decorator, add the following code to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelines' group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' plural: 'taskruns' ``` ### Viewing virtual machines 1. The OpenShift Virtualization operator is installed and configured on a Kubernetes cluster. .Procedure 2. Grant read access to the VirtualMachines resource in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: kubevirt.io resources: virtualmachines virtualmachineinstances verbs: get list ``` 3. To view the virtual machine nodes on the topology plugin, add the following code to the kubernetes.customResources property in the app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachines' group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachineinstances' ``` ### Enabling the source code editor To enable the source code editor, you must grant read access to the CheClusters resource in the ClusterRole as shown in the following example code: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: org.eclipse.che resources: checlusters verbs: get list ``` To use the source code editor, you must add the following configuration to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'org.eclipse.che' apiVersion: 'v2' plural: 'checlusters' ``` ## Managing labels and annotations for Topology plugins ### Linking to the source code editor or the source Add the following annotations to workload resources, such as Deployments to navigate to the Git repository of the associated application using the source code editor: ```yaml annotations: app.openshift.io/vcs uri: <GIT_REPO_URL> ``` Add the following annotation to navigate to a specific branch: ```yaml annotations: app.openshift.io/vcs ref: <GIT_REPO_BRANCH> ``` [NOTE] ---- If Red Hat OpenShift Dev Spaces is installed and configured and Git URL annotations are also added to the workload YAML file, then clicking on the edit code decorator redirects you to the Red Hat OpenShift Dev Spaces instance. ---- [NOTE] ---- When you deploy your application using the OCP Git import flows, then you do not need to add the labels as import flows do that. Otherwise, you need to add the labels manually to the workload YAML file. ---- You can also add the app.openshift.io/edit-link annotation with the edit URL that you want to access using the decorator. ### Entity annotation/label For RHDH to detect that an entity has Kubernetes components, add the following annotation to the catalog-info.yaml file of the entity: ```yaml annotations: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME>` ``` [NOTE] ---- When using the label selector, the mentioned labels must be present on the resource. ---- ### Namespace annotation To identify the Kubernetes resources using the defined namespace, add the backstage.io/kubernetes namespace annotation: ```yaml annotations: backstage.io/kubernetes namespace: <RESOURCE_NS> ``` The Red Hat OpenShift Dev Spaces instance is not accessible using the source code editor if the backstage.io/kubernetes-namespace annotation is added to the catalog-info.yaml file. To retrieve the instance URL, you require the CheCluster custom resource (CR). As the CheCluster CR is created in the openshift-devspaces namespace, the instance URL is not retrieved if the namespace annotation value is not openshift-devspaces. ### Label selector query annotation You can write your own custom label, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations: ```yaml annotations: backstage.io/kubernetes label selector: 'app=my app,component=front end' ``` If you have multiple entities while Red Hat Dev Spaces is configured and want multiple entities to support the edit code decorator that redirects to the Red Hat Dev Spaces instance, you can add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file for each entity. ```yaml annotations: backstage.io/kubernetes label selector: 'component in (<BACKSTAGE_ENTITY_NAME>,che)' ``` If you are using the previous label selector, you must add the following labels to your resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: component: che # add this label to your che cluster instance labels: component: <BACKSTAGE_ENTITY_NAME> # add this label to the other resources associated with your entity ``` You can also write your own custom query for the label selector with unique labels to differentiate your entities. However, you need to ensure that you add those labels to the resources associated with your entities including your CheCluster instance. ### Displaying icon in the node To display a runtime icon in the topology nodes, add the following label to workload resources, such as Deployments: ```yaml labels: app.openshift.io/runtime: <RUNTIME_NAME> ``` Alternatively, you can include the following label to display the runtime icon: ```yaml labels: app.kubernetes.io/name: <RUNTIME_NAME> ``` Supported values of <RUNTIME_NAME> include: django dotnet drupal go gopher golang grails jboss jruby js nginx nodejs openjdk perl phalcon php python quarkus rails redis rh spring boot rust java rh openjdk ruby spring spring boot [NOTE] ---- Other values result in icons not being rendered for the node. ---- ### App grouping To display workload resources such as deployments or pods in a visual group, add the following label: ```yaml labels: app.kubernetes.io/part of: <GROUP_NAME> ``` ### Node connector To display the workload resources such as deployments or pods with a visual connector, add the following annotation: ```yaml annotations: app.openshift.io/connects-to: '[{\""apiVersion\"": <RESOURCE_APIVERSION>,\""kind\"": <RESOURCE_KIND>,\""name\"": <RESOURCE_NAME>}]' ``` For more information about the labels and annotations, see Guidelines for labels and annotations for OpenShift applications. # Bulk importing in Red Hat Developer Hub [IMPORTANT] ---- These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process. For more information""]","To enable visibility for Tekton, you must first grant read access in the `ClusterRole` for the `tekton.dev` apiGroup, allowing `get` and `list` verbs for the `pipelines`, `pipelineruns`, and `taskruns` resources. Following that, to make the Tekton PipelineRuns list appear in the side panel and to show the latest PipelineRuns status in the Topology node decorator, you need to add the following configurations to the `kubernetes.customResources` property in your `app-config.yaml` file: `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelines'`, `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelineruns'`, and `group: 'tekton.dev', apiVersion: 'v1', plural: 'taskruns'`.",,,
+plugins-4,d3c9ce66-c3e4-402d-93ae-daed5b387ea6,ragas:context_relevance,"{""description"": ""Is what we retrieved actually relevant to user query?""}",PASS,1.0,0.7,Max of 2 judges: 1.000,0.013,"As a platform engineer responsible for integrating CI/CD tooling, what are the precise configuration steps, including both RBAC rules and `app-config.yaml` modifications, that are necessary to enable the visibility of Tekton resources like PipelineRuns within the developer platform's user interface?","To integrate Tekton into Red Hat Developer Hub (RHDH) and surface resources like `PipelineRuns` in the UI, you need to configure the **Kubernetes backend** to fetch Tekton Custom Resource Definitions (CRDs). RHDH uses the Kubernetes API to securely pull this data, which requires explicit RBAC permissions on the cluster and specific configurations in your `app-config.yaml`.
+
+Here are the precise steps to achieve this.
+
+---
+
+### Phase 1: Kubernetes RBAC Configuration
+
+RHDH requires a `ServiceAccount` with read-only access to Tekton resources and Pod logs (essential for viewing pipeline step outputs).
+
+**1. Create the ServiceAccount, ClusterRole, and RoleBinding**
+Apply the following YAML to your Kubernetes/OpenShift cluster where Tekton is running:
+
+```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-tekton-viewer
+  namespace: rhdh-backend # Replace with the namespace where RHDH is deployed or your auth namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-tekton-viewer-role
+rules:
+  # Permissions for Tekton resources
+  - apiGroups: [""tekton.dev""]
+    resources: [""pipelines"", ""pipelineruns"", ""taskruns"", ""tasks""]
+    verbs: [""get"", ""list"", ""watch""]
+  # Permissions to view Pods and fetch logs for PipelineRun steps
+  - apiGroups: [""""]
+    resources: [""pods"", ""pods/log""]
+    verbs: [""get"", ""list"", ""watch""]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-tekton-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: rhdh-tekton-viewer
+    namespace: rhdh-backend # Must match the ServiceAccount namespace
+roleRef:
+  kind: ClusterRole
+  name: rhdh-tekton-viewer-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+**2. Extract the ServiceAccount Token**
+You will need a long-lived token for this `ServiceAccount` to authenticate RHDH against the cluster API. Extract it using:
+```bash
+kubectl create token rhdh-tekton-viewer -n rhdh-backend --duration=8760h
+```
+*(Note: Securely store this token as a secret/environment variable, e.g., `K8S_TEKTON_TOKEN`, for your `app-config.yaml`).*
+
+---
+
+### Phase 2: `app-config.yaml` Modifications
+
+The Tekton frontend plugin relies on the Backstage Kubernetes backend. You must configure the cluster connection and explicitly declare Tekton CRDs so the backend knows to scrape them.
+
+Add or update the `kubernetes` section in your `app-config.yaml`:
+
+```yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_CLUSTER_URL} # e.g., https://api.my-cluster.com:6443
+          name: my-tekton-cluster
+          authProvider: 'serviceAccount'
+          skipTLSVerify: false
+          # Ensure you map the token you generated in Phase 1 here:
+          serviceAccountToken: ${K8S_TEKTON_TOKEN}
+          
+          # Optional: Define standard labels RHDH should use to match resources to entities
+          customResources:
+            # Tekton PipelineRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1' # Use 'v1beta1' if you are on an older Tekton version
+              plural: 'pipelineruns'
+            # Tekton TaskRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'taskruns'
+            # Tekton Pipelines
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'pipelines'
+```
+
+---
+
+### Phase 3: Catalog Entity Annotations and Labels
+
+For RHDH to correlate a specific `PipelineRun` in the cluster with a `Component` in the software catalog, the Kubernetes resources and the `catalog-info.yaml` must be properly labeled and annotated.
+
+**1. Update the `catalog-info.yaml`**
+Developers must add the Kubernetes annotation to their component definition so RHDH knows how to filter the cluster resources:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-node-service
+  annotations:
+    # Standard Kubernetes plugin annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+    # Optional: Scope the search to a specific namespace for performance
+    backstage.io/kubernetes-namespace: ""my-app-namespace""
+spec:
+  type: service
+  lifecycle: experimental
+  owner: team-alpha
+```
+
+**2. Label the Tekton PipelineRuns**
+When your CI/CD system creates the `PipelineRun`, it **must** include the matching Kubernetes label. Without this label, RHDH will not link the `PipelineRun` to the catalog entity.
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: my-node-service-run-
+  labels:
+    # This label MUST match the backstage.io/kubernetes-id annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+spec:
+  pipelineRef:
+    name: my-node-service-pipeline
+  # ...
+```
+
+*(Note: Depending on the specific Tekton plugin version configured in RHDH, you can alternatively use the label `app.kubernetes.io/part-of: ""my-node-service""`. The Backstage Kubernetes label selector looks for either by default).*
+
+### Summary of Validation
+Once these configurations are applied and RHDH is restarted:
+1. Navigate to your specific Component in the RHDH catalog.
+2. Click on the **CI/CD** or **Tekton** tab.
+3. RHDH will use the `K8S_TEKTON_TOKEN` to hit the cluster API, query the `tekton.dev/v1` resources filtered by the `backstage.io/kubernetes-id` label, and render the pipeline topology, status, and step logs.",0,0,,,,0,0,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 1.0, ""reason"": ""Ragas context relevance: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 1.0, ""reason"": ""Ragas context relevance: 1.00"", ""judge_input_tokens"": 0, ""judge_output_tokens"": 0, ""embedding_tokens"": 0}]",,"[""metadata: name: backstage read only rules: ... apiGroups: tekton.dev resources: pipelines pipelineruns taskruns verbs: get list ``` 2. To view the Tekton PipelineRuns list in the side panel and the latest PipelineRuns status in the Topology node decorator, add the following code to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelines' group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' plural: 'taskruns' ``` ### Viewing virtual machines 1. The OpenShift Virtualization operator is installed and configured on a Kubernetes cluster. .Procedure 2. Grant read access to the VirtualMachines resource in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: kubevirt.io resources: virtualmachines virtualmachineinstances verbs: get list ``` 3. To view the virtual machine nodes on the topology plugin, add the following code to the kubernetes.customResources property in the app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachines' group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachineinstances' ``` ### Enabling the source code editor To enable the source code editor, you must grant read access to the CheClusters resource in the ClusterRole as shown in the following example code: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: org.eclipse.che resources: checlusters verbs: get list ``` To use the source code editor, you must add the following configuration to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'org.eclipse.che' apiVersion: 'v2' plural: 'checlusters' ``` ## Managing labels and annotations for Topology plugins ### Linking to the source code editor or the source Add the following annotations to workload resources, such as Deployments to navigate to the Git repository of the associated application using the source code editor: ```yaml annotations: app.openshift.io/vcs uri: <GIT_REPO_URL> ``` Add the following annotation to navigate to a specific branch: ```yaml annotations: app.openshift.io/vcs ref: <GIT_REPO_BRANCH> ``` [NOTE] ---- If Red Hat OpenShift Dev Spaces is installed and configured and Git URL annotations are also added to the workload YAML file, then clicking on the edit code decorator redirects you to the Red Hat OpenShift Dev Spaces instance. ---- [NOTE] ---- When you deploy your application using the OCP Git import flows, then you do not need to add the labels as import flows do that. Otherwise, you need to add the labels manually to the workload YAML file. ---- You can also add the app.openshift.io/edit-link annotation with the edit URL that you want to access using the decorator. ### Entity annotation/label For RHDH to detect that an entity has Kubernetes components, add the following annotation to the catalog-info.yaml file of the entity: ```yaml annotations: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME>` ``` [NOTE] ---- When using the label selector, the mentioned labels must be present on the resource. ---- ### Namespace annotation To identify the Kubernetes resources using the defined namespace, add the backstage.io/kubernetes namespace annotation: ```yaml annotations: backstage.io/kubernetes namespace: <RESOURCE_NS> ``` The Red Hat OpenShift Dev Spaces instance is not accessible using the source code editor if the backstage.io/kubernetes-namespace annotation is added to the catalog-info.yaml file. To retrieve the instance URL, you require the CheCluster custom resource (CR). As the CheCluster CR is created in the openshift-devspaces namespace, the instance URL is not retrieved if the namespace annotation value is not openshift-devspaces. ### Label selector query annotation You can write your own custom label, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations: ```yaml annotations: backstage.io/kubernetes label selector: 'app=my app,component=front end' ``` If you have multiple entities while Red Hat Dev Spaces is configured and want multiple entities to support the edit code decorator that redirects to the Red Hat Dev Spaces instance, you can add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file for each entity. ```yaml annotations: backstage.io/kubernetes label selector: 'component in (<BACKSTAGE_ENTITY_NAME>,che)' ``` If you are using the previous label selector, you must add the following labels to your resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: component: che # add this label to your che cluster instance labels: component: <BACKSTAGE_ENTITY_NAME> # add this label to the other resources associated with your entity ``` You can also write your own custom query for the label selector with unique labels to differentiate your entities. However, you need to ensure that you add those labels to the resources associated with your entities including your CheCluster instance. ### Displaying icon in the node To display a runtime icon in the topology nodes, add the following label to workload resources, such as Deployments: ```yaml labels: app.openshift.io/runtime: <RUNTIME_NAME> ``` Alternatively, you can include the following label to display the runtime icon: ```yaml labels: app.kubernetes.io/name: <RUNTIME_NAME> ``` Supported values of <RUNTIME_NAME> include: django dotnet drupal go gopher golang grails jboss jruby js nginx nodejs openjdk perl phalcon php python quarkus rails redis rh spring boot rust java rh openjdk ruby spring spring boot [NOTE] ---- Other values result in icons not being rendered for the node. ---- ### App grouping To display workload resources such as deployments or pods in a visual group, add the following label: ```yaml labels: app.kubernetes.io/part of: <GROUP_NAME> ``` ### Node connector To display the workload resources such as deployments or pods with a visual connector, add the following annotation: ```yaml annotations: app.openshift.io/connects-to: '[{\""apiVersion\"": <RESOURCE_APIVERSION>,\""kind\"": <RESOURCE_KIND>,\""name\"": <RESOURCE_NAME>}]' ``` For more information about the labels and annotations, see Guidelines for labels and annotations for OpenShift applications. # Bulk importing in Red Hat Developer Hub [IMPORTANT] ---- These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process. For more information""]","To enable visibility for Tekton, you must first grant read access in the `ClusterRole` for the `tekton.dev` apiGroup, allowing `get` and `list` verbs for the `pipelines`, `pipelineruns`, and `taskruns` resources. Following that, to make the Tekton PipelineRuns list appear in the side panel and to show the latest PipelineRuns status in the Topology node decorator, you need to add the following configurations to the `kubernetes.customResources` property in your `app-config.yaml` file: `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelines'`, `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelineruns'`, and `group: 'tekton.dev', apiVersion: 'v1', plural: 'taskruns'`.",,,
+plugins-4,d3c9ce66-c3e4-402d-93ae-daed5b387ea6,ragas:context_precision_without_reference,"{""description"": ""How precise the retrieved context is (without reference)""}",PASS,0.9999999999,0.7,Max of 2 judges: 1.000,10.741,"As a platform engineer responsible for integrating CI/CD tooling, what are the precise configuration steps, including both RBAC rules and `app-config.yaml` modifications, that are necessary to enable the visibility of Tekton resources like PipelineRuns within the developer platform's user interface?","To integrate Tekton into Red Hat Developer Hub (RHDH) and surface resources like `PipelineRuns` in the UI, you need to configure the **Kubernetes backend** to fetch Tekton Custom Resource Definitions (CRDs). RHDH uses the Kubernetes API to securely pull this data, which requires explicit RBAC permissions on the cluster and specific configurations in your `app-config.yaml`.
+
+Here are the precise steps to achieve this.
+
+---
+
+### Phase 1: Kubernetes RBAC Configuration
+
+RHDH requires a `ServiceAccount` with read-only access to Tekton resources and Pod logs (essential for viewing pipeline step outputs).
+
+**1. Create the ServiceAccount, ClusterRole, and RoleBinding**
+Apply the following YAML to your Kubernetes/OpenShift cluster where Tekton is running:
+
+```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-tekton-viewer
+  namespace: rhdh-backend # Replace with the namespace where RHDH is deployed or your auth namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-tekton-viewer-role
+rules:
+  # Permissions for Tekton resources
+  - apiGroups: [""tekton.dev""]
+    resources: [""pipelines"", ""pipelineruns"", ""taskruns"", ""tasks""]
+    verbs: [""get"", ""list"", ""watch""]
+  # Permissions to view Pods and fetch logs for PipelineRun steps
+  - apiGroups: [""""]
+    resources: [""pods"", ""pods/log""]
+    verbs: [""get"", ""list"", ""watch""]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-tekton-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: rhdh-tekton-viewer
+    namespace: rhdh-backend # Must match the ServiceAccount namespace
+roleRef:
+  kind: ClusterRole
+  name: rhdh-tekton-viewer-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+**2. Extract the ServiceAccount Token**
+You will need a long-lived token for this `ServiceAccount` to authenticate RHDH against the cluster API. Extract it using:
+```bash
+kubectl create token rhdh-tekton-viewer -n rhdh-backend --duration=8760h
+```
+*(Note: Securely store this token as a secret/environment variable, e.g., `K8S_TEKTON_TOKEN`, for your `app-config.yaml`).*
+
+---
+
+### Phase 2: `app-config.yaml` Modifications
+
+The Tekton frontend plugin relies on the Backstage Kubernetes backend. You must configure the cluster connection and explicitly declare Tekton CRDs so the backend knows to scrape them.
+
+Add or update the `kubernetes` section in your `app-config.yaml`:
+
+```yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_CLUSTER_URL} # e.g., https://api.my-cluster.com:6443
+          name: my-tekton-cluster
+          authProvider: 'serviceAccount'
+          skipTLSVerify: false
+          # Ensure you map the token you generated in Phase 1 here:
+          serviceAccountToken: ${K8S_TEKTON_TOKEN}
+          
+          # Optional: Define standard labels RHDH should use to match resources to entities
+          customResources:
+            # Tekton PipelineRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1' # Use 'v1beta1' if you are on an older Tekton version
+              plural: 'pipelineruns'
+            # Tekton TaskRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'taskruns'
+            # Tekton Pipelines
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'pipelines'
+```
+
+---
+
+### Phase 3: Catalog Entity Annotations and Labels
+
+For RHDH to correlate a specific `PipelineRun` in the cluster with a `Component` in the software catalog, the Kubernetes resources and the `catalog-info.yaml` must be properly labeled and annotated.
+
+**1. Update the `catalog-info.yaml`**
+Developers must add the Kubernetes annotation to their component definition so RHDH knows how to filter the cluster resources:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-node-service
+  annotations:
+    # Standard Kubernetes plugin annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+    # Optional: Scope the search to a specific namespace for performance
+    backstage.io/kubernetes-namespace: ""my-app-namespace""
+spec:
+  type: service
+  lifecycle: experimental
+  owner: team-alpha
+```
+
+**2. Label the Tekton PipelineRuns**
+When your CI/CD system creates the `PipelineRun`, it **must** include the matching Kubernetes label. Without this label, RHDH will not link the `PipelineRun` to the catalog entity.
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: my-node-service-run-
+  labels:
+    # This label MUST match the backstage.io/kubernetes-id annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+spec:
+  pipelineRef:
+    name: my-node-service-pipeline
+  # ...
+```
+
+*(Note: Depending on the specific Tekton plugin version configured in RHDH, you can alternatively use the label `app.kubernetes.io/part-of: ""my-node-service""`. The Backstage Kubernetes label selector looks for either by default).*
+
+### Summary of Validation
+Once these configurations are applied and RHDH is restarted:
+1. Navigate to your specific Component in the RHDH catalog.
+2. Click on the **CI/CD** or **Tekton** tab.
+3. RHDH will use the `K8S_TEKTON_TOKEN` to hit the cluster API, query the `tekton.dev/v1` resources filtered by the `backstage.io/kubernetes-id` label, and render the pipeline topology, status, and step logs.",0,0,,,,8366,1037,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 0.9999999999, ""reason"": ""Ragas context precision without reference: 1.00"", ""judge_input_tokens"": 4044, ""judge_output_tokens"": 69, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 0.9999999999, ""reason"": ""Ragas context precision without reference: 1.00"", ""judge_input_tokens"": 4322, ""judge_output_tokens"": 968, ""embedding_tokens"": 0}]",,"[""metadata: name: backstage read only rules: ... apiGroups: tekton.dev resources: pipelines pipelineruns taskruns verbs: get list ``` 2. To view the Tekton PipelineRuns list in the side panel and the latest PipelineRuns status in the Topology node decorator, add the following code to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelines' group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' plural: 'taskruns' ``` ### Viewing virtual machines 1. The OpenShift Virtualization operator is installed and configured on a Kubernetes cluster. .Procedure 2. Grant read access to the VirtualMachines resource in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: kubevirt.io resources: virtualmachines virtualmachineinstances verbs: get list ``` 3. To view the virtual machine nodes on the topology plugin, add the following code to the kubernetes.customResources property in the app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachines' group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachineinstances' ``` ### Enabling the source code editor To enable the source code editor, you must grant read access to the CheClusters resource in the ClusterRole as shown in the following example code: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: org.eclipse.che resources: checlusters verbs: get list ``` To use the source code editor, you must add the following configuration to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'org.eclipse.che' apiVersion: 'v2' plural: 'checlusters' ``` ## Managing labels and annotations for Topology plugins ### Linking to the source code editor or the source Add the following annotations to workload resources, such as Deployments to navigate to the Git repository of the associated application using the source code editor: ```yaml annotations: app.openshift.io/vcs uri: <GIT_REPO_URL> ``` Add the following annotation to navigate to a specific branch: ```yaml annotations: app.openshift.io/vcs ref: <GIT_REPO_BRANCH> ``` [NOTE] ---- If Red Hat OpenShift Dev Spaces is installed and configured and Git URL annotations are also added to the workload YAML file, then clicking on the edit code decorator redirects you to the Red Hat OpenShift Dev Spaces instance. ---- [NOTE] ---- When you deploy your application using the OCP Git import flows, then you do not need to add the labels as import flows do that. Otherwise, you need to add the labels manually to the workload YAML file. ---- You can also add the app.openshift.io/edit-link annotation with the edit URL that you want to access using the decorator. ### Entity annotation/label For RHDH to detect that an entity has Kubernetes components, add the following annotation to the catalog-info.yaml file of the entity: ```yaml annotations: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME>` ``` [NOTE] ---- When using the label selector, the mentioned labels must be present on the resource. ---- ### Namespace annotation To identify the Kubernetes resources using the defined namespace, add the backstage.io/kubernetes namespace annotation: ```yaml annotations: backstage.io/kubernetes namespace: <RESOURCE_NS> ``` The Red Hat OpenShift Dev Spaces instance is not accessible using the source code editor if the backstage.io/kubernetes-namespace annotation is added to the catalog-info.yaml file. To retrieve the instance URL, you require the CheCluster custom resource (CR). As the CheCluster CR is created in the openshift-devspaces namespace, the instance URL is not retrieved if the namespace annotation value is not openshift-devspaces. ### Label selector query annotation You can write your own custom label, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations: ```yaml annotations: backstage.io/kubernetes label selector: 'app=my app,component=front end' ``` If you have multiple entities while Red Hat Dev Spaces is configured and want multiple entities to support the edit code decorator that redirects to the Red Hat Dev Spaces instance, you can add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file for each entity. ```yaml annotations: backstage.io/kubernetes label selector: 'component in (<BACKSTAGE_ENTITY_NAME>,che)' ``` If you are using the previous label selector, you must add the following labels to your resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: component: che # add this label to your che cluster instance labels: component: <BACKSTAGE_ENTITY_NAME> # add this label to the other resources associated with your entity ``` You can also write your own custom query for the label selector with unique labels to differentiate your entities. However, you need to ensure that you add those labels to the resources associated with your entities including your CheCluster instance. ### Displaying icon in the node To display a runtime icon in the topology nodes, add the following label to workload resources, such as Deployments: ```yaml labels: app.openshift.io/runtime: <RUNTIME_NAME> ``` Alternatively, you can include the following label to display the runtime icon: ```yaml labels: app.kubernetes.io/name: <RUNTIME_NAME> ``` Supported values of <RUNTIME_NAME> include: django dotnet drupal go gopher golang grails jboss jruby js nginx nodejs openjdk perl phalcon php python quarkus rails redis rh spring boot rust java rh openjdk ruby spring spring boot [NOTE] ---- Other values result in icons not being rendered for the node. ---- ### App grouping To display workload resources such as deployments or pods in a visual group, add the following label: ```yaml labels: app.kubernetes.io/part of: <GROUP_NAME> ``` ### Node connector To display the workload resources such as deployments or pods with a visual connector, add the following annotation: ```yaml annotations: app.openshift.io/connects-to: '[{\""apiVersion\"": <RESOURCE_APIVERSION>,\""kind\"": <RESOURCE_KIND>,\""name\"": <RESOURCE_NAME>}]' ``` For more information about the labels and annotations, see Guidelines for labels and annotations for OpenShift applications. # Bulk importing in Red Hat Developer Hub [IMPORTANT] ---- These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process. For more information""]","To enable visibility for Tekton, you must first grant read access in the `ClusterRole` for the `tekton.dev` apiGroup, allowing `get` and `list` verbs for the `pipelines`, `pipelineruns`, and `taskruns` resources. Following that, to make the Tekton PipelineRuns list appear in the side panel and to show the latest PipelineRuns status in the Topology node decorator, you need to add the following configurations to the `kubernetes.customResources` property in your `app-config.yaml` file: `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelines'`, `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelineruns'`, and `group: 'tekton.dev', apiVersion: 'v1', plural: 'taskruns'`.",,,
+plugins-4,d3c9ce66-c3e4-402d-93ae-daed5b387ea6,custom:answer_correctness,"{""description"": ""Correctness vs expected answer using custom LLM evaluation""}",PASS,1.0,0.75,Max of 2 judges: 1.000,22.214,"As a platform engineer responsible for integrating CI/CD tooling, what are the precise configuration steps, including both RBAC rules and `app-config.yaml` modifications, that are necessary to enable the visibility of Tekton resources like PipelineRuns within the developer platform's user interface?","To integrate Tekton into Red Hat Developer Hub (RHDH) and surface resources like `PipelineRuns` in the UI, you need to configure the **Kubernetes backend** to fetch Tekton Custom Resource Definitions (CRDs). RHDH uses the Kubernetes API to securely pull this data, which requires explicit RBAC permissions on the cluster and specific configurations in your `app-config.yaml`.
+
+Here are the precise steps to achieve this.
+
+---
+
+### Phase 1: Kubernetes RBAC Configuration
+
+RHDH requires a `ServiceAccount` with read-only access to Tekton resources and Pod logs (essential for viewing pipeline step outputs).
+
+**1. Create the ServiceAccount, ClusterRole, and RoleBinding**
+Apply the following YAML to your Kubernetes/OpenShift cluster where Tekton is running:
+
+```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-tekton-viewer
+  namespace: rhdh-backend # Replace with the namespace where RHDH is deployed or your auth namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-tekton-viewer-role
+rules:
+  # Permissions for Tekton resources
+  - apiGroups: [""tekton.dev""]
+    resources: [""pipelines"", ""pipelineruns"", ""taskruns"", ""tasks""]
+    verbs: [""get"", ""list"", ""watch""]
+  # Permissions to view Pods and fetch logs for PipelineRun steps
+  - apiGroups: [""""]
+    resources: [""pods"", ""pods/log""]
+    verbs: [""get"", ""list"", ""watch""]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-tekton-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: rhdh-tekton-viewer
+    namespace: rhdh-backend # Must match the ServiceAccount namespace
+roleRef:
+  kind: ClusterRole
+  name: rhdh-tekton-viewer-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+**2. Extract the ServiceAccount Token**
+You will need a long-lived token for this `ServiceAccount` to authenticate RHDH against the cluster API. Extract it using:
+```bash
+kubectl create token rhdh-tekton-viewer -n rhdh-backend --duration=8760h
+```
+*(Note: Securely store this token as a secret/environment variable, e.g., `K8S_TEKTON_TOKEN`, for your `app-config.yaml`).*
+
+---
+
+### Phase 2: `app-config.yaml` Modifications
+
+The Tekton frontend plugin relies on the Backstage Kubernetes backend. You must configure the cluster connection and explicitly declare Tekton CRDs so the backend knows to scrape them.
+
+Add or update the `kubernetes` section in your `app-config.yaml`:
+
+```yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_CLUSTER_URL} # e.g., https://api.my-cluster.com:6443
+          name: my-tekton-cluster
+          authProvider: 'serviceAccount'
+          skipTLSVerify: false
+          # Ensure you map the token you generated in Phase 1 here:
+          serviceAccountToken: ${K8S_TEKTON_TOKEN}
+          
+          # Optional: Define standard labels RHDH should use to match resources to entities
+          customResources:
+            # Tekton PipelineRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1' # Use 'v1beta1' if you are on an older Tekton version
+              plural: 'pipelineruns'
+            # Tekton TaskRuns
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'taskruns'
+            # Tekton Pipelines
+            - group: 'tekton.dev'
+              apiVersion: 'v1'
+              plural: 'pipelines'
+```
+
+---
+
+### Phase 3: Catalog Entity Annotations and Labels
+
+For RHDH to correlate a specific `PipelineRun` in the cluster with a `Component` in the software catalog, the Kubernetes resources and the `catalog-info.yaml` must be properly labeled and annotated.
+
+**1. Update the `catalog-info.yaml`**
+Developers must add the Kubernetes annotation to their component definition so RHDH knows how to filter the cluster resources:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-node-service
+  annotations:
+    # Standard Kubernetes plugin annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+    # Optional: Scope the search to a specific namespace for performance
+    backstage.io/kubernetes-namespace: ""my-app-namespace""
+spec:
+  type: service
+  lifecycle: experimental
+  owner: team-alpha
+```
+
+**2. Label the Tekton PipelineRuns**
+When your CI/CD system creates the `PipelineRun`, it **must** include the matching Kubernetes label. Without this label, RHDH will not link the `PipelineRun` to the catalog entity.
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: my-node-service-run-
+  labels:
+    # This label MUST match the backstage.io/kubernetes-id annotation
+    backstage.io/kubernetes-id: ""my-node-service""
+spec:
+  pipelineRef:
+    name: my-node-service-pipeline
+  # ...
+```
+
+*(Note: Depending on the specific Tekton plugin version configured in RHDH, you can alternatively use the label `app.kubernetes.io/part-of: ""my-node-service""`. The Backstage Kubernetes label selector looks for either by default).*
+
+### Summary of Validation
+Once these configurations are applied and RHDH is restarted:
+1. Navigate to your specific Component in the RHDH catalog.
+2. Click on the **CI/CD** or **Tekton** tab.
+3. RHDH will use the `K8S_TEKTON_TOKEN` to hit the cluster API, query the `tekton.dev/v1` resources filtered by the `backstage.io/kubernetes-id` label, and render the pipeline topology, status, and step logs.",0,0,,,,3452,2167,0,"[{""judge_id"": ""judge_gpt_4o_mini"", ""score"": 1.0, ""reason"": ""Custom answer correctness: 1.00 - The response provides a comprehensive and accurate set of steps for integrating Tekton with the Red Hat Developer Hub (RHDH) to enable visibility of Tekton resources like `PipelineRuns`. It covers the necessary Kubernetes RBAC configuration, including the creation of a `ServiceAccount`, `ClusterRole`, and `ClusterRoleBinding`, which aligns with the expected response regarding granting read access to Tekton resources."", ""judge_input_tokens"": 1654, ""judge_output_tokens"": 267, ""embedding_tokens"": 0}, {""judge_id"": ""judge_gemini_2_5_pro"", ""score"": 1.0, ""reason"": ""Custom answer correctness: 1.00 - The provided response is exceptionally accurate, comprehensive, and practical. It not only covers all the points mentioned in the expected response but also includes critical details that are essential for a successful implementation, which the expected response omits."", ""judge_input_tokens"": 1798, ""judge_output_tokens"": 1900, ""embedding_tokens"": 0}]",,"[""metadata: name: backstage read only rules: ... apiGroups: tekton.dev resources: pipelines pipelineruns taskruns verbs: get list ``` 2. To view the Tekton PipelineRuns list in the side panel and the latest PipelineRuns status in the Topology node decorator, add the following code to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelines' group: 'tekton.dev' apiVersion: 'v1' plural: 'pipelineruns' group: 'tekton.dev' apiVersion: 'v1' plural: 'taskruns' ``` ### Viewing virtual machines 1. The OpenShift Virtualization operator is installed and configured on a Kubernetes cluster. .Procedure 2. Grant read access to the VirtualMachines resource in the ClusterRole: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: kubevirt.io resources: virtualmachines virtualmachineinstances verbs: get list ``` 3. To view the virtual machine nodes on the topology plugin, add the following code to the kubernetes.customResources property in the app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachines' group: 'kubevirt.io' apiVersion: 'v1' plural: 'virtualmachineinstances' ``` ### Enabling the source code editor To enable the source code editor, you must grant read access to the CheClusters resource in the ClusterRole as shown in the following example code: ```yaml ... apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: backstage read only rules: ... apiGroups: org.eclipse.che resources: checlusters verbs: get list ``` To use the source code editor, you must add the following configuration to the kubernetes.customResources property in your app-config.yaml file: ```yaml kubernetes: ... customResources: group: 'org.eclipse.che' apiVersion: 'v2' plural: 'checlusters' ``` ## Managing labels and annotations for Topology plugins ### Linking to the source code editor or the source Add the following annotations to workload resources, such as Deployments to navigate to the Git repository of the associated application using the source code editor: ```yaml annotations: app.openshift.io/vcs uri: <GIT_REPO_URL> ``` Add the following annotation to navigate to a specific branch: ```yaml annotations: app.openshift.io/vcs ref: <GIT_REPO_BRANCH> ``` [NOTE] ---- If Red Hat OpenShift Dev Spaces is installed and configured and Git URL annotations are also added to the workload YAML file, then clicking on the edit code decorator redirects you to the Red Hat OpenShift Dev Spaces instance. ---- [NOTE] ---- When you deploy your application using the OCP Git import flows, then you do not need to add the labels as import flows do that. Otherwise, you need to add the labels manually to the workload YAML file. ---- You can also add the app.openshift.io/edit-link annotation with the edit URL that you want to access using the decorator. ### Entity annotation/label For RHDH to detect that an entity has Kubernetes components, add the following annotation to the catalog-info.yaml file of the entity: ```yaml annotations: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME> ``` Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: backstage.io/kubernetes id: <BACKSTAGE_ENTITY_NAME>` ``` [NOTE] ---- When using the label selector, the mentioned labels must be present on the resource. ---- ### Namespace annotation To identify the Kubernetes resources using the defined namespace, add the backstage.io/kubernetes namespace annotation: ```yaml annotations: backstage.io/kubernetes namespace: <RESOURCE_NS> ``` The Red Hat OpenShift Dev Spaces instance is not accessible using the source code editor if the backstage.io/kubernetes-namespace annotation is added to the catalog-info.yaml file. To retrieve the instance URL, you require the CheCluster custom resource (CR). As the CheCluster CR is created in the openshift-devspaces namespace, the instance URL is not retrieved if the namespace annotation value is not openshift-devspaces. ### Label selector query annotation You can write your own custom label, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations: ```yaml annotations: backstage.io/kubernetes label selector: 'app=my app,component=front end' ``` If you have multiple entities while Red Hat Dev Spaces is configured and want multiple entities to support the edit code decorator that redirects to the Red Hat Dev Spaces instance, you can add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file for each entity. ```yaml annotations: backstage.io/kubernetes label selector: 'component in (<BACKSTAGE_ENTITY_NAME>,che)' ``` If you are using the previous label selector, you must add the following labels to your resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity: ```yaml labels: component: che # add this label to your che cluster instance labels: component: <BACKSTAGE_ENTITY_NAME> # add this label to the other resources associated with your entity ``` You can also write your own custom query for the label selector with unique labels to differentiate your entities. However, you need to ensure that you add those labels to the resources associated with your entities including your CheCluster instance. ### Displaying icon in the node To display a runtime icon in the topology nodes, add the following label to workload resources, such as Deployments: ```yaml labels: app.openshift.io/runtime: <RUNTIME_NAME> ``` Alternatively, you can include the following label to display the runtime icon: ```yaml labels: app.kubernetes.io/name: <RUNTIME_NAME> ``` Supported values of <RUNTIME_NAME> include: django dotnet drupal go gopher golang grails jboss jruby js nginx nodejs openjdk perl phalcon php python quarkus rails redis rh spring boot rust java rh openjdk ruby spring spring boot [NOTE] ---- Other values result in icons not being rendered for the node. ---- ### App grouping To display workload resources such as deployments or pods in a visual group, add the following label: ```yaml labels: app.kubernetes.io/part of: <GROUP_NAME> ``` ### Node connector To display the workload resources such as deployments or pods with a visual connector, add the following annotation: ```yaml annotations: app.openshift.io/connects-to: '[{\""apiVersion\"": <RESOURCE_APIVERSION>,\""kind\"": <RESOURCE_KIND>,\""name\"": <RESOURCE_NAME>}]' ``` For more information about the labels and annotations, see Guidelines for labels and annotations for OpenShift applications. # Bulk importing in Red Hat Developer Hub [IMPORTANT] ---- These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process. For more information""]","To enable visibility for Tekton, you must first grant read access in the `ClusterRole` for the `tekton.dev` apiGroup, allowing `get` and `list` verbs for the `pipelines`, `pipelineruns`, and `taskruns` resources. Following that, to make the Tekton PipelineRuns list appear in the side panel and to show the latest PipelineRuns status in the Topology node decorator, you need to add the following configurations to the `kubernetes.customResources` property in your `app-config.yaml` file: `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelines'`, `group: 'tekton.dev', apiVersion: 'v1', plural: 'pipelineruns'`, and `group: 'tekton.dev', apiVersion: 'v1', plural: 'taskruns'`.",,,

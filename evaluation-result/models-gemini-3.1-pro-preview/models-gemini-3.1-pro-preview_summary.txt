@@ -1,0 +1,143 @@
+LSC Evaluation Framework - Summary Report
+==================================================
+
+Generated: 2026-04-24 15:32:26
+Total Evaluations: 10
+
+Overall Statistics:
+--------------------
+Pass: 8 (80.0%)
+Fail: 2 (20.0%)
+Error: 0 (0.0%)
+Skipped: 0 (0.0%)
+
+Token Usage (Judge LLM):
+--------------------
+Input Tokens: 38,534
+Output Tokens: 25,402
+Total Tokens: 63,936
+
+Token Usage (Embeddings):
+--------------------
+Input Tokens: 0
+
+Token Usage (API Calls):
+--------------------
+Input Tokens: 0
+Output Tokens: 0
+Total Tokens: 0
+
+By Metric:
+---------
+custom:answer_correctness:
+  Pass: 1 (50.0%)
+  Fail: 1 (50.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.850
+    Median: 0.850
+    Min: 0.700, Max: 1.000
+    Std Dev: 0.212
+
+ragas:context_precision_without_reference:
+  Pass: 2 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 1.000
+    Median: 1.000
+    Min: 1.000, Max: 1.000
+    Std Dev: 0.000
+
+ragas:context_recall:
+  Pass: 2 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 1.000
+    Median: 1.000
+    Min: 1.000, Max: 1.000
+    Std Dev: 0.000
+
+ragas:context_relevance:
+  Pass: 2 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 1.000
+    Median: 1.000
+    Min: 1.000, Max: 1.000
+    Std Dev: 0.000
+
+ragas:faithfulness:
+  Pass: 1 (50.0%)
+  Fail: 1 (50.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.738
+    Median: 0.738
+    Min: 0.676, Max: 0.800
+    Std Dev: 0.088
+
+By Conversation:
+---------------
+plugins-4:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-3:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+By Tag:
+------
+eval:
+  Pass: 8 (80.0%)
+  Fail: 2 (20.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.918
+    Median: 1.000
+    Min: 0.676, Max: 1.000
+    Std Dev: 0.136
+
+Configuration Parameters:
+-------------------------
+
+Core:
+  Max Threads: 50
+  Fail On Invalid Data: True
+  Skip On Failure: False
+
+Llm Pool:
+  Defaults: {'cache_enabled': True, 'cache_dir': '.caches/llm_cache', 'timeout': 300, 'num_retries': 3, 'parameters': {'temperature': 0.0, 'max_completion_tokens': 16384}}
+  Models: {'judge_gpt_4o_mini': {'provider': 'openai', 'model': 'gpt-4o-mini', 'ssl_verify': None, 'ssl_cert_file': None, 'api_base': None, 'api_key_path': None, 'parameters': {'temperature': None, 'max_completion_tokens': None}, 'timeout': None}, 'judge_gemini_2_5_pro': {'provider': 'gemini', 'model': 'gemini-2.5-pro', 'ssl_verify': None, 'ssl_cert_file': None, 'api_base': None, 'api_key_path': None, 'parameters': {'temperature': None, 'max_completion_tokens': None}, 'timeout': None}}
+
+Judge Panel:
+  Judges: judge_gpt_4o_mini, judge_gemini_2_5_pro
+  Enabled Metrics: None
+  Aggregation Strategy: max
+
+Embedding:
+  Provider: openai
+  Model: text-embedding-3-small
+  Provider Kwargs: {}
+  Cache Enabled: True
+
+Api:
+  Enabled: False
+  Api Base: http://localhost:8080
+  Version: v1
+  Endpoint Type: streaming
+  Timeout: 300
+  Provider: openai
+  Model: gpt-4o-mini
+  No Tools: None
+  System Prompt: None
+  Extra Request Params: None
+  Cache Enabled: True
+  Mcp Headers: {'enabled': False, 'servers': {'filesystem-tools': {'env_var': 'API_KEY', 'header_name': None}}}
+  Num Retries: 3
+
