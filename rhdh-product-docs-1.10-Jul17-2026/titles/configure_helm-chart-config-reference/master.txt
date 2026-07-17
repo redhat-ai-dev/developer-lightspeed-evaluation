@@ -1,0 +1,134 @@
+# Helm Chart configuration reference
+
+Use Helm Chart values to configure and customize your RHDH deployment with Helm CLI.
+
+# Helm Chart configuration reference
+
+Use the overview of default Helm Chart values to configure and customize your RHDH deployment.
+
+The values are organized into five main categories, which cover the key namespaces that organize the chart&#8217;s hierarchical configuration structure:
+
+* Global
+* Orchestrator
+* Route
+* Test
+* Upstream
+
+## Display a complete list of Helm Chart values with Helm CLI
+
+Use the available options to configure Red Hat Developer Hub with Helm Charts: the Helm deployment method specific configuration files.
+
+1. Pull the released RHDH Helm Chart, including all its dependencies:
+
+```console
+$ helm pull redhat-developer-hub \
+  --repo https://charts.openshift.io \
+  --version 1.10.2 \
+  --untar
+```
+
+2. View default values:
+1. View default values of the RHDH Chart.
+
+```console
+$ helm show values redhat-developer-hub
+```
+
+2. View default values of the upstream Backstage Chart. The fields can be set under the upstream scope when deploying the RHDH Chart.
+
+```console
+$ helm show values redhat-developer-hub/charts/backstage
+```
+
+3. Optional: View default values of the upstream PostgreSQL Chart, which is a dependency of the upstream Backstage Chart.
+
+[IMPORTANT]
+----
+Using the local PostgreSQL database is not recommended for production, as you should be using your own external database. However, it allows for visibility into the local database. For more information, see Configuring an external PostgreSQL instance using the Helm Chart.
+----
+1. The fields can be set under the upstream.postgresql scope when deploying the RHDH Chart.
+
+```console
+$ helm show values redhat-developer-hub/charts/backstage/charts/postgresql
+```
+
+
+## Root namespace value
+
+Use the root namespace value to customize resource names.
+
+
+
+## Global namespace values
+
+Use the global namespace values to define cross-cutting configurations that affect multiple chart components.
+
+
+
+## Orchestrator namespace values
+
+Use orchestrator namespace values to configure the orchestrator subsystem.
+
+
+
+## Route namespace values
+
+Use route namespace values to configure OpenShift Container Platform route-specific settings.
+
+
+
+## Test namespace values
+
+Use test namespace values to configure parameters that run when tests are initiated with helm test to verify RHDH Helm release.
+
+
+
+## Upstream namespace values
+
+Use the upstream namespace values for configurations that are passed to the upstream Backstage Helm chart.
+
+
+[IMPORTANT]
+----
+Specific upstream namespace values are also used in the global configuration of RHDH.
+Changing these values in the upstream namespace can override the global configuration.
+----
+
+
+
+## Additional upstream Backstage Chart values
+
+Add the following Backstage Chart values to the upstream namespace
+to customize your RHDH configuration further.
+
+
+
+# Helm Chart Orchestrator infrastructure reference
+
+Use the overview of default Helm Chart values to configure and customize your Orchestrator infrastructure on OpenShift Container Platform.
+
+## Display a complete list of Orchestrator infrastructure values with Helm CLI
+
+Use the available options to configure Orchestrator infrastructure with Helm Chart: the Helm deployment method specific configuration files.
+
+1. Pull the released RHDH Orchestrator Infrastructure Helm Chart, including all its dependencies:
+
+```console
+helm pull redhat-developer-hub-orchestrator-infra
+  --repo https://charts.openshift.io
+  --version 1.10.2
+```
+
+2. Display the configurable infrastructure values from the chart:
+
+```console
+helm show values redhat-developer-hub-orchestrator-infra \
+  --repo https://charts.openshift.io \
+  --version 1.10.2
+```
+
+
+## Orchestrator infrastructure Helm Chart values
+
+Use these Helm Chart values to deploy the Orchestrator infrastructure on OpenShift Container Platform.
+

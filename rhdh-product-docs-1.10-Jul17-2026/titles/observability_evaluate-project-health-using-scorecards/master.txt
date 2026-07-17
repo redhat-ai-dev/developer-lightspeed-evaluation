@@ -1,0 +1,1568 @@
+# Evaluate project health using Scorecards
+
+Visualize the health, security posture, and compliance of your software components by centrally monitoring KPIs collected from third-party systems like GitHub and Jira.
+
+# Component health and compliance monitoring using Scorecards
+
+
+[IMPORTANT]
+----
+This section describes Developer Preview features in the Scorecard plugin. Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+Use the Scorecard plugin to achieve the following goals:
+
+* Identify and prioritize risks: Use unified health data to make faster remediation decisions.
+* Maintain security standards: Automatically surface compliance gaps to enforce best practices.
+* Streamline workflows: Access all metrics in RHDH to reduce development overhead.
+* Standardize service quality: Define and measure consistent health criteria across the organization.
+
+![Scorecard plugin sample view showing component health metrics]
+
+# Available scorecard metric providers and metric IDs
+
+The Scorecard plugin gathers data from third-party systems through metric providers. Use the following table to identify which metrics are available for each supported provider.
+
+The following metric providers are supported:
+
+
+
+For information about customizing metric thresholds, see Scorecard metric thresholds.
+
+# Set up Scorecards to monitor your project health
+
+You can set up and configure Scorecards so you can track key metrics and quickly understand the health of your projects in Red Hat Developer Hub.
+
+## Enable Scorecards
+
+To monitor component health and quality in RHDH, you must enable the Scorecard plugin in your configuration.
+
+* You have added a custom Developer Hub application configuration.
+
+* Add the following configuration in your RHDH dynamic-plugin-config.yaml file:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard:bs_1.49.4__2.7.7
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-scorecard:
+            entityTabs:
+              - path: '/scorecard'
+                title: Scorecard
+                mountPoint: entity.page.scorecard
+            mountPoints:
+              - mountPoint: entity.page.scorecard/cards
+                importName: EntityScorecardContent
+                config:
+                  layout:
+                    gridColumn: 1 / -1
+                  if:
+                    allOf:
+                      - isKind: component
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard-backend:<tag>
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+## Configure RBAC for Scorecards by using the RBAC CSV file
+
+You can grant read access to Scorecard metrics by adding permission policies to your RBAC CSV file.
+
+* You have enabled RBAC and assigned a policy administrator role.
+* You have added scorecard to the list of authorized plugins under your permission.rbac.pluginsWithPermission configuration.
+
+1. Add the following policy to your CSV file to allow users to view metrics:
+
+```yaml
+g, user:default/<YOUR_USERNAME>, role:default/scorecard-viewer
+p, role:default/scorecard-viewer, scorecard.metric.read, read, allow
+p, role:default/scorecard-viewer, catalog.entity.read, read, allow
+```
+
+
+See Permission policies reference.
+2. Optional: Restrict access to specific metrics by defining a conditional policy in the rbac-conditional-policies.yaml file as described in Defining conditional policies:
+
+```yaml
+result: CONDITIONAL
+roleEntityRef: "role:default/scorecard-viewer"
+pluginId: scorecard
+resourceType: scorecard-metric
+permissionMapping:
+  - read
+conditions:
+  rule: HAS_METRIC_ID
+  resourceType: scorecard-metric
+  params:
+    metricIds: [<your_metric_id>]
+```
+
+
+where:
+metricIds:: Enter the metric ID for user access, such as github.open_prs.
+
+This policy allows users to read only the specified metrics and restricts access to all other metrics.
+
+* Verify that the user can view Scorecard metrics in RHDH.
+
+## Configure RBAC for Scorecards by using the Web UI
+
+You can grant read access to Scorecard metrics by using the RBAC Web UI in RHDH.
+
+* You have added a custom Developer Hub application configuration.
+* You have added scorecard to the list of authorized plugins under your permission.rbac.pluginsWithPermission configuration.
+
+1. In the Red Hat Developer Hub navigation menu, go to Administration > RBAC.
+2. Select or create the Role for Scorecard access.
+3. In the Add permission policies section, select Scorecard from the plugins list.
+4. Expand the Scorecard entry, select policy with the following details, and click Next:
+* Name: scorecard.metric.read
+* Permission: read
+![The RBAC UI showing the scorecard.metric.read permission selected for a role]
+5. Optional: Restrict access to specific metrics:
+1. In the Add permission policies step, select the following:
+* Name: scorecard.metrics.read
+* Permission: Read
+2. Click Use advanced customized permissions to allow access to specific parts of the selected resource type under Actions.
+3. Select the HAS_METRIC_ID rule and specify the plugin IDs, using commas to separate multiple IDs.
+
+* Verify that the user can view Scorecard metrics in RHDH.
+
+# Install and configure Scorecards to view metrics
+
+You can install and configure GitHub, Jira, and OpenSSF Scorecards to display metrics and visual health status for software components in the RHDH catalog.
+
+## Integrate GitHub health metrics using Scorecards
+
+You can configure the GitHub Scorecard plugin to display repository metrics in your RHDH catalog. This integration allows you to monitor component health and security risks directly from Red Hat Developer Hub.
+
+You can grant RHDH access to the GitHub API by using a GitHub App or a GitHub token.
+
+
+[IMPORTANT]
+----
+For long-lived integrations or organizational access, you must use a GitHub App.
+----
+
+* You have installed your RHDH instance.
+* You have installed the Scorecard images.
+* Optional: If you choose the GitHub App option, you must have permissions in GitHub to create and manage a GitHub App.
+* You have added a custom Developer Hub application configuration.
+
+1. Grant GitHub API access: Create one of the following authentication methods:
+* Configure using a GitHub App.
+1. Create a GitHub App with the required permissions (Read-only for Contents to allow reading repositories).
+
+[NOTE]
+----
+You must install the GitHub App on the organization (or user account) that owns repositories you want access to, granting it the necessary repository access permissions.
+----
+1. In the General > Clients secrets section, click Generate a new client secret.
+2. In the General > Private keys section, click Generate a private key.
+3. In the Install App tab, choose an account to install your GitHub App on.
+4. Record the App ID, Client ID, Client Secret, and Private key values.
+2. Add secrets to RHDH by adding the following key/value pairs to your
+RHDH secrets. You can use these secrets in the RHDH configuration files by using the corresponding environment variable name for each secret.
+* GITHUB_INTEGRATION_APP_ID:: The saved App ID.
+* GITHUB_INTEGRATION_CLIENT_ID:: The saved Client ID.
+* GITHUB_INTEGRATION_CLIENT_SECRET:: The saved Client Secret.
+* GITHUB_INTEGRATION_HOST_DOMAIN:: The GitHub host domain: github.com.
+* GITHUB_INTEGRATION_ORGANIZATION:: Your GitHub organization name, such as <your_github_organization_name>.
+* GITHUB_INTEGRATION_PRIVATE_KEY_FILE:: The saved Private key content.
+3. Configure the GitHub integration in your RHDH app-config.yaml file by adding the authentication details to the integrations.github section:
+
+```yaml
+integrations:
+  github:
+    - host: ${GITHUB_INTEGRATION_HOST_DOMAIN}
+      apps:
+        - appId: ${GITHUB_INTEGRATION_APP_ID}
+          clientId: ${GITHUB_INTEGRATION_CLIENT_ID}
+          clientSecret: ${GITHUB_INTEGRATION_CLIENT_SECRET}
+          privateKey: |
+            ${GITHUB_INTEGRATION_PRIVATE_KEY_FILE}
+```
+
+* Configure using a GitHub token.
+1. Create a GitHub token with the following permissions:
+* Classic Personal Access Token (PAT): Select the repo scope for read/write access to private repositories.
+* Fine-Grained Personal Access Token (PAT):
+* Choose the specific repositories that RHDH must access.
+* Grant the token a Read permission for Contents.
+2. Add the token to RHDH secrets by adding the following key/value pair to your RHDH secrets.
+
+where:
+GITHUB_TOKEN:: The generated GitHub token.
+3. Configure the GitHub integration in your RHDH app-config.yaml file by adding the authentication details to the integrations.github section:
+
+```yaml
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+```
+
+2. Enable the GitHub Scorecard plugin: Add the GitHub Scorecard module to your RHDH dynamic-plugins-config.yaml file:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard-backend-module-github:bs_1.49.4__2.7.7
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+3. Find your Backstage version in the RHDH release notes preface.
+4. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+5. Annotate catalog entities: Link a component to the GitHub data source by editing the catalog-info.yaml file for your RHDH entity and adding the required annotations as shown in the following code:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-service
+  annotations:
+    # Required: GitHub project slug in format "owner/repository"
+    github.com/project-slug: myorg/my-service
+    # Required: Entity source location
+    backstage.io/source-location: url:https://github.com/myorg/my-service
+spec:
+  type: service
+  lifecycle: production
+  owner: _<your_team_name>_
+```
+
+
+where:
+annotations:github.com/project-slug:: The GitHub repository format, for example, owner/repository.
+annotations:backstage.io/source-location:: The entity source location format, for example, url:https://github.com/owner/repository.
+spec:owner:: Your team name.
+
+[NOTE]
+----
+You must add the team entity to the Catalog to ensure the provided permissions are applicable.
+----
+6. Ingest the catalog entity: Add the location of your catalog-info.yaml to the catalog.locations section in your RHDH app-config.yaml file:
+
+```yaml
+catalog:
+  locations:
+    - type: url
+      target: https://github.com/<owner>/<repository>/catalog-info.yaml
+```
+
+7. Optional: Customize thresholds:  Define custom roles for the GitHub Open Pull Requests (github.open_prs) metric in your RHDH app-config.yaml file:
+
+```yaml
+scorecard:
+  plugins:
+    github:
+      open_prs:
+        thresholds:
+          rules:
+            - key: success
+              expression: '<10'
+            - key: warning
+              expression: '10-50'
+            - key: error
+              expression: '>50'
+```
+
+
+where:
+scorecard:plugins:github:open_prs:thresholds:: Lists the default threshold values for the GitHub open PRs metric.
+
+
+[NOTE]
+----
+GitHub metrics use the following default thresholds for the GitHub Open Pull Requests (github.open_prs) metric:
+* Error: More than 50 open pull requests.
+* Warning: Between 10 and 50 open pull requests.
+* Success: Fewer than 10 open pull requests.
+You can customize these thresholds in your RHDH app-config.yaml file. For more information, see Scorecard metric thresholds.
+----
+
+## Integrate Jira health metrics using Scorecards
+
+You can configure the Jira Scorecard plugin to display project tracking and delivery velocity data in your RHDH instance. This integration centralizes development status and facilitates the evaluation of component readiness.
+
+The plugin supports Jira Cloud (API v3) and Jira Data Center (API v2).
+
+* You must have administrator privileges for Jira and RHDH.
+* You have installed your RHDH instance.
+* You have installed the Scorecard images.
+* You have added a custom Developer Hub application configuration.
+
+1. Generate a Jira configuration token using one of the following methods, depending on your Jira product:
+* Jira Cloud: Create a personal token. You must create a Base64-encoded string using the following plain text format: your-atlassian-email:your-jira-api-token.
+
+```bash
+$ echo -n 'your-atlassian-email:your-jira-api-token' | base64
+```
+
+* Jira data center: Create a Personal Access Token (PAT) in your Jira data center account.
+2. Add Jira secrets: Define the following key/value pairs in your RHDH secrets:
+JIRA_TOKEN:: Enter your generated Jira token.
+JIRA_BASE_URL:: Enter your Jira base URL.
+3. Configure the plugin: In your RHDH dynamic-plugins-config.yaml file, enable the plugin using either a direct setup or a proxy setup.
+
+[NOTE]
+----
+You must use the proxy setup to ensure configuration compatibility if you also use the Roadie Jira Frontend Plugin.
+----
+* Use a direct setup:
+1. Add the following code to your RHDH dynamic-plugins-config.yaml file:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard-backend-module-jira:bs_1.49.4__2.7.7
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+4. Find your Backstage version in the RHDH release notes preface.
+5. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+1. In your RHDH app-config.yaml file, add the following direct setup settings:
+
+```yaml
+jira:
+  baseUrl: ${JIRA_BASE_URL}
+  token: ${JIRA_TOKEN}
+  product: _<jira_product>_
+```
+
+
+where:
+baseUrl:: The base URL of your Jira instance, configured under ${JIRA_BASE_URL} in your RHDH secrets.
+token:: The Jira token (Base64 string for Cloud, PAT for Data Center), configured under ${JIRA_TOKEN} in your RHDH secrets.
+product:: Enter the supported product: cloud or datacenter.
+* Use a proxy setup:
+2. In your RHDH dynamic-plugins-config.yaml file, add the following code:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard-backend-module-jira:1.49.4__2.7.7
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+6. Find your Backstage version in the RHDH release notes preface.
+7. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+1. In your RHDH app-config.yaml file, add the following proxy settings:
+
+```yaml
+proxy:
+  endpoints:
+    '/jira/api':
+      target: ${JIRA_BASE_URL}
+      headers:
+        Accept: 'application/json'
+        Content-Type: 'application/json'
+        X-Atlassian-Token: 'no-check'
+        Authorization: ${JIRA_TOKEN} # Must be configured in your environment
+jira:
+  proxyPath: /jira/api
+  product: cloud # Change to 'datacenter' if using Jira Datacenter
+```
+
+
+where:
+target:: The base URL of your Jira instance, configured under ${JIRA_BASE_URL} in your RHDH secrets.
+Authorization:: The Jira token, configured under ${JIRA_TOKEN} in your RHDH secrets. Set the token value as one of the following values:
+* For Cloud: Basic YourCreatedCloudToken
+* For Data Center: Bearer YourJiraToken
+8. Annotate catalog entities: Add the Jira project key to the metadata.annotations section of the catalog-info.yaml file for your component:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-service
+  annotations:
+    jira/project-key: PROJECT
+    jira/component: Component
+    jira/label: UI
+    jira/team: 9d3ea319-fb5b-4621-9dab-05fe502283e
+    jira/custom-filter: 'reporter = "abc@xyz.com" AND resolution is not EMPTY'
+spec:
+  type: website
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  providesApis: [example-grpc-api]
+```
+
+
+where:
+jira/project-key:: Required: Enter the Jira project key.
+jira/component:: Optional: Enter the Jira component name.
+jira/label:: Optional: Enter the Jira label.
+jira/team:: Optional: Enter the Jira team ID (not the team title).
+jira/custom-filter:: Optional: Enter a custom Jira Query Language (JQL) filter.
+9. Ingest the catalog entity: Add the location of your catalog-info.yaml to the catalog.locations section in the RHDH app-config.yaml file:
+
+```yaml
+catalog:
+  locations:
+    - type: url
+      target: https://github.com/<owner>/<repository>/catalog-info.yaml
+```
+
+10. Optional: Define metric thresholds and filters: To customize health criteria or filter issues, add the Jira Open Issues metric thresholds to your RHDH app-config.yaml file:
+
+```yaml
+scorecard:
+  plugins:
+    jira:
+      open_issues:
+        thresholds:
+          rules:
+            - key: success
+              expression: '<=50'
+            - key: warning
+              expression: '>50'
+            - key: error
+              expression: '>100'
+```
+
+
+where:
+scorecard:plugins:jira:open_issues:thresholds:: Lists the default threshold values for the Jira Open Issues metric.
+11. Optional: Define global or custom mandatory filters that entities can override by adding the following code to your RHDH app-config.yaml file:
+
+```yaml
+scorecard:
+  plugins:
+    jira:
+      open_issues:
+        options:
+          mandatoryFilter: Type = Task AND Resolution = Unresolved
+          customFilter: priority in ("Critical", "Blocker")
+```
+
+
+where:
+mandatoryFilter:: Optional: Replaces the default filter (type = Bug and resolution = Unresolved).
+customFilter:: Optional: Specifies a global custom filter. The entity annotation jira/custom-filter overrides this value.
+
+
+[NOTE]
+----
+Jira metrics use the following default thresholds for the Jira Open Issues (jira.open_issues) metric:
+* Error: More than 100 open issues.
+* Warning: More than 50 open issues.
+* Success: 50 or fewer open issues.
+You can customize these thresholds in your RHDH app-config.yaml file. For more information, see Scorecard metric thresholds.
+----
+
+## Integrate OpenSSF security metrics by using Scorecards
+
+
+[IMPORTANT]
+----
+This section describes Developer Preview features in the Scorecard plugin. Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+You can configure the OpenSSF Scorecard module to display security and compliance metrics from the OpenSSF Scorecard project in your RHDH catalog.
+
+By default, the module fetches data from the public OpenSSF Scorecard API, which requires no authentication and supports public GitHub repositories. Alternatively, the annotation can point to any HTTPS endpoint that serves OpenSSF Scorecard JSON data, such as a self-hosted instance or a static file.
+
+* You have installed your RHDH instance.
+* You have set up the Scorecard plugin.
+* You have added a custom Developer Hub application configuration.
+* The target repositories are publicly accessible on GitHub, or you have an alternative HTTPS endpoint that serves OpenSSF Scorecard JSON data.
+
+1. Enable the OpenSSF Scorecard module: Add the following configuration to your RHDH dynamic-plugins-config.yaml file:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard-backend-module-openssf:bs_1.49.4__0.2.11
+    disabled: false
+```
+
+2. Annotate catalog entities: Link a component to the OpenSSF Scorecard data source by editing the catalog-info.yaml file for your RHDH entity and adding the required annotation as shown in the following code:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-service
+  annotations:
+    openssf/scorecard-location: https://api.securityscorecards.dev/projects/github.com/_<owner>_/_<repository>_
+spec:
+  type: service
+  lifecycle: production
+  owner: _<your_team_name>_
+```
+
+
+where:
+annotations:openssf/scorecard-location:: Specifies the full URL to the OpenSSF Scorecard API endpoint for the repository. The URL must start with https://.
+spec:owner:: Specifies your team name.
+
+[NOTE]
+----
+For organizations running a self-hosted OpenSSF Scorecard instance, replace api.securityscorecards.dev with the URL of your instance.
+----
+3. Ingest the catalog entity: Add the location of your catalog-info.yaml to the catalog.locations section in your RHDH app-config.yaml file:
+
+```yaml
+catalog:
+  locations:
+    - type: url
+      target: https://github.com/<owner>/<repository>/catalog-info.yaml
+```
+
+
+
+[NOTE]
+----
+OpenSSF metrics use the following default thresholds:
+1. Error: Score below 2.
+2. Warning: Score between 2 and 7.
+3. Success: Score above 7.
+You can customize these thresholds in your RHDH app-config.yaml file. For more information, see Scorecard metric thresholds.
+----
+
+## Configure file-level checks to verify repositories contain required compliance documentation
+
+
+[IMPORTANT]
+----
+This section describes Developer Preview features in the Scorecard plugin. Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+You can configure the Scorecard filecheck module to verify that repositories contain required files such as LICENSE, CODEOWNERS, CONTRIBUTING.md, or any file that you have configured.
+Each configured file generates a boolean metric that reports whether the file is present or missing.
+
+* You have installed your RHDH instance.
+* You have set up the Scorecard plugin.
+* You have added a custom Developer Hub application configuration.
+* Your catalog entities have the backstage.io/source-location annotation set. This annotation is usually added automatically during catalog ingestion.
+
+1. Enable the filecheck module: Add the following configuration to your RHDH dynamic-plugins-config.yaml file:
+
+```yaml
+plugins:
+  - package: package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard-backend-module-filecheck:bs_1.49.4__0.1.8
+    disabled: false
+```
+
+2. Configure the files to check: Define which files to verify in your RHDH app-config.yaml file:
+
+```yaml
+scorecard:
+  plugins:
+    filecheck:
+      files:
+        license: LICENSE
+        codeowners: CODEOWNERS
+        contributing: CONTRIBUTING.md
+        readme: README.md
+```
+
+
+where:
+scorecard:plugins:filecheck:files:: A map of file checks. Each key becomes a metric ID suffix (for example, license produces the filecheck.license metric) and each value is the relative file path to check within the repository.
+
+[IMPORTANT]
+----
+File paths must be relative. Do not use a leading /, ./, or ../ prefix in the path. When no files are configured, no metrics are registered and the module is inactive.
+----
+3. Optional: Customize the collection schedule: By default, the filecheck module collects metrics every hour. To override the schedule, add the following configuration to your RHDH app-config.yaml file:
+
+```yaml
+scorecard:
+  plugins:
+    filecheck:
+      schedule:
+        frequency:
+          cron: '0 6 * * *'
+        timeout:
+          minutes: 5
+        initialDelay:
+          seconds: 5
+```
+
+
+[NOTE]
+----
+All configured file checks share one schedule. The module fetches each entity's repository tree once per run and checks all configured paths in that single request.
+----
+4. Verify the entity annotation: Confirm that your catalog entities have the backstage.io/source-location annotation set:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-service
+  annotations:
+    backstage.io/source-location: url:https://github.com/myorg/my-service
+spec:
+  type: service
+  lifecycle: production
+  owner: _<your_team_name>_
+```
+
+
+where:
+annotations:backstage.io/source-location:: The entity source location. The filecheck module uses this annotation to resolve the source repository and read its file tree.
+spec:owner:: Your team name.
+
+[NOTE]
+----
+This annotation is usually added automatically during catalog ingestion. If your entities are already registered in the catalog, this annotation is likely already present.
+----
+
+
+[NOTE]
+----
+Filecheck metrics use the following default thresholds:
+1. exist: File is present (success).
+2. missing: File is absent (error).
+You can customize these thresholds in your RHDH app-config.yaml file. For more information, see Scorecard metric thresholds.
+----
+
+## Disable specific scorecard metrics per entity
+
+You can disable specific scorecard metrics for an individual catalog entity by adding an annotation to its catalog-info.yaml file. This applies to metrics from any provider, including GitHub, Jira, and OpenSSF. Disabled metrics are not calculated.
+
+* You have installed your RHDH instance.
+* You have set up the Scorecard plugin.
+
+* Add the scorecard.io/disabled-metrics annotation to the catalog-info.yaml file for your RHDH entity:
+
+```yaml
+metadata:
+  annotations:
+    scorecard.io/disabled-metrics: openssf.maintained,filecheck.readme,filecheck.license
+```
+
+
+where:
+scorecard.io/disabled-metrics:: Enter a comma-separated list of metric IDs to disable for this entity. You can use IDs from any provider. For available values, see Available scorecard metric providers and metric IDs.
+
+* Available scorecard metric providers and metric IDs
+
+## Disable scorecard metrics globally
+
+You can disable specific scorecard metrics globally across all catalog entities, and control whether entity owners can disable additional metrics by using annotations.
+
+* You have installed your RHDH instance.
+* You have set up the Scorecard plugin.
+* You have added a custom Developer Hub application configuration.
+
+* Add the following configuration to your RHDH app-config.yaml file:
+
+```yaml
+scorecard:
+  disabledMetrics:
+    - openssf.packaging
+  entityAnnotations:
+    disabledMetrics:
+      enabled: true
+      except:
+        - openssf.maintained
+```
+
+
+where:
+disabledMetrics:: Enter a list of metric IDs to disable globally. Metrics in this list are always skipped and cannot be overridden by entity annotations. For available values, see Available scorecard metric providers and metric IDs.
+entityAnnotations.disabledMetrics.enabled:: Enter true to allow entity owners to disable metrics by using the scorecard.io/disabled-metrics annotation. Enter false to prevent entity owners from disabling metrics. Defaults to true.
+entityAnnotations.disabledMetrics.except:: Enter a list of metric IDs that entity owners cannot disable, even when enabled is true. Use this to ensure critical metrics always run.
+
+* Disable specific scorecard metrics per entity
+* Available scorecard metric providers and metric IDs
+
+# Scorecard metric thresholds
+
+You can configure thresholds to turn raw metrics into meaningful health indicators, such as Success, Warning, or Error, helping you identify healthy components and detect issues early.
+
+## Scorecard metric threshold categorization rules
+
+A threshold defines conditions or expressions to assign metric values to specific visual categories.
+
+To categorize metric values accurately, you must follow the following evaluation rules:
+
+* Sequential evaluation: The system processes threshold rules in the order you define them and applies only the first matching rule.
+* Restrictive ordering: You must sequence rules from the most restrictive range to the least restrictive range to verify that the system assigns categories correctly.
+* Supported categories: Use only the success, warning, and error keys to define thresholds.
+
+## Supported Scorecard threshold expression syntax
+
+Metric threshold expressions use mathematical and logical operators to evaluate data. Use the following operators to define health criteria based on the metric data type.
+
+
+
+## Scorecard metric threshold precedence
+
+Threshold rules follow a specific order of precedence. Higher-priority configurations override lower-priority settings, allowing you to define global defaults with entity-specific exceptions.
+
+
+
+## Standardize Scorecard metric thresholds across components
+
+You can define global thresholds in your RHDH app-config.yaml file to standardize health indicators across all components. Global configurations replace the default thresholds provided by a metric source.
+
+If you omit a threshold category, such as success, the Scorecard plugin does not assign that category to the metric.
+
+The following example defines thresholds for the jira.open_issues metric. These settings apply to all components using this metric unless an entity annotation overrides them.
+
+
+```yaml
+scorecard:
+  plugins:
+    jira:
+      open_issues:
+        thresholds:
+          rules:
+            - key: success
+              expression: '<10'    # fewer than 10 open issues
+            - key: warning
+              expression: '10-50'    # Between 10 and 50 open issues
+            - key: error
+              expression: '>50'      # More than 50 open issues
+```
+
+
+## Override rules to configure entity-specific thresholds in Scorecards
+
+Use annotations in the catalog-info.yaml file of a component to override global threshold rules. These annotations merge with and take precedence over the global rules defined in your RHDH app-config.yaml file.
+
+### Annotation structure
+
+The annotation key must use the following format:
+scorecard.io/{providerId}.thresholds.rules.{thresholdKey}: '{expression}'
+
+
+
+### Example: Override global Jira thresholds
+
+In the following example, the component overrides the warning and error rules for the jira.open_issues metric. The success rule remains unchanged from the global configuration.
+
+
+```yaml
+# catalog-info.yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: critical-production-service
+  annotations:
+    # Changes global 'warning' from '>50' to '10-15'
+    scorecard.io/jira.open_issues.thresholds.rules.warning: '10-15'
+    # Changes global 'error' from '>100' to '>15'
+    scorecard.io/jira.open_issues.thresholds.rules.error: '>15'
+spec:
+  type: service
+```
+
+
+## Verify logical flow in Scorecard threshold rules
+
+To ensure Scorecard assigns the correct health status, order rules carefully, because the evaluation stops at the first matching rule.
+
+Evaluation order for rules:: To ensure the system evaluates all values correctly, sequence rules from the most strict (smallest range) value to the least strict (largest range). If rules are ordered incorrectly, a broad rule can prevent the system from reaching stricter rules.
+Problematic rule order example:: If rules are ordered incorrectly, a less restrictive rule can prevent stricter rules from being evaluated:
+1. warning: <50: Any value less than 50 triggers the warning rule and stops evaluation.
+2. success: <10: This rule is not evaluated because all values less than 10 have already matched the preceding warning rule.
+Correct ordering example:: The following example demonstrates the correct sequence for successes, warnings, and errors:
+
+
+```yaml
+rules:
+  - key: success
+    expression: '<10'     # Most restrictive: Only values below 10
+  - key: warning
+    expression: '10-50'   # Values between 10 and 50
+  - key: error
+    expression: '>50'     # Least restrictive: All values above 50
+```
+
+
+## Configure custom severity levels and colors for Scorecard
+
+Customizing severity thresholds and color mappings in your Scorecard configuration allows you to visualize platform metrics using your organization&#8217;s custom operational terminology.
+
+
+[NOTE]
+----
+Each custom severity threshold key requires both a corresponding icon configuration value and a color parameter configuration value. The scorecard plugin validates the YAML configuration files during application startup. Omitting either property or providing an invalid value causes an initialization failure, and the Scorecard plugin fails to function.
+----
+
+* You have administrative access to the Red Hat Developer Hub configuration files.
+* You have added a custom application configuration file to your Red Hat Developer Hub deployment workspace.
+* You have installed Scorecard backend and frontend plugins, and at least one Scorecard plugin module.
+
+1. Open the RHDH app-config.yaml file.
+2. Navigate to the scorecard.plugins backend threshold definition block.
+3. Define your custom severity threshold keys by adding a structured rule entry containing your custom key string, your boundary expression, your preferred color parameter format, and a supported icon string variable.
+
+```yaml
+scorecard:
+  plugins:
+    myDatasource:
+      myMetric:
+        thresholds:
+          rules:
+            - key: ideal
+              expression: '<10'
+              color: '#5CE65C'
+              icon: star
+            - key: warning
+              expression: '10-50'
+              color: 'rgb(233, 213, 2)'
+              icon: monitor
+            - key: critical
+              expression: '>50'
+              color: error.main
+              icon: scorecardErrorStatusIcon
+```
+
+
+where:
+myDatasource:: represents your specific scorecard data source, such as jira
+myMetric:: represents the metric identifier, such as open_issues
+4. Save the changes to the configuration file.
+5. Restart your Red Hat Developer Hub instance to apply the new threshold rules.
+
+* Open the Red Hat Developer Hub UI, navigate to the Scorecard component, and verify that the custom severity levels display with the colors and icons you specified.
+
+* Adding a custom application configuration file to Red Hat OpenShift Container Platform
+* Enabling Scorecards
+* Installing and configuring Scorecards to view metrics
+
+## Scorecard color and icon configuration formats
+
+Learn the supported color string formats and syntax rules required to map custom severity threshold keys in the configuration parser.
+
+### Threshold color mapping values
+
+
+
+
+[NOTE]
+----
+The default threshold rules use the built-in theme palette references: success.main for success states, warning.main for warning states, and error.main for error states. You can use these standard theme indicators for custom severity levels if desired.
+----
+
+### Supported threshold icon configuration formats
+
+To determine what graphic displays in the metrics matrix block, the Scorecard plugin uses standard frontend mapping components, allowing you to specify icons using any of the following parameters.
+
+
+[NOTE]
+----
+When using Material Design strings, use only icons from the internal icon catalog, such as star or monitor. Standard upstream values that are not added, such as check, will not appear in the user interface. You can use default icons or extend the icon set with dynamic plugins.
+----
+
+### Threshold icon component options
+
+
+
+
+[NOTE]
+----
+The default threshold rules use pre-configured icons:
+ scorecardSuccessStatusIcon for success rule matches,
+ scorecardWarningStatusIcon for warning rule matches, and
+ scorecardErrorStatusIcon for error rule matches. You can use these pre-configured icons for custom severity levels if desired.
+----
+
+# Monitor component health and readiness with Scorecard metrics
+
+You can view metrics to evaluate the health and security of your software components directly in the RHDH catalog.
+
+* You have installed your RHDH instance.
+* You have configured the GitHub or Jira Scorecard (or both) plugin.
+* If RBAC is enabled, you have a role with the following permission: scorecard.metric.read.
+
+1. In your RHDH navigation menu, go to Catalog.
+2. Select the software component (catalog entity) that has Scorecard metrics configured.
+3. On the component Service page, click the Scorecard tab.
+4. Select a metric tile to view detailed data.
+
+# Monitor collective health across components
+
+As an administrator, you can use the Scorecard plugin to view the collective technical health across multiple owned applications or components. This consolidated view helps you identify high-level health trends and risks across complex projects.
+
+## Monitor portfolio health with aggregated KPIs
+
+Use aggregated Key Performance Indicators (KPIs) to identify high-level health trends and technical risks across your portfolio. By consolidating metrics from multiple entities in the Software Catalog, you can assess the health of your entire team from a single dashboard.
+
+To maintain RHDH performance, the Scorecard plugin fetches data from external sources on schedule and saves them to a database. Although the backend calculates KPIs in real time using this stored data, the synchronization of metrics for each entity occurs hourly by default. You have the option to customize the refresh schedule to balance your requirement for current data with the system processing load.
+
+The aggregation endpoint (/metrics/:metricId/catalog/aggregations) summarizes metrics based on entity ownership. By default, the plugin only considers direct ownership, which includes the following entities:
+
+* Entities you own directly.
+* Entities owned by groups where you are a direct member.
+
+The plug-in does not traverse nested group hierarchies unless you enable transitive parent group ownership.
+
+## Aggregated KPIs in the scorecard
+
+Monitor the technical health and regulatory compliance of your infrastructure by using aggregated Key Performance Indicators (KPIs). These KPIs summarize complex data from multiple entities into a high-level overview, allowing you to identify system risks quickly.
+
+Aggregated KPIs allow engineering and product managers to monitor the collective status of all entities the viewer owns in the Software Catalog. Instead of manually inspecting individual service scorecards, managers can use these metrics to identify broad trends or risks within their portfolio.
+
+Aggregated metrics rely on the owner field defined in the Software Catalog entities to determine which data points to include. The scorecard plugin performs scheduled batch processing to calculate these values; therefore, aggregated data is not updated in real-time.
+
+The plugin supports simple aggregation logic, such as summing values (SUM) or calculating averages (AVERAGE) across entities.
+
+## Configure aggregated KPIs for the scorecard
+
+Define aggregated Key Performance Indicators (KPIs) in your configuration to provide a consolidated view of team or group health. Aggregating KPIs allows you to summarize technical metrics into high-level insights for management and stakeholders.
+
+* The scorecard plugin is installed and configured in your Red Hat Developer Hub instance.
+* You have identified the metricId you wish to aggregate.
+
+1. Access your app-config.yaml file.
+2. Navigate to the scorecard section and add an aggregationKPIs block.
+3. Update the configuration to create a homepage card that summarizes a specific metric for a team portfolio. The following example adds a Jira open issues card that groups counts by threshold status for the entities that the signed-in user owns:
+
+```yaml
+scorecard:
+  aggregationKPIs:
+    openIssuesKpi:
+      title: 'Jira open issues KPI'
+      description: 'Open issues across entities you own, grouped by status.'
+      type: statusGrouped
+      metricId: jira.open_issues
+```
+
+
+where:
+scorecard.aggregationKPIs:: Map of KPI keys to KPI definitions. Each key is an aggregation ID. For example openIssuesKpi.
+title:: Title shown for the KPI.
+description:: Short description of the KPI.
+type:: Aggregation strategy. Use statusGrouped for counts per threshold status, or average for a weighted portfolio score.
+metricId:: Metric provider ID. For example jira.open_issues, github.open_prs.
+4. Save the configuration and restart your Red Hat Developer Hub instance.
+
+1. Navigate to the Developer Hub homepage.
+2. Verify that the new aggregated card is displayed with the defined name and calculated value.
+
+## View detailed metrics from aggregated scorecard KPIs
+
+Configure the Red Hat Developer Hub Scorecard plugin to enable drill-down capabilities. This allows you to investigate the specific catalog entities and metrics that contribute to aggregated KPI scores, helping to identify and troubleshoot failing applications across a portfolio.
+
+* You have installed Red Hat Developer Hub.
+* You have configured at least one Scorecard metric provider, such as GitHub or Jira.
+* You have configured aggregated KPIs.
+
+1. Define the metric ID for drill-down in your app-config.yaml file.
+
+Drill-downs are metric-scoped. Even when you click an aggregated KPI, the system requires the underlying metricId to query the catalog for related entities.
+
+```yaml
+jira:
+  product: cloud
+  baseUrl: ${JIRA_URL}
+  token: ${JIRA_TOKEN}
+scorecard:
+  plugins:
+    jira:
+      open_issues:
+        schedule:
+          frequency: { minutes: 5 }
+          timeout: { minutes: 10 }
+          initialDelay: { seconds: 10 }
+```
+
+2. Configure Role-Based Access Control (RBAC) permissions for the relevant user roles to enable scorecard access.
+1. Open your RBAC policy file, typically rbac-policy.csv.
+2. Add the following permission to read both scorecard metrics and catalog entities.
+
+```csv
+p, role:default/team_lead, scorecard.metric.read, read, allow
+p, role:default/team_lead, catalog.entity.read, read, allow
+```
+
+
+1. Navigate to the Red Hat Developer Hub Home Page.
+2. Click an aggregated KPI tile, such as Critical Jira Issues.
+3. Verify that a list of individual catalog entities appears, showing the components contributing to that aggregate score.
+
+If the list does not appear, ensure you are using the latest version of the RHDH plugins.
+
+## Schedule metrics to avoid API limits
+
+To balance data freshness with system performance and API rate limits, you can customize the collection frequency for Scorecard metrics. Scorecard uses the Backstage built-in scheduler service. The default refresh frequency is hourly, but you can adjust it for each metric.
+
+* You have added a custom Developer Hub application configuration.
+* You have identified the datasourceId and metricName for the provider you want to configure.
+
+1. Open your RHDH app-config.yaml file.
+2. Navigate to the scorecard.plugins section.
+3. Add a schedule configuration for your specific data source and metric using the following structure:
+
+```yaml
+scorecard:
+  plugins:
+    my_datasource:
+      example_metric:
+        schedule:
+          frequency:
+            cron: '0 6 * * *'
+          timeout:
+            minutes: 5
+          initialDelay:
+            minutes: 1
+```
+
+4. Define the schedule parameters based on the Backstage SchedulerServiceTaskScheduleDefinitionConfig schema.
+5. Save the file.
+6. Restart the RHDH backend to apply the changes.
+
+[IMPORTANT]
+----
+Constraints: You must make sure the configured frequency does not exceed the API rate limits of your metric provider.
+----
+
+1. Review the backend logs to make sure the task is scheduled without errors.
+2. Verify that new metric data appears in the database according to the defined interval.
+
+## Adjust metric retention to manage storage
+
+To manage storage capacity and comply with data retention policies, adjust the number of days the Scorecard plugin retains metric data to align with your organization&#8217;s policies. By default, the system retains metrics for 365 days.
+
+* You have added a custom Developer Hub application configuration.
+
+1. Open your RHDH app-config.yaml file.
+2. In the scorecard section, add or update the dataRetentionDays parameter with the desired number of days:
+
+```yaml
+scorecard:
+  dataRetentionDays: 12
+```
+
+3. Save the file.
+4. Restart the RHDH backend to apply the changes.
+
+1. Review the backend logs during the next scheduled cleanup cycle to make sure the job runs without errors.
+2. Query the database to confirm that records older than your specified limit are removed.
+
+## Establishing ownership in the Software Catalog
+
+To enable automatic metric aggregation in the Scorecard plugin, you must establish ownership relationships between users, groups, and components in the Software Catalog. The Scorecard plugin uses these definitions to calculate health trends based on who owns the entities.
+
+When you implement the following examples, you must replace the placeholder values with your specific project details.
+
+Group entity:: The Group entity defines a team within a specific namespace.
+
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: _<example_team>_
+  namespace: _<your_namespace>_
+spec:
+  type: team
+  children: [user:_<your_namespace>_/userName]
+```
+
+
+User entity:: The User entity defines an individual and establishes their team membership by using the memberOf field.
+
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: userName
+  title: Example User
+spec:
+  profile:
+    displayName: Example User
+  memberOf: [group:_<your_namespace>_/example-team]
+```
+
+
+Component entities:: The Component specification defines the owner to include the component in a user's or team's aggregated metrics.
+
+
+```yaml
+# Example of user ownership
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: _<user_owned_service>_
+  annotations:
+    github.com/_<your_project_name>_: example-org/example-repository
+    jira/project-key: ET
+spec:
+  type: service
+  owner: user:_<your_namespace>_/userName
+  lifecycle: production
+```
+
+
+
+```yaml
+# Example of group ownership
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: _<group_owned_service>_
+  annotations:
+    github.com/_<your_project_name>_: example-org/example-repository
+    jira/project-key: ET
+spec:
+  type: service
+  owner: group:_<your_namespace>_/_<example_team>_
+  lifecycle: production
+```
+
+
+## View aggregated metrics for owned entities
+
+View aggregated metrics for your owned entities in RHDH to monitor the collective health of your software portfolio. The Scorecard plugin consolidates these metrics based on your ownership definitions in the Software Catalog.
+
+* (To view aggregated KPIs) You have established owner group relationships in the Software Catalog.
+* You have added a custom Developer Hub application configuration.
+* You have the catalog.entity.read permission for the entities included in the aggregation.
+* You have the scorecard.metric.read permission to view aggregated metrics on the home page.
+
+1. Navigate to your RHDH home page.
+2. Locate the Scorecard dashboard to view the aggregated metrics for your owned entities.
+3. Optional: To include entities from a nested group hierarchy in the aggregation, you must enable transitive parent group ownership.
+
+* Confirm that the displayed Key Performance Indicators (KPIs) reflect the status of all components, systems, and resources defined under your ownership in the Software Catalog.
+
+## Available metric data for entities
+
+Use the Scorecard API endpoints to list available metrics, retrieve values for specific catalog entities, and analyze performance trends for entities or aggregated groups.
+
+### Required permissions
+
+To use these endpoints, make sure your account has the following permissions:
+
+* scorecard.metric.read
+* catalog.entity.read (for the specific entities you intend to query)
+
+### API overview
+
+The following table summarizes the available endpoints and their primary functions.
+
+
+
+### API parameter details
+
+Filtering metrics (GET /metrics):: Use these parameters to refine the list of metrics.
+
+
+[NOTE]
+----
+You must not use both parameters in the same request.
+----
+
+
+
+Identifying entities (GET /metrics/catalog/&#8230;&#8203;):: Use path parameters to specify an entity in the Software Catalog.
+
+
+
+### Troubleshooting API errors
+
+If a request fails, the API returns a status code and a message. Use the following table to resolve common issues.
+
+
+
+## Scorecard card configuration parameters
+
+Parameters for application settings and dynamic plugin files used to manage homepage visualizations and portfolio data logic.
+
+### Dynamic plugin properties
+
+
+
+### Application configuration properties (scorecard.aggregationKPIs)
+
+
+
+### Options parameters for the average tracking type
+
+options.statusScores:: Map of threshold status rule keys (success, warning, error) to numeric weight integers. This parameter is required for the average type and must be non-empty; missing or empty maps cause application startup failures.
+options.thresholds:: Optional numeric value array tracking custom status levels evaluated against the averageScore output value on a scale from 0 to 100 with one decimal place. If omitted, the system falls back to default values: less than 30 indicates an error, 30 to 79 indicates a warning, and 80 or higher indicates a success. Custom configurations must provide full real-line range coverage with no numeric gaps.
+
+## Scorecard plugin REST API endpoints and parameters
+
+REST API endpoints for the scorecard plugin used to fetch portfolio evaluations and component summaries.
+
+### Supported REST API endpoints
+
+
+
+
+[IMPORTANT]
+----
+The endpoint GET /metrics/:metricId/catalog/aggregations is deprecated. Update your platform integrations to use the new route path structure: GET /aggregations/:aggregationId.
+----
+
+### API parameter definitions
+
+aggregationId:: The unique identification key tracking a targeted scorecard summary layout block.
+metricId:: The unique provider key tracking an individual metrics collection channel source layer.
+
+# Configure scorecard cards on the homepage
+
+Scorecard visualization cards on the Red Hat Developer Hub homepage display aggregated metrics to give engineering managers and platform teams immediate visibility into portfolio health trends.
+
+## Configure a default scorecard aggregation card
+
+Add a standard scorecard summary card to your homepage using default, out-of-the-box configurations.
+
+* The scorecard plugin is installed and configured in your Red Hat Developer Hub instance.
+* You have administrator permissions to update application configuration files.
+
+1. Open your dynamic plugin configuration file.
+2. Navigate to your scorecard card block under the home.page/cards mount point.
+3. Update the configuration to use the aggregationId property with an established system metric name:
+
+```yaml
+- mountPoint: home.page/cards
+  importName: ScorecardHomepageCard
+  config:
+    props:
+      aggregationId: "github.open_prs"
+    layouts:
+      xl: { w: 3, h: 6, x: 3 }
+      lg: { w: 4, h: 6, x: 4 }
+      md: { w: 6, h: 6, x: 6 }
+      sm: { w: 12, h: 6 }
+      xs: { w: 12, h: 6 }
+      xxs: { w: 12, h: 6 }
+```
+
+4. Save the modified configuration file and restart your Red Hat Developer Hub instance.
+
+1. Access your Developer Hub homepage interface.
+2. Verify that the standard scorecard summary card displays with default metrics.
+
+## Configure an aggregation card with a status-grouped tracking type
+
+Configure a scorecard aggregation card to count entities based on status thresholds.
+
+* The scorecard plugin is installed and configured in your Red Hat Developer Hub instance.
+
+1. Open your app-config.yaml file.
+2. Navigate to the scorecard section and define your backend Key Performance Indicator (KPI) map within an aggregationKPIs block, setting the tracking type to statusGrouped:
+
+```yaml
+scorecard:
+  aggregationKPIs:
+    team-alpha-bugs:
+      title: "Team Alpha Bug KPI"
+      description: "Portfolio bug counts grouped by status threshold"
+      type: statusGrouped
+      metricId: jira.open_issues
+```
+
+3. Open your dynamic plugin configuration file.
+4. Reference your custom aggregation ID inside the homepage card properties block under the home.page/cards mount point:
+
+```yaml
+- mountPoint: home.page/cards
+  importName: ScorecardHomepageCard
+  config:
+    props:
+      aggregationId: "team-alpha-bugs"
+    layouts:
+      xl: { w: 3, h: 6 }
+      lg: { w: 4, h: 6 }
+      md: { w: 6, h: 6 }
+      sm: { w: 12, h: 6 }
+      xs: { w: 12, h: 6 }
+      xxs: { w: 12, h: 6 }
+```
+
+5. Save the modified configuration files and restart your Red Hat Developer Hub instance.
+
+1. Access your Developer Hub homepage interface.
+2. Verify that the status-grouped scorecard summary card displays with your defined title and calculations.
+
+## Configure an aggregation card with an average tracking type
+
+Configure a scorecard aggregation card to calculate a single weighted portfolio score across multiple components.
+
+* The scorecard plugin is installed and configured in your Red Hat Developer Hub instance.
+
+1. Open your app-config.yaml file.
+2. Navigate to the scorecard section and define your backend Key Performance Indicator (KPI) map within an aggregationKPIs block, setting the tracking type to average.
+3. Add the required statusScores map to bind numeric weights to your status rules:
+
+```yaml
+scorecard:
+  aggregationKPIs:
+    portfolio-average-health:
+      title: "Portfolio Health KPI"
+      description: "Weighted average score across portfolio components"
+      type: average
+      metricId: github.open_prs
+      options:
+        statusScores:
+          success: 100
+          warning: 50
+          error: 0
+```
+
+4. Optional: To override the built-in system defaults, add custom threshold parameters using a continuous, gapless number range evaluated on a scale of 0 to 100:
+
+```yaml
+options:
+  statusScores:
+    success: 100
+    warning: 50
+    error: 0
+  thresholds:
+    rules:
+    - key: success
+      expression: '>=80'
+      color: '#6bb300'
+    - key: warning
+      expression: '51-80'
+      color: 'rgb(224, 189, 108)'
+    - key: error
+      expression: '<51'
+      color: '#be1ec7'
+    - key: critical
+      expression: '<10'
+      color: '#ff0000'
+```
+
+5. Open your dynamic plugin configuration file.
+6. Reference your average tracking aggregation ID inside the homepage card properties block under the home.page/cards mount point:
+
+```yaml
+- mountPoint: home.page/cards
+  importName: ScorecardHomepageCard
+  config:
+    props:
+      aggregationId: "portfolio-average-health"
+    layouts:
+      xl: { w: 3, h: 6 }
+      lg: { w: 4, h: 6 }
+      md: { w: 6, h: 6 }
+      sm: { w: 12, h: 6 }
+      xs: { w: 12, h: 6 }
+      xxs: { w: 12, h: 6 }
+```
+
+7. Save the modified configuration files and restart your Red Hat Developer Hub instance.
+
+1. Access your Developer Hub homepage interface.
+2. Verify that the weighted average scorecard summary card displays with your custom scores and thresholds.
+
+## Configure portfolio health on a customizable home page
+
+You can add the aggregated Scorecard widget to a customizable RHDH home page to monitor the collective technical health of your portfolio.
+
+* You established owner group relationships in the Software Catalog.
+* You have installed the Scorecard plugin.
+* You have the scorecard.metric.read permission.
+* You have added a custom Developer Hub application configuration.
+
+1. Update your RHDH app-config.yaml with the following code:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard:bs_1.49.4__2.7.7
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-scorecard:
+            entityTabs:
+              - path: "/scorecard"
+                title: Scorecard
+                mountPoint: entity.page.scorecard
+            mountPoints:
+              - mountPoint: entity.page.scorecard/cards
+                importName: EntityScorecardContent
+                config:
+                  layout:
+                    gridColumn: 1 / -1
+              - mountPoint: home.page/cards
+                importName: ScorecardHomepageCard
+                config:
+                  id: "scorecard-jira.open_issues"
+                  title: "Jira open blocking tickets"
+                  props:
+                    metricId: "jira.open_issues"
+              - mountPoint: home.page/cards
+                importName: ScorecardHomepageCard
+                config:
+                  id: "scorecard-github.open_prs"
+                  title: "GitHub open PRs"
+                  props:
+                    metricId: "github.open_prs"
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-dynamic-home-page:
+            dynamicRoutes:
+              - path: /
+                importName: DynamicCustomizableHomePage
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+2. Find your Backstage version in the RHDH release notes preface.
+3. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+For more information, see Customizing Red Hat Developer Hub.
+4. Log in to the RHDH application.
+5. Enter the Edit mode on the home page.
+6. Click Add widget and select the metric to include.
+
+[NOTE]
+----
+You can add only one metric at a time.
+----
+7. Drag the widget to your preferred layout position.
+8. Click Save.
+
+1. Log in to RHDH.
+2. On the Home page, verify that the aggregated Scorecard widget appears with the name you provided.
+3. Confirm that the displayed KPIs reflect the status of your owned components, systems, and resources.
+
+## Configure portfolio health on a read-only home page
+
+You can add the aggregated Scorecard widget to a read-only RHDH home page to monitor the collective technical health of your portfolio.
+
+* You established owner group relationships in the Software Catalog.
+* You have installed the Scorecard plugin.
+* You have the scorecard.metric.read permission.
+* You have added a custom Developer Hub application configuration.
+
+1. Open your RHDH app-config.yaml file. For more information, see Configuring Red Hat Developer Hub.
+2. Add the aggregated Scorecard mount points to the dynamic plugin configuration file:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scorecard:bs_1.49.4__2.7.7
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-scorecard:
+            entityTabs:
+              - path: "/scorecard"
+                title: Scorecard
+                mountPoint: entity.page.scorecard
+            mountPoints:
+              - mountPoint: entity.page.scorecard/cards
+                importName: EntityScorecardContent
+                config:
+                  layout:
+                    gridColumn: 1 / -1
+              - mountPoint: home.page/cards
+                importName: ScorecardHomepageCard
+                config:
+                  props:
+                    metricId: "jira.open_issues"
+                  layouts:
+                    xl: { w: 3, h: 6 }
+                    lg: { w: 4, h: 6 }
+                    md: { w: 6, h: 6 }
+                    sm: { w: 12, h: 6 }
+                    xs: { w: 12, h: 6 }
+                    xxs: { w: 12, h: 6 }
+              - mountPoint: home.page/cards
+                importName: ScorecardHomepageCard
+                config:
+                  props:
+                    metricId: "github.open_prs"
+                  layouts:
+                    xl: { w: 3, h: 6, x: 3 }
+                    lg: { w: 4, h: 6, x: 4 }
+                    md: { w: 6, h: 6, x: 6 }
+                    sm: { w: 12, h: 6 }
+                    xs: { w: 12, h: 6 }
+                    xxs: { w: 12, h: 6 }
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-dynamic-home-page:
+            dynamicRoutes:
+              - path: /
+                importName: DynamicHomePage
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+3. Find your Backstage version in the RHDH release notes preface.
+4. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+[NOTE]
+----
+The widget automatically calculates and displays aggregations for the entities you own. You do not have to manually configure filters or specify target owner groups in the widget settings.
+----
+
+1. Log in to RHDH.
+2. On the Home page, verify that the aggregated Scorecard widget appears with the name you provided.
+3. Confirm that the displayed KPIs reflect the status of your owned components, systems, and resources.

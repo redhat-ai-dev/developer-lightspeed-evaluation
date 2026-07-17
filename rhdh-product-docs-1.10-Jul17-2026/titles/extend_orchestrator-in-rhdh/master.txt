@@ -1,0 +1,4483 @@
+# Orchestrator in Red Hat Developer Hub
+
+Use Orchestrator to enable serverless workflows in Red Hat Developer Hub to support cloud migration, developer onboarding, and custom workflows.
+
+# About Orchestrator in Red Hat Developer Hub
+
+You can streamline and automate your work by using the Orchestrator in Red Hat Developer Hub to design, run, and monitor workflows across applications and services.
+
+* Design, run, and monitor workflows to simplify multi-step processes across applications and services.
+* Standardize onboarding, migration, and integration workflows to reduce manual effort and improve consistency.
+* Extend RHDH with enterprise-grade Orchestration features to support collaboration and scalability.
+
+
+[NOTE]
+----
+Orchestrator currently supports only Red Hat OpenShift Container Platform (OpenShift Container Platform); it is not available on Microsoft Azure Kubernetes Service (AKS), Amazon Elastic Kubernetes Service (EKS), or Google Kubernetes Engine (GKE).
+----
+
+## Compatibility guide for Orchestrator
+
+To verify that your serverless workflows run reliably, use the validated Orchestrator plugin and infrastructure versions listed in the following table.
+
+
+[IMPORTANT]
+----
+Red Hat does not support or guarantee Orchestrator plugin functionality with unvalidated infrastructure versions. Use only the specific versions of OpenShift Serverless Logic (OSL) and other components listed in the following table.
+----
+
+The following table lists compatible Orchestrator and infrastructure versions:
+
+
+
+
+[NOTE]
+----
+The Orchestrator plugin supports the same OpenShift Container Platform versions as RHDH. See the Life Cycle page.
+----
+
+## Understand Orchestrator architecture
+
+The Orchestrator architecture is composed of several components, each contributing to the running and management of workflows.
+
+Red Hat Developer Hub (RHDH):: Serves as the primary interface. It contains the following subcomponents:
+Orchestrator frontend plugins:: Provide the interface for users to run and monitor workflows within RHDH.
+Orchestrator backend plugins:: Get workflow data into Developer Hub.
+Notifications plugins:: Inform users about workflow events.
+OpenShift Serverless Logic Operator:: Serves as the workflow engine, and its subcomponents handle running, executing and providing persistence for the workflows. The Red Hat Developer Hub Operator and the Red Hat Developer Hub Helm chart manage the following lifecycle of these subcomponents:
+SonataFlow Runtime/Workflow Application:: Functions as a deployed workflow. Operates as an HTTP server, handling requests for running workflow instances. It is managed as a Kubernetes (K8s) deployment by the Openshift Serverless Logic Operator.
+Data Index Service:: Serves as a repository for workflow definitions, instances, and associated jobs. It exposes a GraphQL API used by the Orchestrator backend plugin to retrieve workflow definitions and instances.
+Job Service:: Orchestrates scheduled tasks for workflows.
+OpenShift Serverless:: Provides serverless capabilities essential for workflow communication. It employs Knative eventing to interface with the Data Index service and uses Knative functions to introduce more complex logic to workflows.
+PostgreSQL Server:: Provides a database solution essential for data persistence within the Orchestrator ecosystem. The system uses PostgreSQL Server for storing both SonataFlow information and Developer Hub data.
+OpenShift AMQ Streams (Strimzi/Kafka):: Provides enhanced reliability of the eventing system. Eventing can work without Kafka by using direct HTTP calls, however, this approach is not reliable.
+
+Optional: The current deployment iteration does not natively integrate or include the AMQ Streams Operator. However, you can add the Operator post-install for enhanced reliability if you require it.
+
+## Getting started with Orchestrator
+
+To start using Orchestrator in RHDH, you must install the required infrastructure components and configure your Backstage custom resource or Helm values file.
+
+* Install the required infrastructure components, such as OpenShift Serverless Operator, and OpenShift Serverless Logic Operator
+* Configure your Backstage custom resource (CR) or Helm values file for Orchestrator
+
+
+[NOTE]
+----
+When using the RHDH Operator, you must first install the required infrastructure components. The Operator then provisions the dependent SonataFlow resources once the Orchestrator plugins are enabled in the Backstage CR.
+When using the RHDH Helm chart, the required infrastructure components are installed automatically using the dedicated redhat-developer-hub-orchestrator-infra Helm chart before enabling the Orchestrator plugins in the main RHDH chart.
+----
+
+## Orchestrator plugin dependencies for Operator installation
+
+When you enable the Orchestrator plugin in your Backstage custom resource (CR), the Operator automatically provisions required dependencies.
+
+* A SonataflowPlatform CR
+* NetworkPolicies that allow traffic between infrastructure resources (Knative, Serverless Logic Operator), monitoring traffic, and intra-namespace traffic
+
+The Orchestrator plugin requires these components to run. For example, to communicate with the SonataFlow platform, the Orchestrator plugin uses the sonataflow-platform-data-index-service, which is created by the SonataFlowPlatform CR.
+
+
+[IMPORTANT]
+----
+The SonataFlowPlatform CR contains Data Index service that requires PostgreSQL database as shown in the following example:
+
+```yaml
+      persistence:
+        postgresql:
+          secretRef:
+            name: backstage-psql-secret-{{backstage-name}}
+            userKey: POSTGRES_USER
+            passwordKey: POSTGRES_PASSWORD
+          serviceRef:
+            name: backstage-psql-{{backstage-name}} # # Namespace where the Backstage CR is created
+            namespace: {{backstage-ns}} # Namespace where the Backstage (CR) is created
+            databaseName: backstage_plugin_orchestrator
+```
+
+----
+
+By default, the Orchestrator plugin dependencies use the following:
+
+* The PostgreSQL database named backstage_plugin_orchestrator created by Backstage
+* A Secret created by Backstage Operator for the PostgreSQL with POSTGRES_USER and POSTGRES_PASSWORD keys as the database credentials in the Backstage CR namespace.
+* A Service created by Backstage Operator for the PostgreSQL database with the name backstage-psql-{{backstage-name}} in the Backstage CR namespace.
+
+
+[NOTE]
+----
+To enable the Backstage Operator to work with the SonataFlow platform, its ServiceAccount must have the appropriate permissions.
+The Operator automatically creates the required Role and RoleBinding resource in profile/rhdh/plugin-rbac directory.
+----
+
+* Dynamic plugins dependency management
+
+# Enable Orchestrator plugins components
+
+Enable and configure the Orchestrator plugin components in your Developer Hub instance.
+
+## Configure Orchestrator plugins
+
+To use the Orchestrator, enable the Orchestrator plugins for Red Hat Developer Hub that are disabled by default.
+
+Orchestrator-frontend plugin:: 
+backstage-plugin-orchestrator:: Provides the interface for users to run and monitor workflows within RHDH. You can run and track the execution status of processes.
+Orchestrator-backend plugin:: 
+backstage-plugin-orchestrator-backend:: Gets workflow data into Developer Hub making sure RHDH processes critical workflow metadata and runtime status fulfilling your need for visibility.
+Orchestrator-form-widget:: 
+backstage-plugin-orchestrator-form-widgets:: Provides custom widgets for the workflow execution form, allowing you to customize input fields and streamline the process of launching workflows.
+Orchestrator-scaffolder-backend-module:: 
+scaffolder-backend-module-orchestrator:: Provides callable actions from Scaffolder templates, such as orchestrator:workflow:run or orchestrator:workflow:get_params.
+
+* You have installed the following operators:
+* OpenShift Serverless
+* OpenShift Serverless Logic (OSL)
+* (Optional) For managing the Orchestrator project, you have an instance of Argo CD or Red Hat OpenShift GitOps in the cluster. It is disabled by default.
+* (Optional) To use Tekton tasks and the build pipeline, you have an instance of Tekton or Red Hat OpenShift Pipelines in the cluster. These features are disabled by default.
+
+1. Locate your Developer Hub configuration and enable the Orchestrator plugins and the supporting notification plugins.
+
+The {{inherit}} attribute in the package field automatically resolves to the default plugin version and configuration for your version of RHDH.
+
+```yaml
+plugins:
+  - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{inherit}}"
+    disabled: false
+  - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend:{{inherit}}"
+    disabled: false
+  - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator:{{inherit}}"
+    disabled: false
+  - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets:{{inherit}}"
+    disabled: false
+  - package: "./dynamic-plugins/dist/backstage-plugin-notifications"
+    disabled: false
+  - package: "./dynamic-plugins/dist/backstage-plugin-signals"
+    disabled: false
+  - package: "./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic"
+    disabled: false
+  - package: "./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic"
+    disabled: false
+```
+
+
+[NOTE]
+----
+If you need a specific plugin version, replace {{inherit}} with the version tag, for example: oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:1.3.0.
+----
+2. Optional: Restrict where the Workflows tab appears.
+
+By default, the Workflows tab appears on all entity types. To display it only on specific entities, add the pluginConfig section with filtering conditions.
+
+```yaml
+plugins:
+  - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{inherit}}"
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-orchestrator:
+            appIcons:
+              - importName: OrchestratorIcon
+                name: orchestratorIcon
+            dynamicRoutes:
+              - importName: OrchestratorPage
+                menuItem:
+                  icon: orchestratorIcon
+                  text: Orchestrator
+                  textKey: menuItem.orchestrator
+                path: /orchestrator
+            entityTabs:
+              - path: /workflows
+                title: Workflows
+                titleKey: catalog.entityPage.workflows.title
+                mountPoint: entity.page.workflows
+            mountPoints:
+              - mountPoint: entity.page.workflows/cards
+                importName: OrchestratorCatalogTab
+                config:
+                  layout:
+                    gridColumn: 1 / -1
+                  if:
+                    anyOf:
+                      - IsOrchestratorCatalogTabAvailable
+```
+
+
+Where:
+IsOrchestratorCatalogTabAvailable:: A condition function exported by the Orchestrator plugin that checks whether the entity has workflow-related data or annotations.
+layout.gridColumn:: Controls the grid layout positioning. The value 1 / -1 spans the full width of the grid.
+if.anyOf:: Specifies that the tab appears if any of the listed conditions are met. Add conditions like isKind: component to further restrict where the tab appears.
+
+[IMPORTANT]
+----
+Make sure the indentation is correct: if must be at the same level as layout under config, and conditions under anyOf must be indented two more levels. Incorrect indentation can cause the Workflows tab to appear on all entity types, including User and Group entities.
+To restrict the Workflows tab to only Component entities, modify the if condition:
+
+```yaml
+                  if:
+                    allOf:
+                      - IsOrchestratorCatalogTabAvailable
+                      - isKind: component
+```
+
+----
+
+# Trigger workflows from event-driven systems with CloudEvents
+
+Connect your Apache Kafka infrastructure to Developer Hub Orchestrator to trigger workflows asynchronously from existing event-driven systems. This integration lets you maintain your messaging architecture while adding workflow orchestration capabilities.
+
+## Event-driven workflow execution for enterprise messaging integration
+
+Event-driven workflows enable RHDH Orchestrator to respond to business events from existing messaging systems. This architecture maintains loose coupling and integrates workflows into established enterprise event streams.
+
+### Why CloudEvents matter for workflow integration
+
+When you integrate workflows with message-driven systems, you need a common event format that works across different platforms and services without custom adapters for each system.
+
+CloudEvents is a Cloud Native Computing Foundation (CNCF) specification that standardizes how to describe event data across services, platforms, and systems. This common envelope format ensures that systems can produce and consume events without custom integration code for each platform.
+
+A CloudEvent includes required metadata fields such as the event type, source, unique identifier, and specification version.
+Optional fields provide additional context such as content type, data schema, subject, and timestamp.
+The data field contains the event payload itself, which can include structured data relevant to the event type.
+
+For example, a CloudEvent might describe a deployment request, a compliance check trigger, or a customer order placement.
+Because CloudEvents standardizes the event format, multiple systems can process these events by using common libraries and tools, reducing integration complexity.
+
+### How your workflows respond to CloudEvents
+
+When you configure a workflow for event-driven execution, RHDH Orchestrator processes incoming CloudEvents sourced from Apache Kafka that match specific event types.
+The underlying SonataFlow engine natively supports CloudEvents, which means your workflows can consume events without additional transformation or middleware.
+
+When a CloudEvent arrives:
+
+1. The workflow engine validates the CloudEvent structure and extracts the event metadata.
+2. The engine matches the event type to registered workflows configured to handle that event type.
+3. The workflow instance starts automatically, with the CloudEvent data available as workflow input.
+4. The workflow runs its defined steps, which can include calling APIs, orchestrating services, or emitting additional CloudEvents.
+
+This event-driven model differs from HTTP-triggered workflows, where you explicitly call a workflow endpoint to start the workflow.
+
+### Event-driven versus HTTP-triggered workflow execution
+
+Event-driven and HTTP-triggered workflows serve different integration patterns:
+
+HTTP-triggered workflows:: This approach is appropriate for synchronous operations where the caller needs immediate feedback or must wait for workflow completion.
+The caller sends an HTTP request to a specific workflow endpoint and receives a response indicating the workflow status.
+This pattern works well for user-initiated actions in web applications or API integrations that require request-response semantics.
+Event-driven workflows:: Use this approach when your event producers need to continue working immediately without waiting for workflow completion.
+Your producers publish CloudEvents to Apache Kafka, and workflows start automatically when events arrive, without blocking the producer.
+This pattern supports fire-and-forget semantics, enabling the producer to continue processing without blocking on the workflow.
+Event-driven workflows also provide better scalability for high-volume workloads and support complex event routing and filtering capabilities that the message broker provides.
+
+### Benefits of event-driven workflows
+
+Integrating workflows with CloudEvents and message brokers provides several architectural advantages:
+
+Loose coupling:: Event producers do not need direct knowledge of workflow endpoints or RHDH infrastructure.
+They publish standardized CloudEvents to a message broker, and the workflow engine consumes events independently.
+This separation allows services to evolve independently without tight coupling.
+Asynchronous execution:: Event producers do not block waiting for workflows to complete.
+This improves system responsiveness and allows workflows to handle long-running operations without impacting the producing system.
+Architectural consistency:: Organizations that have standardized on message-oriented middleware can integrate RHDH workflows into existing event-driven architectures without creating HTTP-based exceptions.
+This maintains architectural consistency across the enterprise.
+Enterprise messaging standards:: CloudEvents specification provides a vendor-neutral event format that major cloud providers and messaging platforms support.
+This ensures portability and reduces vendor lock-in.
+
+### CloudEvent type to Kafka topic mapping
+
+When you configure workflows to consume CloudEvents from Kafka, you decide how CloudEvent types map to Kafka topics based on your workflow design and organizational standards.
+
+A common pattern maps each workflow to a specific Kafka topic, where the topic name corresponds to the CloudEvent type that triggers the workflow.
+For example, a workflow that processes deployment requests might subscribe to a deployment.request topic, and producers would publish CloudEvents with type: deployment.request to that topic.
+
+You can organize workflows by business capability and route events to the appropriate workflow by using Kafka topic-based routing.
+You can also use Kafka consumer groups to scale workflow processing across multiple RHDH instances.
+
+### When to use CloudEvent triggering
+
+Choose CloudEvent-based workflow triggering when:
+
+* Your organization has standardized on message brokers such as Apache Kafka for system-to-system communication.
+* Your workflows respond to business events produced by other systems in your architecture.
+* You need asynchronous, fire-and-forget workflow execution.
+* You want to decouple workflow callers from RHDH infrastructure.
+* Your workflows integrate into existing event-driven architectural patterns.
+
+Use HTTP-triggered workflows when:
+
+* Your users need immediate workflow feedback or synchronous responses.
+* Your workflows serve as APIs for external systems that expect request-response patterns.
+* Your organization has not deployed message broker infrastructure.
+* Your workflow execution is strictly on-demand rather than event-driven.
+
+## Enable event-driven workflows by configuring Kafka connectivity
+
+Configure Apache Kafka connectivity in the Orchestrator backend to enable workflows triggered by CloudEvents. This configuration allows workflows to respond asynchronously to business events from your messaging infrastructure.
+
+* You have enabled Orchestrator plugins.
+* You have deployed Apache Kafka broker infrastructure and ensured it is accessible from RHDH.
+* You have Kafka broker URLs and connection credentials.
+* You have verified network connectivity between RHDH and Kafka brokers.
+
+1. Locate your Developer Hub application configuration file.
+
+The location depends on your deployment method:
+* For Operator deployments: The configuration is in a ConfigMap, typically named my-rhdh-app-config.
+* For Helm deployments: The configuration is in the values.yaml file or a custom configuration file referenced in your Helm values.
+2. Add the orchestrator.kafka configuration section to your app-config.yaml file.
+
+```yaml
+orchestrator:
+  kafka:
+    clientId: my-rhdh-orchestrator
+    brokers:
+      - kafka-broker-1.example.com:9092
+      - kafka-broker-2.example.com:9092
+      - kafka-broker-3.example.com:9092
+    # logLevel override for the orchestrator kafka services. Defaults to INFO which is 4
+    # logLevel values based on KafkaJS values https://kafka.js.org/docs/configuration#logging
+    # logLevel: 5 // DEBUG
+    logLevel: 4
+```
+
+
+where:
+clientId:: Unique identifier for the RHDH Kafka client. This identifier is displayed in Kafka broker logs and metrics.
+brokers:: Array of Kafka broker URLs. Include multiple brokers for high availability.
+logLevel:: Optional. Kafka client logging level. Valid numeric values based on KafkaJS values are 0 (NOTHING), 1 (ERROR), 2 (WARN), 4 (INFO), or 5 (DEBUG). Default is 4 (INFO).
+3. Apply the configuration changes.
+* For Operator deployments: Update the ConfigMap and restart the RHDH instance by scaling the deployment to zero and back to the target replica count, or by deleting the pod to trigger a restart.
+
+Replace <my_deployment_name> with the name of your deployment:
+
+```terminal
+$ oc rollout restart deployment/<my_deployment_name>
+```
+
+* For Helm deployments: Upgrade the Helm release with the updated configuration.
+
+```terminal
+$ helm upgrade my-rhdh-custom-resource redhat-developer/backstage -f values.yaml -n my-rhdh-project
+```
+
+1. Check the orchestrator-backend plugin logs for Kafka connection messages.
+
+Replace <my_deployment_name> with the name of your deployment:
+
+```terminal
+$ oc logs deployment/<my_deployment_name> | grep -i kafka
+```
+
+
+Successful connection logs include messages indicating the Kafka client has connected to the broker cluster.
+2. Navigate to the Orchestrator plugin in the RHDH UI.
+3. Verify that the Run as Event button is displayed next to workflows.
+
+The button is only visible when Kafka connectivity is successfully configured.
+
+If the Run as Event button does not appear:
+
+* Verify that the Kafka broker URLs are correct and accessible from the RHDH pod.
+* Check the orchestrator-backend logs for connection errors or authentication failures.
+* Confirm that network policies allow traffic between RHDH and the Kafka brokers.
+* Verify that the orchestrator.kafka configuration section is correctly formatted in the configuration file.
+
+## Run workflows asynchronously through the UI with CloudEvents
+
+Publish CloudEvents to Apache Kafka from the RHDH UI to trigger workflows asynchronously. This method enables fire-and-forget operation without blocking on workflow completion.
+
+* You have configured Kafka connectivity for the Orchestrator.
+* You have deployed an event-type workflow that appears in the Orchestrator plugin.
+
+1. In the RHDH UI, navigate to the Orchestrator plugin.
+2. In the workflows list, locate the workflow you want to trigger.
+3. Click the Run as Event button next to the workflow.
+
+[NOTE]
+----
+The Run as Event button appears only when you have configured Kafka connectivity and the workflow supports event-driven execution.
+----
+4. If the workflow requires input data, complete the workflow input form.
+
+The form fields correspond to the workflow&#8217;s input schema.
+The CloudEvent data payload includes the values you provide.
+5. Click Submit to send the CloudEvent to Kafka.
+
+The RHDH UI transmits a CloudEvent to the configured Kafka broker with the workflow input data.
+The workflow starts when the Kafka broker delivers the event to the SonataFlow engine.
+6. Monitor the workflow status.
+
+After submitting the CloudEvent, one of two outcomes occurs:
+Immediate start:: If the workflow starts before the UI timeout period, the UI navigates to the workflow instance detail page, where you can monitor progress.
+Delayed start:: If the workflow has not started when the UI timeout expires, the UI displays an informational message indicating that it sent the event to Kafka as a kafkaEvent.
+The UI navigates to the workflow runs list, where the workflow instance appears when the workflow starts.
+7. If the workflow does not start immediately, locate the workflow in the workflow runs list.
+
+The workflow instance appears in the list when the Kafka broker delivers the CloudEvent and the workflow engine starts the workflow.
+Depending on Kafka broker latency and workflow engine processing time, this can take several seconds.
+
+If the workflow does not appear in the workflow runs list after several minutes:
+
+* Verify that the Kafka broker is running and accessible.
+* Check the orchestrator-backend logs for errors related to Kafka message publishing.
+* Confirm that you configured the workflow to consume CloudEvents from the correct Kafka topic.
+* Verify that the CloudEvent type matches the workflow's event type configuration.
+
+## CloudEvent structure reference for workflow design and troubleshooting
+
+CloudEvent attribute specifications and Kafka topic mapping patterns help you design workflows that consume events from external systems. Understanding this structure is essential for troubleshooting event-driven workflow integration.
+
+### CloudEvent specification structure
+
+CloudEvents use a standardized JSON structure with required and optional attributes.
+
+
+
+### Example CloudEvent payload
+
+An example of a CloudEvent that triggers a deployment workflow:
+
+
+```json
+{
+  "specversion": "1.0",
+  "type": "deployment.request",
+  "source": "/api/deployments",
+  "id": "a234-5678-9abc-def0",
+  "datacontenttype": "application/json",
+  "time": "2025-08-15T14:30:00Z",
+  "data": {
+    "applicationName": "my-application",
+    "environment": "production",
+    "version": "2.1.0",
+    "approver": "jane.doe@example.com"
+  }
+}
+```
+
+
+In this example:
+
+* The type field (deployment.request) identifies the event type and typically matches the Kafka topic name.
+* The source field indicates the API endpoint that produced the event.
+* The id field provides a unique identifier for this specific deployment request.
+* The data field contains the workflow input parameters required to run the deployment.
+
+### How RHDH constructs CloudEvents
+
+When you use the Run as Event button in the RHDH UI, the Orchestrator backend plugin constructs a CloudEvent automatically:
+
+1. The plugin generates a unique event ID by using UUID format.
+2. The plugin sets the type field based on the workflow's event type configuration.
+3. The plugin sets the source field to identify RHDH as the event producer.
+4. The plugin sets specversion to 1.0.
+5. The plugin includes the workflow input form data in the data field.
+6. The plugin publishes the CloudEvent to the configured Kafka broker.
+
+### Workflow input data structure
+
+When you design workflows that consume CloudEvents, the workflow input schema should match the structure of the CloudEvent data field.
+
+For example, if your workflow requires the following input:
+
+
+```json
+{
+  "applicationName": "string",
+  "environment": "string",
+  "version": "string"
+}
+```
+
+
+The CloudEvent data field must provide these properties.
+When you trigger the workflow from the RHDH UI, the workflow input form collects these values and includes them in the data field of the published CloudEvent.
+
+### CloudEvent type and Kafka topic mapping
+
+The mapping between CloudEvent types and Kafka topics depends on your workflow configuration and Kafka topic design:
+
+Single topic per workflow type:: Each workflow subscribes to a dedicated Kafka topic, where the topic name matches the CloudEvent type field.
+For example, a workflow handling deployment.request events subscribes to the deployment.request topic.
+This pattern provides clear separation between workflow types and simplifies event routing.
+Shared topic with event filtering:: Multiple workflow types subscribe to a shared Kafka topic, and each workflow filters events based on the type field.
+This pattern reduces the number of Kafka topics but requires workflows to include event filtering logic.
+
+The SonataFlow workflow definition specifies which event types the workflow consumes, and the Kafka topic configuration determines where the workflow engine listens for events.
+
+# Display workflow data with custom review pages
+
+To meet specific approval and validation requirements, configure custom review pages in Red Hat Developer Hub Orchestrator. You can use these pages to control data layout and add business rules without modifying your existing workflow definitions.
+
+## Workflow review pages for your approval requirements
+
+You can replace the default Orchestrator review page with a custom component to meet organizational standards, show warnings, require acknowledgment before run, or integrate with design systems in Red Hat Developer Hub.
+
+Custom review pages are optional. If you do not implement a custom review component, the Orchestrator continues to use the default review page without any impact on functionality.
+
+Use a custom review page when you need to perform the following actions:
+
+* Display workflow data in a specific layout that matches your organization's documentation or approval standards.
+* Apply client-side checks or show warnings before the workflow runs.
+* Include additional context, such as help text or links to documentation, for reviewers.
+* Integrate with custom UI component libraries or design systems.
+
+Custom review pages are compatible with existing workflows. The same workflow definitions, schemas, and data structures work with both default and custom review pages. You can switch between review page types without modifying your workflow configurations.
+
+## Build custom review pages for workflows
+
+To build a custom review page that displays workflow data in a specific layout, or integrates with a design system, you must implement the getReviewComponent() method in the form API.
+
+* You have configured the Orchestrator plugins in your Developer Hub instance.
+* You have a plugin or module that implements the OrchestratorFormApi interface from the orchestrator-form-api package.
+* You are familiar with React component development and TypeScript.
+
+1. In your plugin that implements OrchestratorFormApi, import the required types:
+
+```typescript
+import type {
+  OrchestratorFormApi,
+  ReviewComponentProps,
+} from '@red-hat-developer-hub/backstage-plugin-orchestrator-form-api';
+```
+
+2. Import the helper utilities from the orchestrator-form-react package:
+
+```typescript
+import {
+  generateReviewTableData,
+  schemaHasUiHiddenFields,
+  ReviewHiddenParametersAlert,
+  NestedReviewTable,
+} from '@red-hat-developer-hub/backstage-plugin-orchestrator-form-react';
+```
+
+
+These utilities handle hidden fields, password masking, and nested data structures in your custom review page.
+3. Create your custom review page component:
+
+```typescript
+import React from 'react';
+import { Button, Box, Typography } from '@mui/material';
+
+export const CustomReviewPage = (props: ReviewComponentProps) => {
+  const { busy, schema, data, handleBack, handleExecute } = props;
+  const [showHiddenFields, setShowHiddenFields] = React.useState(false);
+
+  const reviewData = React.useMemo(
+    () => generateReviewTableData(schema, data, {
+      includeHiddenFields: showHiddenFields
+    }),
+    [schema, data, showHiddenFields]
+  );
+
+  const hasHiddenFields = schemaHasUiHiddenFields(schema);
+
+  return (
+    <Box>
+      <Typography variant="h5">Review Your Workflow Data</Typography>
+
+      {hasHiddenFields && (
+        <ReviewHiddenParametersAlert
+          showHiddenFields={showHiddenFields}
+          onShowHiddenFieldsChange={setShowHiddenFields}
+        />
+      )}
+
+      <NestedReviewTable data={reviewData} />
+
+      <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+        <Button onClick={handleBack} disabled={busy}>
+          Back
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleExecute}
+          disabled={busy}
+        >
+          Execute Workflow
+        </Button>
+      </Box>
+    </Box>
+  );
+};
+```
+
+4. Add the getReviewComponent() method to your OrchestratorFormApi implementation:
+
+```typescript
+export class MyFormApi implements OrchestratorFormApi {
+  getReviewComponent() {
+    return CustomReviewPage;
+  }
+
+  // ... other OrchestratorFormApi methods
+}
+```
+
+5. Register your custom form API with the Orchestrator plugin according to your plugin's extension mechanism.
+
+1. Open the Orchestrator plugin in the Developer Hub web interface.
+2. Select a workflow and complete the workflow form.
+3. Proceed to the review step.
+4. Confirm that your custom review page displays with the correct layout and styling.
+5. Click Back and confirm that the workflow form is populated.
+6. Click Execute Workflow and verify that the workflow runs successfully.
+
+To revert to the default Orchestrator review page, return undefined from the getReviewComponent() method:
+
+
+```typescript
+export class MyFormApi implements OrchestratorFormApi {
+  getReviewComponent() {
+    return undefined; // Uses default review page
+  }
+}
+```
+
+
+## Custom review page API reference
+
+The custom review page API provides the ReviewComponentProps interface, helper utilities for data processing, and UI components to implement custom review pages for Red Hat Developer Hub Orchestrator workflows.
+
+### ReviewComponentProps interface
+
+Your custom review component receives the following properties through the ReviewComponentProps interface:
+
+
+
+### Helper utilities
+
+The orchestrator-form-react package exports the following utilities to help you build custom review pages that handle data correctly:
+
+
+
+### Helper components
+
+The orchestrator-form-react package exports the following React components for use in custom review pages:
+
+
+
+### OrchestratorFormApi method
+
+To provide a custom review page, implement the following method in your OrchestratorFormApi implementation:
+
+
+
+# Install Red Hat Developer Hub with Orchestrator by using the Red Hat Developer Hub Operator
+
+You can install Red Hat Developer Hub with Orchestrator by using the Red Hat Developer Hub Operator.
+
+## Enable the Orchestrator plugins using the Operator
+
+You can enable the Orchestrator plugins in RHDH by configuring dynamic plugins in your Backstage custom resource (CR).
+
+* You have installed RHDH on OpenShift Container Platform.
+* You have access to edit or create ConfigMaps in the namespace where the Backstage CR is deployed.
+
+1. To enable the Orchestrator plugins with default settings, set disabled: false for the corresponding packages.
+
+The {{inherit}} attribute in the package field automatically resolves to the default plugin version and configuration for your version of RHDH.
+
+```yaml
+- package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{inherit}}"
+  disabled: false
+- package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend:{{inherit}}"
+  disabled: false
+  dependencies:
+    - ref: sonataflow
+- package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator:{{inherit}}"
+  disabled: false
+- package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets:{{inherit}}"
+  disabled: false
+```
+
+
+[NOTE]
+----
+If you need a specific plugin version, replace {{inherit}} with the version tag, such as 1.3.0.
+When you use the Operator, the ref: sonataflow field installs the OpenShift Serverless and OpenShift Serverless Logic resources.
+----
+
+The following example shows a complete configuration of the Orchestrator plugin dynamic-plugins config map:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-plugin
+data:
+    dynamic-plugins.yaml: |
+      includes:
+        - dynamic-plugins.default.yaml
+      plugins:
+        - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{inherit}}"
+          disabled: false
+        - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend:{{inherit}}"
+          disabled: false
+          dependencies:
+            - ref: sonataflow
+        - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator:{{inherit}}"
+          disabled: false
+        - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets:{{inherit}}"
+          disabled: false
+```
+
+2. (Optional) Configure backend authentication to allow Orchestrator components to communicate with the RHDH API.
+
+This step is required only when your workflow definitions include API calls to RHDH plugins, such as the notifications or scaffolding plugins.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config-rhdh
+data:
+  app-config.yaml: |-
+    backend:
+      auth:
+        externalAccess:
+          - type: static
+            options:
+              token: ${BACKEND_SECRET}
+              subject: orchestrator
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-auth-secret
+stringData:
+  # Run the following command to generate a secure random value:
+  # node -p 'require("crypto").randomBytes(24).toString("base64")'
+  BACKEND_SECRET: "<GENERATED_VALUE>"
+```
+
+
+[IMPORTANT]
+----
+Replace <GENERATED_VALUE> with a securely generated random token. Do not use example or placeholder values in production environments.
+----
+3. If you have configured backend authentication in the previous step, update your Backstage CR to reference the secret:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: orchestrator
+spec:
+  application:
+    appConfig:
+      configMaps:
+        - name: app-config-rhdh
+    dynamicPluginsConfigMapName: orchestrator-plugin
+    extraEnvs:
+      secrets:
+        - name: backend-auth-secret
+```
+
+
+* In the RHDH console, confirm that the Orchestrator frontend and backend features are available.
+
+## Configure Orchestrator to connect to existing PostgreSQL infrastructure
+
+Connect the Orchestrator plugins to your existing PostgreSQL database to leverage centralized database management and meet compliance requirements.
+
+By default, when you enable the Orchestrator plugin by using the Operator, the dependencies: - ref: sonataflow field automatically provisions a SonataFlowPlatform custom resource (CR) and creates the required PostgreSQL database resources. The Operator uses specific naming patterns for these resources (such as backstage-psql-{{backstage-name}} for the service and backstage-psql-secret-{{backstage-name}} for the secret).
+
+However, when you use an external PostgreSQL database that the Operator does not manage, these default resources and naming patterns do not exist. You must explicitly configure the SonataFlowPlatform CR to reference your external database resources and remove the automatic dependency provisioning.
+
+* You have installed RHDH by using the Operator.
+* You have configured Developer Hub to use an external PostgreSQL database.
+* You have access to create jobs, secrets, config maps, and custom resources in the namespace where you deploy the Backstage CR.
+
+1. Create the backstage_plugin_orchestrator database on your external PostgreSQL server by applying the following job:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-sonataflow-database-developer-hub
+spec:
+  ttlSecondsAfterFinished: 30
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      containers:
+        - name: psql
+          image: quay.io/fedora/postgresql-15:latest
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - secretRef:
+                name: <SECRET-NAME-WITH-DB-CREDENTIALS>
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              set -e
+              # Check if the backstage_plugin_orchestrator database exists
+              DB_EXISTS=$(PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -tAc "SELECT 1 FROM pg_database WHERE datname='backstage_plugin_orchestrator'" postgres)
+              if [ -z "$DB_EXISTS" ]; then
+                # Create the database if it does not exist
+                PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -c "CREATE DATABASE backstage_plugin_orchestrator;" postgres
+              fi
+      restartPolicy: Never
+```
+
+2. Create a SonataFlowPlatform CR that references your external PostgreSQL service:
+
+```yaml
+apiVersion: sonataflow.org/v1alpha08
+kind: SonataFlowPlatform
+metadata:
+  name: sonataflow-platform
+spec:
+  monitoring:
+    enabled: true
+  services:
+    dataIndex:
+      enabled: true
+      persistence:
+        postgresql:
+          secretRef:
+            name: <SECRET-NAME-WITH-DB-CREDENTIALS>
+            userKey: POSTGRES_USER
+            passwordKey: POSTGRES_PASSWORD
+          serviceRef:
+            name: <SERVICE-NAME-TO-DB>
+            namespace: <RHDH-NAMESPACE>
+            databaseName: backstage_plugin_orchestrator
+    jobService:
+      enabled: true
+      persistence:
+        postgresql:
+          secretRef:
+            name: <SECRET-NAME-WITH-DB-CREDENTIALS>
+            userKey: POSTGRES_USER
+            passwordKey: POSTGRES_PASSWORD
+          serviceRef:
+            name: <SERVICE-NAME-TO-DB>
+            namespace: <RHDH-NAMESPACE>
+            databaseName: backstage_plugin_orchestrator
+```
+
+
+[IMPORTANT]
+----
+Unlike the default configuration that uses the dependencies: - ref: sonataflow field to automatically provision database resources with specific naming patterns, this configuration explicitly references your external database Service and Secret. The SonataFlowPlatform CR will use these resources to connect to your external database instead of creating new database resources.
+----
+3. Configure the Orchestrator plugins in your dynamic plugins config map to remove the default sonataflow dependency and explicitly reference the SonataFlowPlatform services:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-plugin
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      # Orchestrator plugins
+      - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{inherit}}"
+        disabled: false
+      - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend:{{inherit}}"
+        disabled: false
+        pluginConfig:
+          orchestrator:
+            dataIndexService:
+              url: http://<SERVICE-NAME-SONATAFLOW-PLATFORM-DATA-INDEX>
+        dependencies: [{}]  # Empty array removes default 'ref: sonataflow' to prevent automatic database provisioning
+      - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator:{{inherit}}"
+        disabled: false
+        pluginConfig:
+          orchestrator:
+            dataIndexService:
+              url: http://<SERVICE-NAME-SONATAFLOW-PLATFORM-DATA-INDEX>
+        dependencies: [{}]  # Empty array removes default 'ref: sonataflow' to prevent automatic database provisioning
+      - package: "oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets:{{inherit}}"
+        disabled: false
+```
+
+4. Update your Backstage CR to reference the orchestrator plugin config map and inject the database credentials secret:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: orchestrator
+spec:
+  application:
+    appConfig:
+      configMaps:
+        - name: app-config-rhdh
+    dynamicPluginsConfigMapName: orchestrator-plugin
+    extraEnvs:
+      secrets:
+        - name: <SECRET-NAME-WITH-DB-CREDENTIALS>
+```
+
+
+1. Verify that the SonataFlowPlatform CR is running:
+
+```terminal
+$ oc get sonataflowplatform sonataflow-platform -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+True
+```
+
+2. In the RHDH console, confirm that the Orchestrator frontend and backend features are available and can connect to your external database.
+
+## Upgrade the OpenShift Serverless Logic Operator for Red Hat Developer Hub 1.9
+
+Upgrade the OpenShift Serverless Logic (OSL) Operator to version 1.38.0 for compatibility with Red Hat Developer Hub 1.10.
+
+See OpenShift Serverless Logic Operator documentation for the supported OpenShift Serverless Logic Operator versions and upgrade process.
+
+Starting with OSL 1.37.0, the Operator subscription name and starting ClusterServiceVersion (CSV) no longer explicitly reference the operating system (OS) version.
+
+In previous releases, the Operator subscription name and starting CSV explicitly included the OS version, such as logic-operator-rhel8 and logic-operator-rhel8.v1.36.0.
+
+
+[IMPORTANT]
+----
+Before performing the upgrade, make sure you do not delete the existing SonataflowPlatform operands during this process.
+When performing the upgrade, you must replace the logic-operator-rhel8 subscription with the logic-operator subscription.
+----
+
+* You have administrative access to the OpenShift cluster.
+
+1. Delete the previous logic-operator-rhel8 subscription and apply the following configuration to install the logic-operator subscription:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-serverless-logic
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-serverless-logic
+  namespace: openshift-serverless-logic
+spec:
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: logic-operator
+  namespace: openshift-serverless-logic
+spec:
+  channel: stable  #  channel of an operator package to subscribe to
+  installPlanApproval: Automatic #  whether the update should be installed automatically
+  name: logic-operator  #  name of the operator package
+  source: redhat-operators  #  name of the catalog source
+  sourceNamespace: openshift-marketplace
+  startingCSV: logic-operator.v1.38.0  # The initial version of the operator
+```
+
+2. Optional: If your configuration uses an external PostgreSQL database with SSL, add the required datasource environment variables to the jobService specification in the SonataflowPlatform custom resource as shown in the following configuration:
+
+```yaml
+jobService:
+  enabled: true
+  persistence:
+    dbMigrationStrategy: service
+    postgresql:
+      # no additional url params here. We only have currentSchema=jobs-service.
+      jdbcUrl: 'jdbc:postgresql://postgress-external-db-primary.postgress-external-db.svc.cluster.local:5432/sonataflow?currentSchema=jobs-service'
+      secretRef:
+        name: postgres-cred
+        passwordKey: POSTGRES_PASSWORD
+        userKey: POSTGRES_USER
+  podTemplate:
+    container:
+      env:
+        # only this two env vars
+        - name: QUARKUS_DATASOURCE_REACTIVE_POSTGRESQL_SSL_MODE
+          value: allow
+        - name: QUARKUS_DATASOURCE_REACTIVE_TRUST_ALL
+          value: 'true'
+```
+
+
+## Upgrade the Orchestrator plugins for 1.9 Operator-backed instances
+
+Update the dynamic-plugins ConfigMap to use Open Container Initiative (OCI) image references for Orchestrator plugins compatibility with Red Hat Developer Hub 1.10.
+
+
+[IMPORTANT]
+----
+If you do not update the dynamic-plugins ConfigMap after upgrading the RHDH Operator to 1.10, the Developer Hub instance fails to upgrade.
+----
+
+* You have a running instance of Red Hat Developer Hub with Orchestrator 1.8 backed by the Operator.
+* You have upgraded the Red Hat Developer Hub Operator to version 1.10.
+* You have administrative access to the OpenShift cluster.
+
+1. Open your dynamic-plugins ConfigMap for editing.
+2. Update the package references for the Orchestrator plugins to use the 1.10 OCI registry paths as shown in the following example:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dynamic-plugins-rhdh
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: 'oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator:{{inherit}}'
+        disabled: false
+      - package: 'oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend:{{inherit}}'
+        disabled: false
+        dependencies:
+          - ref: sonataflow
+      - package: 'oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator:{{inherit}}'
+        disabled: false
+      - package: 'oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets:{{inherit}}'
+        disabled: false
+```
+
+
+[NOTE]
+----
+The {{inherit}} attribute in your configuration automatically resolves to the 1.10 version provided by the Operator.
+----
+3. Save the configuration changes.
+
+1. Log in to your Red Hat Developer Hub instance.
+2. Confirm that the Orchestrator plugins display the version metadata for 1.10.
+
+## Resolve pod startup failure when upgrading to RHDH 1.8.6 with Orchestrator
+
+To ensure successful pod startup during a RHDH upgrade, update Orchestrator plugin versions to match the RHDH 1.8.6 configuration (version 1.8.12). This update enables the Orchestrator to automatically infer integrity hashes and prevents configuration errors.
+
+* You have an Operator-backed instance of RHDH 1.8.5 with Orchestrator 1.8.9.
+* You encounter the following error when upgrading to RHDH 1.8.6:
+
+```terminal
+InstallException: No integrity hash provided for Package @redhat/backstage-plugin-orchestrator@1.8.9
+```
+
+
+1. Edit the dynamic-plugins ConfigMap to update the Orchestrator plugin version to 1.8.12:
+
+```terminal
+$ oc edit configmap dynamic-plugins-rhdh -n <your_namespace>
+```
+
+2. Update the plugin versions in the ConfigMap:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dynamic-plugins-rhdh
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: "@redhat/backstage-plugin-orchestrator@1.8.12"
+        disabled: false
+      - package: "@redhat/backstage-plugin-orchestrator-backend-dynamic@1.8.12"
+        disabled: false
+        dependencies:
+          - ref: sonataflow
+      - package: "@redhat/backstage-plugin-scaffolder-backend-module-orchestrator-dynamic@1.8.12"
+        disabled: false
+      - package: "@redhat/backstage-plugin-orchestrator-form-widgets@1.8.12"
+        disabled: false
+```
+
+3. Save and close the ConfigMap. The RHDH pods restart automatically.
+
+1. Monitor the status of the RHDH pods to ensure they restart:
+
+```terminal
+$ oc get pods -w
+```
+
+2. Verify that all RHDH pods are in Running status with no errors.
+
+## Orchestrator plugin permissions
+
+The Orchestrator plugin uses the Red Hat Developer Hub permission mechanism and the Role-Based Access Control (RBAC) plugin to restrict access to backend endpoints. Orchestrator supports decoupling visibility (read) from running (update) using specific workflow IDs instead of generic permissions.
+
+
+
+
+[WARNING]
+----
+Generic permissions override specific denial policies within the same action type. To maintain granular control, avoid granting generic permissions if you intend to restrict specific workflows.
+* Granting orchestrator.workflow (read) prevents you from denying access to orchestrator.workflow.[workflowId] (read).
+* Granting orchestrator.workflow.use (update) prevents you from denying access to orchestrator.workflow.use.[workflowId] (update).
+----
+
+The [workflowId] must match the unique identifier in your workflow definition file. For example, in the workflow definition below, the identifier is greeting:
+
+
+```yaml
+id: greeting
+version: '1.0'
+specVersion: '0.8'
+name: Greeting workflow
+description: YAML based greeting workflow
+annotations:
+  - 'workflow-type/infrastructure'
+dataInputSchema: 'schemas/greeting.sw.input-schema.json'
+extensions:
+  - extensionid: workflow-output-schema
+    outputSchema: schemas/workflow-output-schema.json
+```
+
+
+## Manage Orchestrator plugin permissions using RBAC policies
+
+You can configure Role-Based Access Control (RBAC) policies so that users can view workflow details without the permission to run those workflows. This configuration restricts user interaction to authorized workflows.
+
+The Orchestrator plugin uses specific permission strings to control access to workflows and instances. After you enable the role-based access control (RBAC) plugin, you must grant the following permissions in your rbac-policy.csv file to view and manage workflows in the Orchestrator UI:
+
+orchestrator.workflow (read):: Lists and views workflow definitions and their instances. If this permission is missing, the workflow list in the UI appears empty.
+orchestrator.workflow.use (update):: Executes or aborts a workflow.
+orchestrator.workflowAdminView (read):: Accesses the workflow definition editor and instance variables.
+orchestrator.instanceAdminView (read):: Views all workflow instances, including those created by other users.
+
+* You have identified the [workflowId] for each workflow you want to restrict.
+* You have enabled the RBAC plugin.
+* You have configured the policies-csv-file path in your app-config.yaml.
+
+1. Identify the workflowId from your workflow definition file:
+
+```yaml
+id: greeting
+version: '1.0'
+```
+
+2. In your RBAC policy CSV file, define the permissions using the p, role, permission, action, allow format.
+
+[NOTE]
+----
+Generic permissions (for example, orchestrator.workflow) take precedence over specific permissions targeting a workflowId, (for example, orchestrator.workflow.greeting). You cannot grant generic access and then selectively deny a specific ID.
+----
+3. Add the following example policies to your CSV file to establish basic user and administrator roles:
+
+```csv
+# Minimal user role - can only view and run specific workflows
+p, role:default/workflowUser, orchestrator.workflow.greeting, read, allow
+p, role:default/workflowUser, orchestrator.workflow.use.greeting, update, allow
+
+# Support role - can view all workflows and instances, but not execute
+p, role:default/workflowSupport, orchestrator.workflow, read, allow
+p, role:default/workflowSupport, orchestrator.instanceAdminView, read, allow
+
+# Full admin role - complete access to all Orchestrator functions
+p, role:default/workflowAdmin, orchestrator.workflow, read, allow
+p, role:default/workflowAdmin, orchestrator.workflow.use, update, allow
+p, role:default/workflowAdmin, orchestrator.workflowAdminView, read, allow
+p, role:default/workflowAdmin, orchestrator.instanceAdminView, read, allow
+
+# Assign users to the roles
+g, user:default/example_user, role:default/workflowUser
+```
+
+4. In your RHDH app-config.yaml file, enable permissions by adding the orchestrator plugin to the rbac section and setting policyFileReload to true.
+
+```yaml
+permission:
+  enabled: true
+  rbac:
+    policies-csv-file: <absolute_path_to_the_policy_file>
+    pluginsWithPermission:
+      - orchestrator
+    policyFileReload: true
+    admin:
+      users:
+        - name: user:default/YOUR_USER
+```
+
+5. Restart the application to apply the changes.
+
+1. Log in as a user assigned to the workflowUser role.
+2. Navigate to the Orchestrator plugin and verify that the workflow appears in the list.
+
+
+[IMPORTANT]
+----
+You can view dynamic permissions containing a workflowId in the RBAC UI, but you cannot modify them in the interface. You must use the policy CSV file or the RBAC API to manage these specific workflow permissions.
+----
+
+* RBAC documentation
+
+# Install Red Hat Developer Hub with Orchestrator by using the Red Hat Developer Hub Helm chart
+
+You can install Red Hat Developer Hub with Orchestrator by using the Red Hat Developer Hub Helm chart.
+
+## Install Red Hat Developer Hub (RHDH) on OpenShift Container Platform with the Orchestrator using the Helm CLI
+
+You can install Red Hat Developer Hub (RHDH) on OpenShift Container Platform with the Orchestrator by using the Helm CLI. The installation automatically enables the required dynamic plugins and integrates workflow infrastructure.
+
+* You are logged in as an administrator and have access to the Red Hat Developer Hub Helm chart repository.
+* You can install the necessary infrastructures resources, such as other OpenShift operators (OpenShift Serverless and OpenShift Serverless Logic), alongside RHDH in the same namespace.
+
+This is a one-off requirement and must be completed before enabling the Orchestrator plugin.
+
+1. Manually approve the install plans for the Operators. You must run the oc patch installplan commands provided in the output to approve their installation.
+
+[IMPORTANT]
+----
+By default, Orchestrator Infrastructure for Red Hat Developer Hub Helm chart does not auto-approve the required Serverless Operators. You must manually approve the install plans.
+----
+2. As an administrator, install relevant cluster-wide resources.
+
+```terminal
+$ helm repo add openshift-helm-charts https://charts.openshift.io/
+$ helm install <release_name> openshift-helm-charts/redhat-developer-hub-orchestrator-infra
+```
+
+
+[IMPORTANT]
+----
+You must be an administrator to install the redhat-developer-hub-orchestrator-infra Helm chart because it deploys additional cluster-scoped OpenShift Serverless and OpenShift Serverless Logic Operators. As an administrator, you must manually approve the install plans for OpenShift Serverless and Serverless Logic Operators.
+----
+3. Install the Backstage chart with the orchestrator enabled as shown in the following example:
+
+```terminal
+$ helm install <release_name> openshift-helm-charts/redhat-developer-hub --version 1.10.2 \
+  --set orchestrator.enabled=true
+```
+
+4. (Optional) Enable Notifications and Signals plugins by adding them to the global.dynamic.plugins list in your values.yaml file as shown in the following example:
+
+```yaml
+global:
+  dynamic:
+    plugins:
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-notifications"
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-signals"
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic"
+      - disabled: false
+        package: "./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic"
+```
+
+5. (Optional) You can disable the Serverless Logic and Serverless Operators individually or together by setting their values to false, as shown in the following example:
+
+```terminal
+$ helm install <release_name> openshift-helm-charts/redhat-developer-hub \
+  --version 1.10.2 \
+  --set orchestrator.enabled=true \
+  --set orchestrator.serverlessOperator=false \
+  --set orchestrator.serverlessLogicOperator=false
+```
+
+6. (Optional) To configure Orchestrator to use an external PostgreSQL database, follow the detailed instructions in Configure Orchestrator to connect to existing PostgreSQL infrastructure using Helm.
+
+[NOTE]
+----
+Configuring an external database for Orchestrator requires additional steps beyond standard RHDH external database configuration. You must create the backstage_plugin_orchestrator database, configure the orchestrator.sonataflowPlatform values, and ensure proper service connectivity. See the detailed procedure for complete instructions.
+----
+
+1. Verify that the Orchestrator plugin is visible in the Red Hat Developer Hub UI.
+2. Create and run sample workflows to confirm the orchestration is functioning correctly.
+
+## Install Red Hat Developer Hub (RHDH) using Helm from the OpenShift Container Platform web console
+
+You can install Red Hat Developer Hub (RHDH) with the Orchestrator by using the (OpenShift Container Platform) web console. This method is useful if you prefer a graphical interface or want to deploy cluster-wide resources without using the Helm CLI.
+
+* You are logged in to the OpenShift Container Platform web console as an administrator.
+* You have access to the Red Hat Developer Hub Helm chart repository.
+* Your cluster has internet access or the Helm charts are mirrored in a disconnected environment.
+
+1. In the OpenShift Container Platform web console, go to the Helm Charts and verify that the Red Hat Developer Hub Helm chart repository is available.
+2. Search for the Orchestrator infrastructure for Red Hat Developer Hub and select Install.
+
+[IMPORTANT]
+----
+You must be an administrator to install the Orchestrator Infrastructure for Red Hat Developer Hub Helm chart because it deploys cluster-scoped resources. As an administrator, you must manually approve the install plans for OpenShift Serverless and Serverless Logic Operators.
+----
+
+As a regular user, search for the Red Hat Developer Hub chart and install it by setting the value of orchestrator.enabled to true. Otherwise, the Orchestrator will not be deployed.
+3. Wait until they are successfully deployed.
+4. Monitor the deployment status by navigating to Pods or releases.
+
+After deployment completes:
+
+1. The orchestrator-related pods are running in the selected namespace.
+2. Cluster-wide resources are present.
+3. You can start connecting the orchestrator to your Red Hat Developer Hub UI.
+
+## Configure Orchestrator to connect to existing PostgreSQL infrastructure using Helm
+
+Connect the Orchestrator plugins to your existing PostgreSQL database when deploying with the Helm chart to leverage centralized database management and meet compliance requirements.
+
+By default, when you enable the Orchestrator plugin by using the Helm chart with orchestrator.enabled=true, the chart automatically provisions a SonataFlowPlatform custom resource (CR) and creates the required PostgreSQL database resources. The chart uses the orchestrator.sonataflowPlatform values to configure these resources.
+
+However, when you use an external PostgreSQL database that the Helm chart does not manage, you must explicitly configure the orchestrator.sonataflowPlatform values to reference your external database resources.
+
+* You have installed RHDH by using the Helm chart.
+* You have configured Developer Hub to use an external PostgreSQL database.
+* You have access to create jobs, secrets, services, and custom resources in the namespace where you deploy RHDH.
+
+1. Create the backstage_plugin_orchestrator database on your external PostgreSQL server by applying the following job:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-sonataflow-database-developer-hub
+spec:
+  ttlSecondsAfterFinished: 30
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      containers:
+        - name: psql
+          image: quay.io/fedora/postgresql-15:latest
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - secretRef:
+                name: <SECRET-NAME-WITH-DB-CREDENTIALS>
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              set -e
+              # Check if the backstage_plugin_orchestrator database exists
+              DB_EXISTS=$(PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -tAc "SELECT 1 FROM pg_database WHERE datname='backstage_plugin_orchestrator'" postgres)
+              if [ -z "$DB_EXISTS" ]; then
+                # Create the database if it does not exist
+                PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -c "CREATE DATABASE backstage_plugin_orchestrator;" postgres
+              fi
+      restartPolicy: Never
+```
+
+2. Configure your external PostgreSQL database for Orchestrator in your Helm configuration file values.yaml:
+
+```yaml
+orchestrator:
+  enabled: true
+  sonataflowPlatform:
+    externalDBsecretRef: <SECRET-NAME-WITH-DB-CREDENTIALS>
+    externalDBName: backstage_plugin_orchestrator
+    externalDBHost: <SERVICE-NAME-TO-DB>
+    externalDBPort: "5432"
+```
+
+
+Where:
+orchestrator.enabled:: Set to true to enable the Orchestrator plugin.
+orchestrator.sonataflowPlatform.externalDBsecretRef:: The secret name containing database credentials with POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, and POSTGRES_PORT keys.
+orchestrator.sonataflowPlatform.externalDBName:: The database name for Orchestrator data (must be backstage_plugin_orchestrator).
+orchestrator.sonataflowPlatform.externalDBHost:: The Kubernetes Service name pointing to your external database.
+orchestrator.sonataflowPlatform.externalDBPort:: The PostgreSQL port (typically 5432).
+
+[IMPORTANT]
+----
+Unlike the default configuration where the Helm chart automatically provisions database resources, this configuration explicitly references your external database Service and Secret. The SonataFlowPlatform CR will use these resources to connect to your external database instead of creating new database resources.
+----
+3. Apply the configuration changes in your Helm configuration file values.yaml:
+
+```terminal
+$ helm upgrade -n <your_namespace> <your_deploy_name> openshift-helm-charts/redhat-developer-hub -f values.yaml --version 1.10.2
+```
+
+
+1. Verify that the SonataFlowPlatform CR is running:
+
+```terminal
+$ oc get sonataflowplatform sonataflow-platform -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+True
+```
+
+2. In the RHDH console, confirm that the Orchestrator frontend and backend features are available and can connect to your external database.
+
+## Resource limits for installing Red Hat Developer Hub with the Orchestrator plugin when using Helm
+
+When installing Red Hat Developer Hub (RHDH) with the Orchestrator plugin using Helm, the chart defines default CPU and memory limits for the SonataFlowPlatform component.
+
+These limits are enforced by the cluster so that pods do not exceed their allocated resources.
+
+1. Default resource limits
+
+
+
+1. You can override these values in any of the following ways:
+* With values.yaml
+* With --set flags
+2. Override defaults with values.yaml as shown in the following example:
+
+```yaml
+orchestrator:
+  enabled: true
+  sonataflowPlatform:
+  resources:
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+```
+
+3. Override with --set as shown in the following example:
+
+```terminal
+$ helm upgrade --install <release_name>  openshift-helm-charts/redhat-developer-hub \
+  --set orchestrator.enabled=true \
+  --set orchestrator.sonataflowPlatform.resources.requests.cpu=500m \
+  --set orchestrator.sonataflowPlatform.resources.requests.memory=128Mi \
+  --set orchestrator.sonataflowPlatform.resources.limits.cpu=1 \
+  --set orchestrator.sonataflowPlatform.resources.limits.memory=2Gi
+```
+
+
+[NOTE]
+----
+The --set setting is applicable only when orchestrator.enabled is true. By default, it is set to false.
+----
+
+## Install Orchestrator components manually on OpenShift Container Platform
+
+Use manual installation when you want full control of the setup process and component versions. Manual installation method focuses on setting up the underlying infrastructure.
+
+1. Install the OpenShift Serverless components manually by following the instructions in the Red Hat OpenShift Serverless documentation.
+2. (Optional) If required, deploy a custom PostgreSQL database.
+
+[IMPORTANT]
+----
+Prevent workflow context from being lost when the Pod restarts by configuring workflow persistence.
+You can configure persistence at the namespace level by using the SonataFlowPlatform or SonataFlow custom resources (CR).
+For more information, check the Managing workflow persistence documentation.
+----
+
+# Install Orchestrator plugin in an air-gapped environment with the Operator
+
+You can configure Red Hat Developer Hub (RHDH) with the Orchestrator plugin in a fully disconnected or partially disconnected environment by using the Operator.
+
+## Install Red Hat Developer Hub with Orchestrator in a fully disconnected OpenShift Container Platform environment using the Operator
+
+You can install Red Hat Developer Hub with Orchestrator plugin in a fully air-gapped environment using the Operator.
+
+A disconnected installation prevents unauthorized access, data transfer, or communication with external sources.
+
+You can use the helper script to install Red Hat Developer Hub by mirroring the Operator-related images to disk and transferring them to your disconnected environment without any connection to the internet.
+
+* You have mirrored the Red Hat Developer Hub Operator images to the local registry using the RHDH mirroring script. For more information, see Installing Red Hat Developer Hub in a fully disconnected environment with the Operator.
+
+* You have set up your disconnected environment using a local registry.
+* You have permissions to push OCI images to your internal container registry.
+* You have installed the oc mirror tool, with a version corresponding to the version of your OpenShift Container Platform cluster.
+
+1. Create an ImageSetConfiguration file for oc mirror. You must include the images and operators required by the Serverless Logic Operator in the ImageSetConfiguration file, as shown in the following example:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  additionalimages:
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets@<digest>
+
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v<ocp-version>
+     # For example: registry.redhat.io/redhat/redhat-operator-index:v4.21
+      packages:
+      - name: logic-operator
+        channels:
+        - name: stable
+          minVersion: 1.38.0
+          maxVersion: 1.38.0
+      - name: serverless-operator
+        channels:
+        - name: stable
+          minVersion: 1.37.1
+          maxVersion: 1.37.1
+```
+
+
+where:
+<digest>:: Locate the image digests for your version of RHDH in the dynamic-plugins.default.yaml file. You can extract this file from the plugin catalog index image to verify the default settings for your specific release:
+
+```bash
+#!/bin/bash
+
+unpack () {
+  local IMAGE="$1"
+  DIR="${IMAGE//:/}"
+  DIR="/tmp/${DIR//\//-}"
+  rm -fr "$DIR"; mkdir -p "$DIR"; container_id=$(podman create "${IMAGE}")
+  podman export $container_id -o /tmp/image.tar && tar xf /tmp/image.tar -C "${DIR}/"; podman rm $container_id; rm -f /tmp/image.tar
+  echo "Unpacked $IMAGE into $DIR"
+  cd $DIR; tree -d -L 3 -I "usr|root|buildinfo"
+}
+
+unpack "registry.access.redhat.com/rhdh/plugin-catalog-index:{product-version)"
+
+# you can then find the dynamic-plugins.default.yaml under /tmp/registry.access.redhat.com/rhdh/plugin-catalog-index{product-version)/dynamic-plugins.default.yaml
+```
+
+2. Mirror the images in the ImageSetConfiguration.yaml file by running the oc mirror command. For example:
+
+```terminal
+$ oc mirror --config=ImageSetConfiguration.yaml file:///path/to/mirror-archive --authfile /path/to/authfile --v2
+```
+
+
+[NOTE]
+----
+1. The --v2 flag is required for OpenShift Container Platform 4.21 and later.
+2. The oc mirror command generates a local workspace containing the mirror archive files and the required cluster manifests.
+----
+3. Transfer the directory specified by /path/to/mirror-archive to a bastion host within your disconnected environment.
+4. From the bastion host which has access to the mirror registry, mirror the images from the disk directory to your target registry. For example:
+
+```yaml
+$ oc mirror --v2 --from <mirror-archive-file> docker://<target-registry-url:port> --workspace file://<workspace folder> --authfile /path/to/authfile
+```
+
+
+where:
+<mirror-archive-file>:: Enter the name of the transferred tar file.
+<target-registry-url:port>:: Enter your local registry, for example, registry.localhost:5000.
+5. Apply the cluster-wide resources generated during the push step to redirect all image pulls to your local registry, as shown in the following example:
+
+```terminal
+$ cd <workspace folder>/working-dir/cluster-resources/
+$ oc apply -f .
+```
+
+6. Install the OpenShift Serverless Operator and OpenShift Serverless Logic Operators using OperatorHub.
+7. Create a Backstage custom resource (CR).
+8. Configure the Backstage CR for the Orchestrator as described in the Orchestrator plugin dependencies for Operator installation.
+
+Create all the resources and configure the Backstage instance accordingly.
+
+1. Restart the RHDH pod and wait for the components to deploy properly.
+2. Once stable, go to the RHDH UI, and confirm that the Orchestrator UI is accessible and functioning correctly.
+
+
+[NOTE]
+----
+The successful accessibility of the Orchestrator UI confirms that the underlying components are running and the cluster recognizes the plugin.
+----
+
+## Install Red Hat Developer Hub with Orchestrator in a partially disconnected OpenShift Container Platform environment using the Operator
+
+You can install Red Hat Developer Hub with Orchestrator plugin in a partial air-gapped environment using the Operator.
+
+A disconnected installation prevents unauthorized access, data transfer, or communication with external sources.
+
+You can use the oc mirror command to mirror resources directly to your accessible local mirror registry and apply the generated cluster resources.
+
+* You have mirrored the Red Hat Developer Hub Operator images to the local registry using the RHDH mirroring script. For more information, see Installing Red Hat Developer Hub in a partially disconnected environment with the Operator.
+
+* You have set up your disconnected environment using a local registry.
+* You have permissions to push OCI images to your internal container registry.
+* You have installed the oc mirror tool, with a version corresponding to the version of your OpenShift Container Platform cluster.
+
+1. Create an ImageSetConfiguration file for oc mirror. You must include the images and operators required by the Serverless Logic Operator in the ImageSetConfiguration file, as shown in the following example:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  additionalimages:
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets@<digest>
+
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v<ocp-version>
+     # For example: registry.redhat.io/redhat/redhat-operator-index:v4.21
+      packages:
+      - name: logic-operator
+        channels:
+        - name: stable
+          minVersion: 1.38.0
+          maxVersion: 1.38.0
+      - name: serverless-operator
+        channels:
+        - name: stable
+          minVersion: 1.37.1
+          maxVersion: 1.37.1
+```
+
+
+Where:
+<digest>:: Locate the image digests for your version of RHDH in the dynamic-plugins.default.yaml file. You can extract this file from the plugin catalog index image to verify the default settings for your specific release:
+
+```bash
+#!/bin/bash
+
+unpack () {
+  local IMAGE="$1"
+  DIR="${IMAGE//:/}"
+  DIR="/tmp/${DIR//\//-}"
+  rm -fr "$DIR"; mkdir -p "$DIR"; container_id=$(podman create "${IMAGE}")
+  podman export $container_id -o /tmp/image.tar && tar xf /tmp/image.tar -C "${DIR}/"; podman rm $container_id; rm -f /tmp/image.tar
+  echo "Unpacked $IMAGE into $DIR"
+  cd $DIR; tree -d -L 3 -I "usr|root|buildinfo"
+}
+
+unpack "registry.access.redhat.com/rhdh/plugin-catalog-index:{product-version)"
+
+# you can then find the dynamic-plugins.default.yaml under /tmp/registry.access.redhat.com/rhdh/plugin-catalog-index{product-version)/dynamic-plugins.default.yaml
+```
+
+2. Mirror the images in the ImageSetConfiguration.yaml file by running the oc mirror command. For example:
+
+```terminal
+$ oc mirror --config=imagesetconfiguration.yaml docker://<registry URL:port> --workspace file://<workspace folder> --authfile /path/to/authfile --v2
+$ cd <workspace folder>/working-dir/cluster-resources/
+$ oc apply -f .
+```
+
+
+[NOTE]
+----
+The --v2 flag is required for OpenShift Container Platform 4.21 and later.
+----
+3. Install the OpenShift Serverless Operator and OpenShift Serverless Logic Operators using OperatorHub.
+4. Create a Backstage custom resource (CR).
+5. Configure the Backstage CR for the Orchestrator as described in the Orchestrator plugin dependencies for Operator installation.
+
+Create all the resources and configure the Backstage instance accordingly.
+
+1. Restart the RHDH pod and wait for the components to deploy properly.
+2. Once stable, go to the RHDH UI, and confirm that the Orchestrator UI is accessible and functioning correctly.
+
+
+[NOTE]
+----
+The successful accessibility of the Orchestrator UI confirms that the underlying components are running and the cluster recognizes the plugin.
+----
+
+# Install Orchestrator plugin in an air-gapped environment with the Helm chart
+
+You can configure Red Hat Developer Hub (RHDH) with the Orchestrator plugin in a fully disconnected or partially disconnected environment by using the Helm chart.
+
+## Install Red Hat Developer Hub with Orchestrator in a fully disconnected OpenShift Container Platform environment using the Helm chart
+
+You can install Red Hat Developer Hub (RHDH) with the Orchestrator plugin in a fully air-gapped OpenShift Container Platform environment using the Helm chart.
+
+You can mirror images to an intermediary disk, and then mirror from the disk to your target local registry and apply the generated cluster resources.
+
+* You have set up your disconnected environment using a local registry.
+* You have permissions to push OCI images to your internal container registry.
+* You have installed the oc mirror tool, with a version corresponding to the version of your OpenShift Container Platform cluster.
+
+1. Create an ImageSetConfiguration.yaml file for oc mirror. You must use an ImageSetConfiguration file to include all mirrored images required, as shown in the following example:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  additionalimages:
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets@<digest>
+
+  helm:
+    repositories:
+      - name: openshift-charts
+        url: https://charts.openshift.io
+        charts:
+          - name: redhat-developer-hub
+            version: "1.10.2"
+          - name: redhat-developer-hub-orchestrator-infra
+            version: "1.10.2"
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v<ocp-version>
+     # For example: registry.redhat.io/redhat/redhat-operator-index:v4.21
+      packages:
+      - name: logic-operator
+        channels:
+        - name: stable
+          minVersion: 1.38.0
+          maxVersion: 1.38.0
+      - name: serverless-operator
+        channels:
+        - name: stable
+          minVersion: 1.37.1
+          maxVersion: 1.37.1
+```
+
+
+where:
+<digest>:: Locate the image digests for your version of RHDH in the dynamic-plugins.default.yaml file. You can extract this file from the plugin catalog index image to verify the default settings for your specific release:
+
+```bash
+#!/bin/bash
+
+unpack () {
+  local IMAGE="$1"
+  DIR="${IMAGE//:/_}"
+  DIR="/tmp/${DIR//\//-}"
+  rm -fr "$DIR"; mkdir -p "$DIR"; container_id=$(podman create "${IMAGE}")
+  podman export $container_id -o /tmp/image.tar && tar xf /tmp/image.tar -C "${DIR}/"; podman rm $container_id; rm -f /tmp/image.tar
+  echo "Unpacked $IMAGE into $DIR"
+  cd $DIR; tree -d -L 3 -I "usr|root|buildinfo"
+}
+
+unpack "registry.access.redhat.com/rhdh/plugin-catalog-index:1.10"
+
+# you can then find the dynamic-plugins.default.yaml under /tmp/registry.access.redhat.com/rhdh/plugin-catalog-index_1.10/dynamic-plugins.default.yaml
+```
+
+2. Mirror the images in the ImageSetConfiguration.yaml file by running the oc mirror command. For example:
+
+```terminal
+$ oc mirror --config=ImageSetConfiguration.yaml file:///path/to/mirror-archive --authfile /path/to/authfile --v2
+```
+
+
+[NOTE]
+----
+1. The --v2 flag is required for OpenShift Container Platform 4.21 and later.
+2. The oc mirror command pulls the charts listed in the ImageSetConfiguration file and makes them available as tgz archives under the /path/to/mirror-archive directory.
+----
+3. Apply the cluster-wide resources generated during the push step to redirect all image pulls to your local registry, as shown in the following example:
+
+```terminal
+$ cd <workspace folder>/working-dir/cluster-resources/
+$ oc apply -f .
+```
+
+4. Transfer the generated mirror archive file, for example, /path/to/mirror-archive/mirror_000001.tar, to a bastion host within your disconnected environment.
+5. From the bastion host in your disconnected environment, which has access to the mirror registry, mirror the images from the archive file to your target registry. For example:
+
+```terminal
+$ oc mirror --v2 --from <mirror-archive-file> docker://<target-registry-url:port> --workspace file://<workspace folder> --authfile /path/to/authfile
+```
+
+
+where:
+<mirror-archive-file>:: Enter the name of the transferred tar file.
+<target-registry-url:port>:: Enter your local registry, for example, registry.localhost:5000.
+6. Apply the redhat-developer-hub-orchestrator-infra Helm chart and approve the install plans. See Air-gapped installation with Helm chart instructions for details.
+7. Apply the RHDH 1.10 Helm chart. Include the version 1.10.2 and enable the Orchestrator plugin, as shown in the following example:
+
+```yaml
+orchestrator.enabled=true
+```
+
+8. The RHDH 1.10 Helm chart defaults to pulling Orchestrator plugins from the official Red Hat OCI registry using full URL references. Override this default behavior to point the chart to your local registry.
+
+To configure the Orchestrator plugins to use a custom registry, complete the following steps:
+9. Open your values.yaml file.
+10. List the Orchestrator plugin packages under the orchestrator.plugins section. You must replace the simplified package references with the full URLs that point to your custom OCI registry.
+
+[IMPORTANT]
+----
+You must explicitly include the pluginConfig configuration for each plugin as shown in the following example:
+----
+
+```yaml
+orchestrator:
+  plugins:
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@_<digest>_
+      disabled: true
+      pluginConfig:
+        orchestrator:
+          dataIndexService:
+            url: http://sonataflow-platform-data-index-service
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets@_<digest>_
+      disabled: true
+      pluginConfig:
+        dynamicPlugins:
+          frontend:
+            red-hat-developer-hub.backstage-plugin-orchestrator-form-widgets: {}
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@_<digest>_
+      disabled: true
+      pluginConfig:
+        dynamicPlugins:
+          frontend:
+            red-hat-developer-hub.backstage-plugin-orchestrator:
+              appIcons:
+              - importName: OrchestratorIcon
+                name: orchestratorIcon
+              dynamicRoutes:
+              - importName: OrchestratorPage
+                menuItem:
+                  icon: orchestratorIcon
+                  text: Orchestrator
+                  textKey: menuItem.orchestrator
+                path: /orchestrator
+              entityTabs:
+              - path: /workflows
+                title: Workflows
+                titleKey: catalog.entityPage.workflows.title
+                mountPoint: entity.page.workflows
+              mountPoints:
+              - mountPoint: entity.page.workflows/cards
+                importName: OrchestratorCatalogTab
+                config:
+                  layout:
+                    gridColumn: 1 / -1
+                  if:
+                    anyOf:
+                      - IsOrchestratorCatalogTabAvailable
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator@_<digest>_
+      disabled: true
+      pluginConfig:
+        orchestrator:
+          dataIndexService:
+            url: http://sonataflow-platform-data-index-service
+```
+
+
+where:
+<custom_registry_url>:: Enter the address of your custom registry where the OCI images have been mirrored.
+<digest>:: Locate the image digests for your version of RHDH in the dynamic-plugins.default.yaml file. You can extract this file from the plugin catalog index image to verify the default settings for your specific release:
+
+```bash
+#!/bin/bash
+
+unpack () {
+  local IMAGE="$1"
+  DIR="${IMAGE//:/}"
+  DIR="/tmp/${DIR//\//-}"
+  rm -fr "$DIR"; mkdir -p "$DIR"; container_id=$(podman create "${IMAGE}")
+  podman export $container_id -o /tmp/image.tar && tar xf /tmp/image.tar -C "${DIR}/"; podman rm $container_id; rm -f /tmp/image.tar
+  echo "Unpacked $IMAGE into $DIR"
+  cd $DIR; tree -d -L 3 -I "usr|root|buildinfo"
+}
+
+unpack "registry.access.redhat.com/rhdh/plugin-catalog-index:{product-version)"
+
+# you can then find the dynamic-plugins.default.yaml under /tmp/registry.access.redhat.com/rhdh/plugin-catalog-index{product-version)/dynamic-plugins.default.yaml
+```
+
+
+1. Restart the RHDH Pod and wait for the components to deploy properly.
+2. After deployment is complete, go to the RHDH UI and confirm that the Orchestrator UI is accessible and functioning correctly.
+
+
+[NOTE]
+----
+The successful accessibility of the Orchestrator UI confirms that the underlying components are running and the cluster recognizes the plugin.
+----
+
+## Install Red Hat Developer Hub with Orchestrator in a partially disconnected OpenShift Container Platform environment using the Helm chart
+
+You can install Red Hat Developer Hub (RHDH) with the Orchestrator plugin in a partial OpenShift Container Platform environment using the Helm chart.
+
+A disconnected installation prevents unauthorized access, data transfer, or communication with external sources.
+
+You can use the oc mirror command to mirror resources directly to your accessible local registry and apply the generated cluster resources.
+
+* You have set up your disconnected environment using a local registry.
+* You have permissions to push OCI images to your internal container registry.
+* You have installed the oc mirror tool, with a version corresponding to the version of your OpenShift Container Platform cluster.
+
+1. Create an ImageSetConfiguration.yaml file for oc mirror. You must use an ImageSetConfiguration file to include all mirrored images required, as shown in the following example:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  additionalimages:
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator@<digest>
+  - name: registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets@<digest>
+
+  helm:
+    repositories:
+      - name: openshift-charts
+        url: https://charts.openshift.io
+        charts:
+          - name: redhat-developer-hub
+            version: "1.10.2"
+          - name: redhat-developer-hub-orchestrator-infra
+            version: "1.10.2"
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v<ocp-version>
+     # For example: registry.redhat.io/redhat/redhat-operator-index:v4.21
+      packages:
+      - name: logic-operator
+        channels:
+        - name: stable
+          minVersion: 1.38.0
+          maxVersion: 1.38.0
+      - name: serverless-operator
+        channels:
+        - name: stable
+          minVersion: 1.37.1
+          maxVersion: 1.37.1
+```
+
+2. Mirror the images in the ImageSetConfiguration.yaml file by running the oc mirror command to pull images and charts, and push the images directly to the target registry. For example:
+
+```terminal
+$ oc mirror --config=imagesetconfiguration.yaml docker://<registry URL:port> --workspace file://<workspace folder> --authfile /path/to/authfile --v2
+```
+
+
+[NOTE]
+----
+1. The --v2 flag is required for OpenShift Container Platform 4.21 and later.
+2. The oc mirror command pulls the charts listed in the ImageSetConfiguration file and makes them available as tgz archives under the <workspace folder> directory.
+----
+3. Apply the generated cluster resources to the disconnected cluster. For example:
+
+```terminal
+$ cd <workspace folder>/working-dir/cluster-resources/
+$ oc apply -f .
+```
+
+4. Apply the redhat-developer-hub-orchestrator-infra Helm chart and approve the install plans. See Air-gapped installation with Helm chart instructions for details.
+5. Apply the RHDH 1.10 Helm chart. Include the version 1.10.2 and enable the Orchestrator plugin, as shown in the following example:
+
+```yaml
+orchestrator.enabled=true
+```
+
+6. The RHDH 1.10 Helm chart defaults to pulling Orchestrator plugins from the official Red Hat OCI registry using full URL references. You must override this behavior to point to your local registry.
+
+To configure the Orchestrator plugins to use a custom registry, complete the following steps:
+* Open your values.yaml file.
+* Explicitly list the Orchestrator plugin packages under the orchestrator.plugins section.
+
+You must replace the simplified package references with the full URLs that point to your custom OCI registry. You must explicitly include the pluginConfig configuration for each plugin as shown in the following example:
+
+```yaml
+orchestrator:
+  plugins:
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@_<digest>_
+      disabled: true
+      pluginConfig:
+        orchestrator:
+          dataIndexService:
+            url: http://sonataflow-platform-data-index-service
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets@_<digest>_
+      disabled: true
+      pluginConfig:
+        dynamicPlugins:
+          frontend:
+            red-hat-developer-hub.backstage-plugin-orchestrator-form-widgets: {}
+    - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator@_<digest>_
+      disabled: true
+      pluginConfig:
+        dynamicPlugins:
+          frontend:
+            red-hat-developer-hub.backstage-plugin-orchestrator:
+              appIcons:
+              - importName: OrchestratorIcon
+                name: orchestratorIcon
+              dynamicRoutes:
+              - importName: OrchestratorPage
+                menuItem:
+                  icon: orchestratorIcon
+                  text: Orchestrator
+                  textKey: menuItem.orchestrator
+                path: /orchestrator
+              entityTabs:
+              - path: /workflows
+                title: Workflows
+                titleKey: catalog.entityPage.workflows.title
+                mountPoint: entity.page.workflows
+              mountPoints:
+              - mountPoint: entity.page.workflows/cards
+                importName: OrchestratorCatalogTab
+                config:
+                  layout:
+                    gridColumn: 1 / -1
+                  if:
+                    anyOf:
+                      - IsOrchestratorCatalogTabAvailable
+    - - package: oci://<custom_registry_url>/rhdh/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator@_<digest>_
+      disabled: true
+      pluginConfig:
+        orchestrator:
+          dataIndexService:
+            url: http://sonataflow-platform-data-index-service
+```
+
+
+Where:
+<custom_registry_url>:: Enter the address of your custom registry where the OCI images have been mirrored.
+<digest>:: Locate the image digests for your version of RHDH in the dynamic-plugins.default.yaml file. You can extract this file from the plugin catalog index image to verify the default settings for your specific release:
+
+```bash
+#!/bin/bash
+
+unpack () {
+  local IMAGE="$1"
+  DIR="${IMAGE//:/}"
+  DIR="/tmp/${DIR//\//-}"
+  rm -fr "$DIR"; mkdir -p "$DIR"; container_id=$(podman create "${IMAGE}")
+  podman export $container_id -o /tmp/image.tar && tar xf /tmp/image.tar -C "${DIR}/"; podman rm $container_id; rm -f /tmp/image.tar
+  echo "Unpacked $IMAGE into $DIR"
+  cd $DIR; tree -d -L 3 -I "usr|root|buildinfo"
+}
+
+unpack "registry.access.redhat.com/rhdh/plugin-catalog-index:{product-version)"
+
+# you can then find the dynamic-plugins.default.yaml under /tmp/registry.access.redhat.com/rhdh/plugin-catalog-index{product-version)/dynamic-plugins.default.yaml
+```
+
+
+1. Restart the RHDH pod and wait for the components to deploy properly.
+2. After deployment is complete, go to the RHDH UI and confirm that the Orchestrator UI is accessible and functioning correctly.
+
+
+[NOTE]
+----
+The successful accessibility of the Orchestrator UI confirms that the underlying components are running and the cluster recognizes the plugin.
+----
+
+# Integrate Loki Logs to debug Orchestrator workflows
+
+You can configure the Orchestrator backend to integrate external services and support serverless workflows. For detailed workflow debugging, integrate a log provider.
+
+## Integrate Loki logs for Orchestrator workflows
+
+To troubleshoot and debug errors, integrate Loki logs into the Red Hat Developer Hub interface. You must install the Loki backend module and configure the connection details.
+
+* You have enabled the Orchestrator plugins in your Red Hat Developer Hub instance.
+* You have a running Loki instance.
+* You have stored your Orchestrator logs in the Loki instance.
+
+1. Enable the Loki backend module in the redhat-developer-hub-dynamic-plugins ConfigMap.
+![Enabling the Loki backend module in the ConfigMap]
+2. Open the ConfigMap and select the YAML view.
+3. Add the Loki backend module to the plugins section:
+
+```yaml
+- disabled: false
+      package: oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-orchestrator-backend-module-loki:{{inherit}}
+```
+
+![Adding the Loki backend module plugin to the ConfigMap]
+4. Save the file.
+5. In your application app-config.yaml ConfigMap file, add the Loki workflow log provider integration to the orchestrator section:
+![Adding the Loki workflow log provider configuration]
+![Loki workflow log provider configuration in the ConfigMap]
+
+[NOTE]
+----
+The base URl might vary depending on where you store and access the Loki logs.
+----
+
+To obtain the base URL, run the following command:
+
+```bash
+LOKI_HOST=$(oc get route logging-loki -n openshift-logging -o jsonpath='{.spec.host}')
+echo "https://$LOKI_HOST/api/logs/v1/application/"
+```
+
+
+```yaml
+orchestrator:
+  workflowLogProvider:
+    loki:
+      baseUrl: <LOKI_BASE_URL>
+	token: <AUTH_TOKEN>
+	rejectUnauthorized: false
+     # logPipelineFilters:
+      # - '| filter1'
+      # - '|= filter2'
+      # logStreamSelectors:
+      #   - label: 'app'
+      #     value: '=~".+"'
+```
+
+
+where:
+
+baseUrl: Specifies the base URL of your Loki instance. This value is required.
+
+token: The access token for authentication. This value is required. To find your current token, run the oc whoami -t command.
+
+rejectUnauthorized: Set to false if using self-signed certificates.
+Optional Parameters:: 
+
+logPipelineFilters: Multiple Log Pipeline Filters can be specified in the logPipelineFilters section. See the Loki documentation to learn more about the log pipeline filters and their values and usage.
+
+logStreamSelectors: Specifies log stream selectors to filter the logs. By default, the plugin retrieves logs with the openshift_log_type="application". For more information about selector syntax, see the Grafana Loki documentation.
+6. Save the ConfigMap.
+7. Restart the Red Hat Developer Hub pod to apply the changes.
+
+1. Navigate to the Orchestrator plugin in the RHDH interface.
+2. Select a workflow instance.
+3. Click View Logs to display the workflow instance logs.
+
+# Diagnose workflow failures by using centralized logging
+
+Search all workflow logs from a single dashboard in Red Hat Developer Hub to diagnose failures quickly. Use structured logging to connect process instances with traces and set up automated alerts for workflow failures.
+
+## Enable JSON logging to search logs instantly without manual parsing
+
+Output logs as JSON instead of plain text so log platforms can automatically filter by process instance, error level, or trace ID. Structured logging eliminates manual parsing and enables instant searches across millions of log entries.
+
+SonataFlow workflows support structured JSON logging with automatic process instance correlation through:
+
+* Process instance context: Automatic processInstanceId correlation in all log entries
+* Structured format: JSON logs optimized for machine processing and aggregation
+* Multi-tenancy support: Log isolation by workflow and process instance
+
+* You have deployed SonataFlow workflow by using the SonataFlow Operator on OpenShift or Kubernetes.
+* You have included the io.quarkus:quarkus-logging-json extension in your workflow QUARKUS_EXTENSIONS environment variable.
+* You have cluster-admin permissions for deploying log aggregation stack.
+
+1. Update your workflow build configuration to include the JSON logging extension:
+
+```bash
+export QUARKUS_EXTENSIONS="${QUARKUS_EXTENSIONS},io.quarkus:quarkus-logging-json"
+```
+
+2. Open the {workflow-name}-props ConfigMap for your workflow.
+3. Add the following properties to the application.properties section:
+
+```bash
+# Enable JSON logging with Quarkus JSON logging extension
+quarkus.log.console.json=true
+quarkus.log.console.json.pretty-print=false
+
+# Include all MDC context fields in JSON output
+# - processInstanceId: Set automatically by SonataFlow/Kogito
+# - traceId, spanId: Set by Quarkus OpenTelemetry (requires quarkus.otel.enabled=true)
+quarkus.log.console.json.print-details=true
+
+# Set log levels for workflow components
+quarkus.log.category."org.kie.kogito".level=DEBUG
+quarkus.log.category."io.serverlessworkflow".level=INFO
+
+# Optional: Enable additional context logging
+quarkus.log.category."org.kie.kogito.services.context".level=DEBUG
+```
+
+4. Save the ConfigMap and restart the workflow pod.
+
+The following is an example of a workflow ConfigMap with an enabled JSON logging:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greetings-props
+  namespace: sonataflow-infra
+data:
+  application.properties: |
+    # JSON logging configuration
+    quarkus.log.console.json=true
+    quarkus.log.console.json.pretty-print=false
+    quarkus.log.console.json.print-details=true
+
+    # Log levels
+    quarkus.log.category."org.kie.kogito".level=DEBUG
+    quarkus.log.category."io.serverlessworkflow".level=INFO
+```
+
+
+1. Check the pod logs to verify the JSON format and the presence of the processInstanceId:
+
+```bash
+oc logs <workflow_pod_name> | grep processInstanceId
+```
+
+
+```bash
+{"timestamp":"...","level":"INFO","message":"...","mdc":{"processInstanceId":"abc-123-..."}}
+```
+
+
+
+[NOTE]
+----
+If the Mapped Diagnostic Context (MDC) fields are empty, verify the following:
+1. The workflow has processed at least one instance.
+2. The SonataFlow version matches the required configuration for MDC propagation.
+----
+
+## Rotate logs automatically to prevent pod crashes from full disks
+
+Automatically archive old logs before the disk fills up and crashes your workflow pods. Log rotation keeps recent logs available for debugging while preventing storage from becoming a production incident.
+
+
+[IMPORTANT]
+----
+When using file-based logging in Kubernetes, mount the log directory to a volume to prevent data loss or pod instability.
+----
+
+* You have configured a shared Kubernetes volume in the SonataFlow custom resource.
+* Your workflow image includes the JSON logging extension.
+
+1. Add the following properties to the workflow ConfigMap to enable file-based JSON output:
+
+```bash
+quarkus.log.file.enable=true
+quarkus.log.file.path=/var/log/sonataflow/workflow.log
+quarkus.log.file.json=true
+```
+
+2. Configure log rotation settings to manage disk usage:
+
+```bash
+quarkus.log.file.rotation.max-file-size=10M
+quarkus.log.file.rotation.max-backup-index=5
+quarkus.log.file.rotation.rotate-on-boot=true
+```
+
+
+This configuration does the following:
+3. Rotates logs when they reach 10MB
+4. Keeps up to 5 backup files
+5. Adds date suffix to rotated files
+6. Rotates on application startup
+7. Set log level for file output:
+
+```bash
+quarkus.log.file.level=INFO
+```
+
+8. Update the SonataFlow custom resource (CR) to mount the volume at the log path:
+
+```bash
+spec:
+  podTemplate:
+    container:
+      volumeMounts:
+      - name: shared-logs
+        mountPath: /var/log/sonataflow
+  volumes:
+  - name: shared-logs
+    emptyDir:
+      sizeLimit: 500Mi
+```
+
+9. After applying the configuration, restart your workflow pod and check the log output:
+
+```bash
+# Get workflow pod name
+oc get pods -n sonataflow-infra -l sonataflow.org/workflow-app=your-workflow
+
+# Check logs for JSON format
+oc logs -n sonataflow-infra your-workflow-pod-name | head -5
+```
+
+
+1. Access the workflow container and verify the log file exists and is receiving JSON data:
+
+```bash
+oc exec <pod_name> -- ls -l /var/log/sonataflow/workflow.log
+```
+
+2. Verify that the file contains JSON data:
+
+```bash
+oc exec <pod_name> -- head -n 5 /var/log/sonataflow/workflow.log
+```
+
+
+## Link logs to traces for complete failure diagnosis
+
+Click a trace ID in any log entry to see the complete timeline of what happened across all services. Log-to-trace correlation turns a single error message into a full execution diagram showing every step and service call.
+
+* You have deployed an OpenTelemetry-compliant collector (for example, Jaeger) in the cluster.
+* You have set quarkus.log.console.json.print-details=true to true.
+
+1. Add the OpenTelemetry exporter and service identification properties to your workflow ConfigMap:
+
+```yaml
+# Enable OpenTelemetry integration
+quarkus.otel.enabled=true
+quarkus.otel.exporter.otlp.traces.endpoint=http://jaeger-collector:4317
+quarkus.otel.service.name=${workflow.name}
+```
+
+2. Set the resource attributes to filter traces in your observability dashboard:
+
+```yaml
+quarkus.otel.resource.attributes=service.namespace=sonataflow-infra
+```
+
+3. Restart the workflow pod to apply the new configuration.
+
+1. Trigger a workflow execution.
+2. Check the logs for trace identifiers:
+
+```bash
+oc logs <pod_name> | grep traceId
+```
+
+3. Make sure the mdc block in the JSON output contains traceId and spanId fields with non-empty values.
+
+## Centralize logs for workflow troubleshooting
+
+Query logs from all workflow pods in your Red Hat Developer Hub cluster using a single Grafana dashboard. Centralized logging allows you to search by process ID, error type, or time range from a browser.
+
+* You have running Loki and Grafana instances in the cluster.
+* You have configured workflow for file-based JSON logging.
+* You have cluster-admin permissions.
+
+1. Deploy the PLG stack by using Helm:
+
+```bash
+# Add Grafana Helm repository
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+# Create namespace
+oc new-project sonataflow-observability
+
+# Deploy Loki stack
+helm install loki-stack grafana/loki-stack \
+  --namespace sonataflow-observability \
+  --set loki.persistence.enabled=true \
+  --set loki.persistence.size=20Gi \
+  --set promtail.config.logLevel=info \
+  --set grafana.enabled=true
+```
+
+
+[NOTE]
+----
+For production deployments, use a custom values.yaml file with appropriate resource limits and security contexts.
+----
+2. Create a ConfigMap for the Promtail sidecar by selecting the configuration that matches your logging method:
+1. Scrape container stdout
+
+Use this configuration to collect logs from container stdout by using Kubernetes service discovery:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: sonataflow-observability
+data:
+  config.yml: |
+    server:
+      http_listen_port: 3101
+
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+
+    scrape_configs:
+    - job_name: sonataflow-workflows
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["sonataflow-infra"]
+
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_sonataflow_org_workflow_app]
+        action: keep
+        regex: (.+)
+
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+      - source_labels: [__meta_kubernetes_pod_label_sonataflow_org_workflow_app]
+        target_label: workflow
+
+      pipeline_stages:
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            logger: logger
+            message: message
+            processInstanceId: mdc.processInstanceId
+            traceId: mdc.traceId
+            spanId: mdc.spanId
+
+      - labels:
+          level:
+          logger:
+          processInstanceId:
+          traceId:
+```
+
+2. Scrape JSON log files
+
+If you use [file-based JSON logging](#file-based-json-logging), configure Promtail to read from the shared log volume:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-sidecar-config
+  namespace: sonataflow-infra
+data:
+  config.yml: |
+    server:
+      http_listen_port: 3101
+
+    clients:
+      - url: http://loki.sonataflow-observability.svc.cluster.local:3100/loki/api/v1/push
+
+    positions:
+      filename: /var/log/positions.yaml
+
+    scrape_configs:
+    - job_name: sonataflow-json-files
+      static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: sonataflow-workflows
+          __path__: /var/log/sonataflow/*.log
+
+      pipeline_stages:
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            logger: loggerName
+            message: message
+            processInstanceId: mdc.processInstanceId
+            traceId: mdc.traceId
+            spanId: mdc.spanId
+
+      - labels:
+          level:
+          logger:
+          processInstanceId:
+          traceId:
+
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+```
+
+3. Add the Promtail sidecar container to your SonataFlow custom resource:
+
+```yaml
+apiVersion: sonataflow.org/v1alpha08
+kind: SonataFlow
+metadata:
+  name: my-workflow
+  namespace: sonataflow-infra
+spec:
+  podTemplate:
+    container:
+      volumeMounts:
+      - name: shared-logs
+        mountPath: /var/log/sonataflow
+    containers:
+    - name: promtail-sidecar
+      image: grafana/promtail:2.9.0
+      args:
+        - -config.file=/etc/promtail/config.yml
+      volumeMounts:
+      - name: shared-logs
+        mountPath: /var/log/sonataflow
+        readOnly: true
+      - name: promtail-config
+        mountPath: /etc/promtail
+      - name: positions
+        mountPath: /var/log
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+    volumes:
+    - name: shared-logs
+      emptyDir:
+        sizeLimit: 500Mi
+    - name: promtail-config
+      configMap:
+        name: promtail-sidecar-config
+    - name: positions
+      emptyDir: {}
+```
+
+4. Querying logs in Grafana: After deploying the stack, use the following LogQL queries in the Grafana Explore view:
+1. Filter logs by process instance
+
+```json
+{job="sonataflow-workflows"} | json | processInstanceId="abc-123-def-456"
+```
+
+2. Find workflow errors:
+
+```json
+{job="sonataflow-workflows", workflow="onboarding"} | json | level="ERROR"
+```
+
+3. Trace correlation:
+
+```json
+{job="sonataflow-workflows"} | json | traceId="4bf92f3577b34da6a3ce929d0e0e4736"
+```
+
+4. Process instance timeline:
+
+```json
+{job="sonataflow-workflows"} | json | processInstanceId="abc-123-def-456" | line_format "{{.timestamp}} [{{.level}}] {{.message}}"
+```
+
+
+1. Access the Grafana Explore view.
+2. Run the following LogQL query, replacing <instance_id> with a valid ID:
+
+```json
+{job="sonataflow-workflows"} | json | processInstanceId="<instance_id>"
+```
+
+
+Confirm that Grafana displays the log entries associated with the specified process instance.
+
+## Monitor workflow health with automated alerts
+
+Set up automated alerts to notify your team when workflows fail at high rates, process instances become stuck, or runtimes exceed thresholds. Proactive alerting reduces mean time to detection for production issues.
+
+* You have enabled a structured JSON logging to provide metadata for LogQL and PromQL queries.
+* You have installed a monitoring stack, such as Prometheus or Loki with Alertmanager in the cluster.
+
+1. Create a configuration file containing the following alert rule groups based on your monitoring requirements:
+* To monitor failure rates:
+
+```yaml
+- alert: WorkflowHighErrorRate
+  expr: rate({job="sonataflow-workflows", level="ERROR"}[5m]) > 0.1
+  for: 2m
+  labels:
+    severity: warning
+  annotations:
+    summary: "High error rate in SonataFlow workflows"
+```
+
+* To identify stalled process instances:
+
+```yaml
+- alert: WorkflowInstanceStuck
+  expr: |
+    time() - max by (process_instance_id) (
+      {job="sonataflow-workflows"} | json | unwrap timestamp[1h]
+    ) > 3600
+  labels:
+    severity: critical
+```
+
+* To identify long-running workflows:
+
+```yaml
+  - alert: LongRunningWorkflow
+    expr: |
+      time() - min by (process_instance_id) (
+        {job="sonataflow-workflows"} | json | message="Workflow started" | unwrap timestamp[24h]
+      ) > 7200
+    labels:
+      severity: warning
+    annotations:
+      summary: "Workflow {{ $labels.process_instance_id }} running longer than 2 hours"
+```
+
+2. Apply the alert rules to your cluster.
+
+1. Access the monitoring dashboard, such as the Prometheus or OpenShift Console.
+2. Verify that the alerts appear in the list under the Alerts tab.
+
+## Route alerts to existing tools to reduce response time
+
+Receive failure notifications where your team already monitors incidents instead of checking a separate dashboard. Routing alerts to existing channels ensures on-call engineers see critical workflow issues immediately.
+
+* You have a valid webhook URL for the notification service (for example, Slack webhook).
+
+1. Define a receiver and a routing path in your Alertmanager configuration:
+
+```yaml
+route:
+  group_by: ['alertname', 'workflow']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+
+receivers:
+- name: 'web.hook'
+  slack_configs:
+  - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+    channel: '#workflow-alerts'
+    title: 'SonataFlow Alert'
+    text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+```
+
+2. Reload the Alertmanager configuration to apply the changes.
+
+1. Trigger a test alert in your workflow environment.
+2. Monitor the external notification service (for example, the Slack channel #workflow-alerts). A notification appears in the external service containing the summary and details of the triggered alert.
+
+## Diagnose missing observability data to restore visibility
+
+To restore monitoring visibility in Red Hat Developer Hub, you must identify why logs or traces are missing. Use these diagnostic steps to resolve issues with plain text logs, empty process instance IDs, or missing traces in Jaeger.
+
+* You have access to the OpenShift (oc) CLI.
+* You have administrator permissions for the sonataflow-infra and sonataflow-observability namespaces.
+* You have access to the workflow project pom.xml and ConfigMap files.
+
+1. Verify JSON log formatting.
+
+If logs appear as plain text instead of structured JSON, verify the following:
+2. The io.quarkus:quarkus-logging-json extension is defined in the pom.xml file.
+3. The quarkus.log.console.json=true property is set in the {workflow-name}-props ConfigMap.
+4. The workflow image was rebuilt and redeployed after adding the extension.
+5. The workflow pod was restarted after applying ConfigMap changes.
+6. Diagnose missing process instance context.
+
+If logs are in JSON format but the processInstanceId field is missing or empty, verify the following:
+7. Workflow instances are actively running.
+8. The following property is set in the workflow ConfigMap:
+
+```bash
+quarkus.log.console.json.print-details=true
+```
+
+9. The SonataFlow version in use supports automatic Mapped Diagnostic Context (MDC) population.
+10. Resolve log collection failures in Loki.
+
+If logs are generated but do not appear in Loki or the aggregation dashboard, verify the following:
+11. The Promtail or Fluent Bit label selector matches the workflow pod labels.
+12. The collector has the required Role-Based Access Control (RBAC) permissions to read logs from the workflow namespace.
+13. The scrape_configs in the collector configuration include the correct namespace.
+14. Check the collector logs for permission errors:
+
+```bash
+oc logs -l app=promtail -n sonataflow-observability
+```
+
+15. Mitigate high resource usage.
+
+If JSON logging causes performance degradation or high storage costs, implement the following changes:
+16. Increase the log level for verbose categories to reduce output volume:
+
+```bash
+quarkus.log.category."org.kie.kogito".level=WARN
+```
+
+17. Enable asynchronous logging to reduce the impact on workflow execution time:
+
+```bash
+quarkus.log.console.async=true
+```
+
+18. Configure log rotation and retention policies in the aggregation backend.
+
+1. After applying a fix, trigger a workflow execution.
+2. Inspect the latest log entries. The logs appear in JSON format and include valid processInstanceId, traceId, and spanId fields:
+
+```bash
+oc logs <workflow_pod_name> --tail=10
+```
+
+
+## OpenTelemetry configuration reference for controlling trace behavior
+
+Configuration properties that control where traces are sent, how often they are sampled, and which service name appears in your monitoring dashboard. Reference this table to tune telemetry behavior for your environment.
+
+
+
+# Optimize workflow performance by eliminating bottlenecks
+
+To maintain high performance in Red Hat Developer Hub, you must identify and resolve execution delays. Use distributed tracing to visualize the execution path and workflows and determine where time is spent across service boundaries.
+
+## Collect traces to monitor workflow performance
+
+To monitor workflows in Red Hat Developer Hub, you must enable distributed tracing. Distributed tracing shows the executed path of workflow steps and identifies where failures occur.
+
+To enable observability features such as tracing and metrics in the SonataFlow runtime, you must add the OpenTelemetry addon and configure the workflow properties. The sonataflow-addons-quarkus-opentelemetry addon provides a standard configuration with minimal setup required.
+
+The OpenTelemetry integration for SonataFlow includes the following capabilities:
+
+* Distributed tracing: Track workflow execution across services and steps.
+* Metrics collection: Monitor performance, duration, and success rates.
+* Log aggregation: Centralize logs with trace correlation.
+* Context propagation: Maintain trace context across workflow boundaries and asynchronous operations.
+
+* You have installed and configured the SonataFlow Operator.
+* You have cluster-admin or equivalent permissions to deploy observability infrastructure and modify ConfigMaps.
+* A Kubernetes or OpenShift cluster is available.
+
+1. Add the OpenTelemetry addon to the QUARKUS_EXTENSIONS environment variable during the image build process:
+
+```bash
+export QUARKUS_EXTENSIONS="${QUARKUS_EXTENSIONS},org.apache.kie.sonataflow:sonataflow-addons-quarkus-opentelemetry"
+```
+
+2. Open the {workflow-name}-props ConfigMap for your workflow.
+3. In the application.properties section, enable the OpenTelemetry integration and configure the service attributes:
+
+```bash
+# Application Identity
+quarkus.application.name=my-workflow
+quarkus.application.version=1.0.0
+
+# OpenTelemetry Configuration
+quarkus.otel.enabled=true
+quarkus.otel.traces.enabled=true
+quarkus.otel.metrics.enabled=true
+quarkus.otel.logs.enabled=true
+
+# Service Resource Attributes
+quarkus.otel.resource.attributes=\
+  service.name=my-workflow,\
+  service.namespace=workflows,\
+  service.version=1.0.0,\
+  deployment.environment=production
+
+# SonataFlow Specific Configuration
+# Master switch for SonataFlow OpenTelemetry integration
+sonataflow.otel.enabled=true
+# Service identification (uses Quarkus application name/version as defaults)
+sonataflow.otel.service-name=${quarkus.application.name:kogito-workflow-service}
+sonataflow.otel.service-version=${quarkus.application.version:unknown}
+# Enable span creation for workflow states
+sonataflow.otel.spans.enabled=true
+# Enable process lifecycle events (start, complete, error, state transitions)
+sonataflow.otel.events.enabled=true
+```
+
+4. Save the ConfigMap and restart the workflow pod to apply the changes.
+
+1. Verify that the OpenTelemetry addon is loaded by checking the pod logs:
+
+```bash
+oc logs -n workflows deployment/onboarding-workflow | grep "sonataflow-addons-quarkus-opentelemetry"
+```
+
+2. Verify the trace report status:
+
+```bash
+oc logs -n workflows deployment/greeting | grep -i "export\|batch"
+```
+
+3. Confirm that the observability backend, such as Jaeger, is receiving data:
+
+```bash
+oc logs -n observability deployment/jaeger | grep -i "span\|trace"
+```
+
+
+## Connect traces to existing monitoring to avoid tool sprawl
+
+Route workflow traces to the observability tools your team already uses instead of learning a new system. Exporter configuration sends telemetry data to Jaeger, Grafana, or any OTLP-compatible platform.
+
+* You have enabled OpenTelemetry in your workflow.
+* An observability platform (Jaeger or OpenTelemetry Collector) is available in your cluster.
+
+1. Configure an export strategy based on your environment requirements:
+* Configure the OTLP exporter with batch processing (Recommended)
+
+For production environments, use an OTLP exporter with batch processing to reduce network overhead and improve performance:
+
+```bash
+# OTLP exporter - Direct to Jaeger
+quarkus.otel.exporter.otlp.endpoint=http://jaeger-collector.observability.svc.cluster.local:4317
+quarkus.otel.exporter.otlp.protocol=grpc
+quarkus.otel.traces.exporter=cdi
+
+# Batch processing for production
+quarkus.otel.bsp.schedule.delay=5s
+quarkus.otel.bsp.max.export.batch.size=512
+quarkus.otel.bsp.export.timeout=2s
+quarkus.otel.bsp.max.queue.size=2048
+```
+
+* Configure direct export to an external platform
+
+For development or simple integrations, use a direct export configuration:
+
+```bash
+# Example: Direct export to Jaeger
+quarkus.otel.exporter.otlp.endpoint=http://jaeger-collector:4317
+quarkus.otel.exporter.otlp.protocol=grpc
+quarkus.otel.traces.exporter=cdi
+```
+
+2. Externalize the configuration for production deployments by using environment variables. This ensures that your deployment remains secure and flexible across environments.
+
+```bash
+# Externalized Configuration
+quarkus.otel.exporter.otlp.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+quarkus.otel.exporter.otlp.headers=${OTEL_EXPORTER_OTLP_HEADERS:}
+quarkus.application.name=${OTEL_SERVICE_NAME:my-workflow}
+quarkus.otel.resource.attributes=${OTEL_RESOURCE_ATTRIBUTES:deployment.environment=dev}
+```
+
+
+## Troubleshooting reference for trace connectivity and authentication issues
+
+Symptom-to-solution reference table for missing traces, authentication failures, and broken context propagation. Use this troubleshooting guide when traces fail to appear in Jaeger, authentication errors occur, or telemetry delivery stops working.
+
+
+
+### Diagnose missing traces
+
+1. Verify that OpenTelemetry is enabled in the workflow ConfigMap:
+
+```bash
+oc get cm {workflow-name}-props -n workflows -o yaml
+```
+
+1. Check the pod logs for initialization errors:
+
+```bash
+oc logs deployment/{deployment-name} -n workflows | grep -i "otel"
+```
+
+2. Test the connection to the Jaeger collector from within the workflow pod:
+
+```bash
+oc exec deployment/{deployment-name} -- curl -v http://jaeger-collector:4317
+```
+
+2. Configure authentication headers. If your observability platform requires authentication, add the following property to your application.properties file:
+
+```bash
+quarkus.otel.exporter.otlp.headers=authorization=Bearer ${API_TOKEN}
+```
+
+3. Resolve context propagation issues. To ensure trace IDs are maintained across service boundaries, configure the following propagators and enable JSON logging to verify the IDs in the output:
+
+
+```bash
+# Include required propagators
+quarkus.otel.propagators=tracecontext,baggage,jaeger
+
+# Enable JSON logging to verify trace IDs
+quarkus.log.console.json=true
+```
+
+
+# Deployment manifests for Jaeger and Loki observability stack
+
+Deploy a complete observability stack for SonataFlow workflows with ready-to-use Jaeger and Loki manifests. These pre-configured examples help you monitor workflow performance and logs immediately without manual setup.
+
+## Jaeger distributed tracing deployment manifests
+
+Deploy Jaeger to visualize distributed traces from SonataFlow workflows. Use these manifests to set up trace collection with pre-configured OTLP endpoints and resource limits for development or production environments.
+
+Jaeger provides distributed tracing visualization for SonataFlow workflows.
+
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jaeger-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: jaeger-system
+  labels:
+    app: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:1.59
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+        ports:
+        - containerPort: 16686
+          name: query
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 14269
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 14269
+          initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: jaeger-system
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+  - name: otlp-http
+    port: 4318
+    targetPort: 4318
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: jaeger-system
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: query-http
+    port: 16686
+    targetPort: 16686
+  type: ClusterIP
+```
+
+
+
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: jaeger-query
+  namespace: jaeger-system
+spec:
+  to:
+    kind: Service
+    name: jaeger-query
+  port:
+    targetPort: query-http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+```
+
+
+Add these properties to the application.properties file of your workflow:
+
+
+```bash
+# Direct connection to Jaeger
+quarkus.otel.exporter.otlp.endpoint=http://jaeger-collector.jaeger-system.svc.cluster.local:4317
+quarkus.otel.exporter.otlp.protocol=grpc
+quarkus.otel.traces.exporter=cdi
+
+# Additional Jaeger-specific propagation
+quarkus.otel.propagators=tracecontext,baggage,jaeger
+```
+
+
+For production environments, use the Jaeger Operator with Elasticsearch storage:
+
+
+```yaml
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger-production
+  namespace: observability
+spec:
+  strategy: production
+  storage:
+    type: elasticsearch
+    elasticsearch:
+      nodeCount: 3
+      storage:
+        storageClassName: gp3
+        size: 50Gi
+      resources:
+        requests:
+          cpu: 500m
+          memory: 4Gi
+        limits:
+          cpu: 1000m
+          memory: 8Gi
+  collector:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+```
+
+
+## Loki log aggregation deployment manifests
+
+Deploy Loki to aggregate logs from SonataFlow workflows using OpenTelemetry Protocol. These manifests include pre-configured OTLP settings, structured metadata support, and resource limits for immediate log collection.
+
+Loki supports OpenTelemetry Protocol (OTLP) for direct log ingestion from SonataFlow workflows.
+
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: observability
+data:
+  loki-config.yaml: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9096
+
+    common:
+      path_prefix: /loki
+      storage:
+        filesystem:
+          chunks_directory: /loki/chunks
+          rules_directory: /loki/rules
+      replication_factor: 1
+      ring:
+        instance_addr: 127.0.0.1
+        kvstore:
+          store: inmemory
+
+    distributor:
+      otlp_config:
+        # Default resource attributes as index labels
+        default_resource_attributes_as_index_labels:
+          - service.name
+          - service.namespace
+          - deployment.environment
+          - k8s.namespace.name
+          - k8s.cluster.name
+
+    limits_config:
+      # Enable structured metadata (default in Loki 3.0+)
+      allow_structured_metadata: true
+      # Maximum number of index labels per stream
+      max_label_names_per_series: 15
+
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: tsdb
+          object_store: filesystem
+          schema: v13  # Required for OTLP support
+          index:
+            prefix: index_
+            period: 24h
+```
+
+
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: observability
+  labels:
+    app: loki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      securityContext:
+        fsGroup: 10001
+        runAsUser: 10001
+        runAsNonRoot: true
+      containers:
+      - name: loki
+        image: grafana/loki:3.0.0
+        args:
+          - -config.file=/etc/loki/loki-config.yaml
+        ports:
+        - containerPort: 3100
+          name: http-metrics
+        - containerPort: 9096
+          name: grpc
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/loki
+        - name: storage
+          mountPath: /loki
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 45
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3100
+          initialDelaySeconds: 45
+      volumes:
+      - name: config
+        configMap:
+          name: loki-config
+      - name: storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: observability
+  labels:
+    app: loki
+spec:
+  selector:
+    app: loki
+  ports:
+  - name: http-metrics
+    port: 3100
+    targetPort: 3100
+  - name: grpc
+    port: 9096
+    targetPort: 9096
+  type: ClusterIP
+```
+
+
+To route logs to Loki and traces to Jaeger, use the following configuration:
+
+
+```bash
+# OpenTelemetry Configuration
+quarkus.otel.enabled=true
+quarkus.otel.traces.enabled=true
+quarkus.otel.metrics.enabled=true
+quarkus.otel.logs.enabled=true
+
+# OTLP Exporter - Send logs to Loki, traces to Jaeger
+quarkus.otel.exporter.otlp.logs.endpoint=http://loki.observability.svc.cluster.local:3100/otlp
+quarkus.otel.exporter.otlp.traces.endpoint=http://jaeger-collector.observability.svc.cluster.local:4317
+quarkus.otel.exporter.otlp.protocol=grpc
+
+# JSON Logging for better structure
+quarkus.log.console.json=true
+quarkus.log.console.json.pretty-print=false
+
+# Include trace correlation in logs
+quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) traceId=%X{traceId}, spanId=%X{spanId} %s%e%n
+
+# Resource attributes for Loki labels
+quarkus.otel.resource.attributes=\
+  service.name=greeting-workflow,\
+  service.namespace=workflows,\
+  deployment.environment=production
+```
+
+
+## OpenTelemetry Collector deployment manifest
+
+Deploy an OpenTelemetry Collector to route workflow telemetry to multiple backends. Use this intermediate layer for advanced log filtering, processing, and multi-destination export beyond direct workflow integration.
+
+Deploy an OpenTelemetry collector between workflows and backends for advanced log processing, filtering, and multi-destination export.
+
+
+```yaml
+# Collector routes to both Jaeger and Loki
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger-collector:4317
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/loki]
+```
+
+
+# Trace attributes reference for filtering and querying workflows
+
+Span attributes and lifecycle events that SonataFlow automatically generates for workflow executions. Use this data dictionary to build Jaeger queries, filter traces by workflow state, and track requests across service boundaries.
+
+This data allows you to track a workflow from start to finish, analyze external function calls, and correlate logs across asynchronous boundaries.
+
+## Span attributes for workflow filtering
+
+Automatic span attributes that identify workflow executions, instances, and states. Use these attributes in Jaeger queries to locate specific workflow runs, filter by version, or trace process instances through various execution states.
+
+To locate specific workflow executions or trace a process through various states, use the automatic span attributes generated by SonataFlow. Each span includes the following specific attributes:
+
+* sonataflow.process.id: Indicates the ID of the workflow definition.
+* sonataflow.process.instance.id: Indicates the unique ID for the specific execution instance.
+* sonataflow.process.version: Indicates the version of the workflow definition.
+* sonataflow.workflow.state: Indicates the name of the current workflow state, for example, StartEvent.
+* sonataflow.process.instance.state: Indicates the current state of the process instance, such as ACTIVE, COMPLETED, ERROR, or SUSPENDED.
+* sonataflow.transaction.id: Indicates the ID used to correlate multiple workflows in a single business transaction.
+* sonataflow.tracker.*: Indicates custom attributes converted from X-TRACKER-* headers.
+* service.name and service.version: Indicates the service identification details from the configuration.
+
+## Process lifecycle events for timeline tracking
+
+OpenTelemetry events that mark workflow execution milestones including start, completion, errors, and state transitions. Use these events to reconstruct the chronological order of workflow execution and identify when failures occurred.
+
+To understand the exact chronological order of a workflow&#8217;s execution, look for OpenTelemetry events that are automatically generated at key lifecycle points. SonataFlow attaches the following events and their specific attributes to spans to mark execution milestones:
+
+* process.instance.start: Indicates the beginning of the execution. This event includes the process.instance.id, the trigger that started the process, and the reference.id.
+* process.instance.complete: Indicates the completion of the workflow. This event includes the process.instance.id, the final outcome, and the total duration.ms.
+* process.instance.error: Indicates a workflow failure. This event includes the process.instance.id, the error.message, and the error.type.
+* state.started and state.completed: Indicate the start and completion of individual workflow states. These events include an event.description that details the state execution.
+* log.message: Indicates the application log content within the trace span. This event provides the level, logger, message, thread.name, and thread.id.
+
+## Function call attributes for external integration debugging
+
+HTTP and function-specific attributes attached to external service call spans. Use these attributes to debug REST API failures, identify slow external dependencies, and verify correct endpoint invocation in workflow integrations.
+
+When a workflow invokes an external function, for example, a REST service, the function call spans are enriched with additional HTTP attributes:
+
+* sonataflow.function.name: The name of the function being called.
+* sonataflow.function.type: The type of function, such as rest or expression.
+* http.method: The HTTP method used for external REST calls.
+* http.url: The full target URL for the external call.
+* http.status_code: The resulting HTTP response code from the service.
+
+## Trace context propagation headers across services
+
+HTTP headers that SonataFlow extracts and propagates to maintain trace correlation across service boundaries. Use these headers to link workflow executions in distributed transactions and pass custom tracking context through service chains.
+
+SonataFlow extracts and propagates the following headers to maintain observability across service boundaries:
+
+* X-TRANSACTION-ID: Correlates multiple workflow executions that belong to the same business transaction.
+* X-TRACKER-*: Sanitizes and converts any custom tracking context from headers into span attributes, such as sonataflow.tracker.*, to simplify querying.
+
+# Build and deploy serverless workflows
+
+Deploy a workflow and make it available in the Orchestrator plugin by building workflow images, generating workflow manifests, and deploying workflows to a cluster.
+
+* Building workflow images
+* Generating workflow manifests
+* Deploying workflows to a cluster
+
+This process moves the workflow from your local machine to deployment on a cluster.
+
+## Benefits of workflow images
+
+While the OpenShift Serverless Logic Operator supports the building of workflows dynamically, this approach is primarily for experimentation.
+For production deployments, building images is the preferred method due to the following reasons:
+
+* Production readiness: Prebuilt images can be scanned, secured, and tested before going live.
+* GitOps compatibility: The Orchestrator relies on a central OpenShift Serverless Logic Operator instance to track workflows and their state. To use this tracking service, you must deploy workflows with the gitops profile, which expects a prebuilt image.
+* Testing and quality: Building an image gives you more control over the testing process.
+
+### Project structure overview
+
+The project utilizes Quarkus project layout (Maven project structure), as illustrated by the 01_basic workflow example.
+
+
+```yaml
+01_basic
+├── pom.xml
+├── README.md
+└── src
+    └── main
+        ├── docker
+        │   ├── Dockerfile.jvm
+        │   ├── Dockerfile.legacy-jar
+        │   ├── Dockerfile.native
+        │   └── Dockerfile.native-micro
+        └── resources
+            ├── application.properties
+            ├── basic.svg
+            ├── basic.sw.yaml
+            ├── schemas
+            │   ├── basic__main-schema.json
+            │   └── workflow-output-schema.json
+            └── secret.properties
+```
+
+
+The main workflow resources are located under the src/main/resources/ directory.
+
+The kn-workflow CLI generated this project structure. You can try generating the structure yourself by following the Getting Started guide.
+
+* Creating your first Quarkus application
+
+### Create and run your serverless workflow project locally
+
+Use the kn-workflow CLI to generate workflow manifests and project structures, enabling you to develop and test a new serverless workflow locally.
+
+1. Use the kn-workflow CLI to create a new workflow project, which adheres to the Quarkus structure as shown in the following example:
+
+```bash
+$ kn-workflow quarkus create --name <specify project name, for example ,00_new_project>
+```
+
+2. Edit the workflow, add schema and specific files, and run it locally from project folder as shown in the following example:
+
+```bash
+$ kn-workflow quarkus run
+```
+
+3. Run the workflow locally using the kn-workflow run which pulls the following image:
+
+```yaml
+registry.redhat.io/openshift-serverless-1/logic-swf-devmode-rhel9:1.38.0
+```
+
+4. For building the workflow image, the kn-workflow CLI pulls the following images:
+
+```yaml
+registry.redhat.io/openshift-serverless-1/logic-swf-builder-rhel9:1.38.0
+registry.access.redhat.com/ubi9/openjdk-17:1.21-2
+```
+
+
+* About OpenShift Serverless Logic
+* OpenShift Serverless Logic Tutorial
+* Running Red Hat Developer Hub behind a corporate proxy
+* Using the Red Hat-hosted Quarkus repository
+
+## Build workflow images locally
+
+Build workflow images locally by using the build script (build.sh) to prepare container images for deployment.
+
+1. Clone the project as shown in the following example:
+
+```yaml
+git clone git@github.com:rhdhorchestrator/orchestrator-demo.git
+cd orchestrator-demo
+```
+
+2. Check the help menu of the script:
+
+```yaml
+./scripts/build.sh --help
+```
+
+3. Run the build.sh script, providing the required flags, for example, the image path (-i), workflow source directory (-w), and manifests output directory (-m).
+
+[IMPORTANT]
+----
+You must specify the full target image path with a tag as shown in the following example:
+
+```yaml
+./scripts/build.sh --image=quay.io/orchestrator/demo-basic:test -w 01_basic/ -m 01_basic/manifests
+```
+
+----
+
+### The build-sh script functionality and important flags
+
+The build-sh script generates workflow manifests, builds workflow images, and optionally pushes images and deploys workflows.
+
+* Generates workflow manifests using the kn-workflow CLI.
+* Builds the workflow image using podman or docker.
+* Optional: The script pushes the images to an image registry and deploys the workflow using kubectl.
+
+You can review the script configuration options and see available flags and their functions by accessing the help menu:
+
+
+```bash
+./scripts/build.sh [flags]
+```
+
+
+The following flags are essential for running the script:
+
+
+
+
+[TIP]
+----
+The script also supports builder and runtime image overrides, namespace targeting, and persistence flags.
+----
+
+### Environment variables supported by the build script
+
+The build-sh script supports environment variables that customize the workflow build process without modifying the script itself.
+
+QUARKUS_EXTENSIONS:: The QUARKUS_EXTENSIONS variable specifies additional Quarkus extensions required by the workflow. This variable takes the format of a comma-separated list of fully qualified extension IDs as shown in the following example:
+
+```yaml
+export QUARKUS_EXTENSIONS="io.quarkus:quarkus-smallrye-reactive-messaging-kafka"
+```
+
+
+Add Kafka messaging support or other integrations at build time.
+MAVEN_ARGS_APPEND:: The MAVEN_ARGS_APPEND variable appends additional arguments to the Maven build command. This variable takes the format of a string of Maven CLI arguments as shown in the following example:
+
+```yaml
+export MAVEN_ARGS_APPEND="-DmaxYamlCodePoints=35000000"
+```
+
+
+Control build behavior. For example, set maxYamlCodePoints parameter that controls the maximum input size for YAML input files to 35000000 characters (~33MB in UTF-8).
+
+* Quarkus extensions
+
+### Required tools
+
+To run the build-sh script locally and manage the workflow lifecycle, you must install several command-line tools.
+
+
+
+### Build the 01_basic workflow
+
+To run the script from the root directory of the repository, you must use the -w flag to point to the workflow directory. Additionally, specify the output directory with the -m flag.
+
+* You have specified the target image using a tag.
+
+1. Run the following command:
+
+```bash
+$ ./scripts/build.sh --image=quay.io/orchestrator/demo-basic:test -w 01_basic/ -m 01_basic/manifests
+```
+
+
+This build command produces the following two artifacts:
+2. A workflow image and Kubernetes manifests: quay.io/orchestrator/demo-basic:test and tagged as latest.
+3. Kubernetes manifests under: 01_basic/manifests/
+4. Optional: You can add the --push flag to automatically push the image after building. Otherwise, pushing manually is mandatory before deploying.
+
+## Generated workflow manifests
+
+Review the structure and content of workflow manifests generated under the 01_basic/manifests directory.
+
+
+```yaml
+01_basic/manifests
+├── 00-secret_basic-secrets.yaml
+├── 01-configmap_basic-props.yaml
+├── 02-configmap_01-basic-resources-schemas.yaml
+└── 03-sonataflow_basic.yaml
+```
+
+
+00-secret_basic-secrets.yaml:: Contains secrets from 01_basic/src/main/resources/secret.properties.
+Values are not required at this stage as you can set them later after applying CRs or when using GitOps.
+
+
+[IMPORTANT]
+----
+In OpenShift Serverless Logic 1.38.0, after updating a secret, you must manually restart the workflow Pod for changes to apply.
+----
+
+01-configmap_basic-props.yaml:: Holds application properties from application.properties.
+Any change to this ConfigMap triggers an automatic Pod restart.
+02-configmap_01-basic-resources-schemas.yaml:: Contains JSON schemas from src/main/resources/schemas.
+
+[NOTE]
+----
+You do not need to deploy certain configuration resources when using the GitOps profile.
+----
+03-sonataflow_basic.yaml:: The SonataFlow custom resource (CR) that defines the workflow.
+
+```yaml
+podTemplate:
+  container:
+    image: quay.io/orchestrator/demo-basic
+    resources: {}
+    envFrom:
+      - secretRef:
+          name: basic-secrets
+```
+
+
+```yaml
+persistence:
+  postgresql:
+    secretRef:
+      name: sonataflow-psql-postgresql
+      userKey: <your_postgres_username>
+      passwordKey: <your_postgres_password>
+    serviceRef:
+      name: sonataflow-psql-postgresql
+      port: 5432
+      databaseName: sonataflow
+      databaseSchema: basic
+```
+
+
+where:
+postgresql:secretRef:name:: Enter the Secret name for your deployment.
+postgresql:secretRef:userKey:: Enter the key for your deployment.
+postgresql:secretRef:passwordKey:: Enter the password for your deployment.
+postgresql:serviceRef:name:: Enter the Service name for your deployment.
+
+If you must connect to an external database, replace serviceRef with jdbcUrl. See Managing workflow persistence.
+
+By default, the script generates all the manifests without a namespace. You can specify a namespace to the script by using the --namespace flag if you know the target namespace in advance. Otherwise, you must provide the namespace when applying the manifests to the cluster. See Configuring workflow services.
+
+## Deploy workflows on a cluster
+
+You can deploy the workflow on a cluster, because the image is pushed to the image registry and the deployment manifests are available.
+
+* You have an OpenShift Container Platform cluster with the following versions of components installed:
+* Red Hat Developer Hub (RHDH) 1.10
+* Orchestrator plugins 1.10.0
+* OpenShift Serverless 1.37.1
+* OpenShift Serverless Logic 1.38.0
+
+For instructions on how to install these components, see the Orchestrator plugin components on OpenShift Container Platform.
+* You must apply the workflow manifests in a namespace that contains a SonataflowPlatform custom resource (CR), which manages the supporting services.
+
+1. Use the kubectl create command specifying the target namespace to apply the Kubernetes manifests as shown in the following example:
+
+```bash
+$ kubectl create -n <your_namespace> -f ./01_basic/manifests/.
+```
+
+2. After deployment, monitor the status of the workflow pods as shown in the following example:
+
+```bash
+$ kubectl get pods -n <your_namespace> -l app=basic
+```
+
+
+The pod may initially appear in an Error state because of missing or incomplete configuration in the Secret or ConfigMap.
+3. Inspect the Pod logs as shown in the following example:
+
+```bash
+$ oc logs -n <your_namespace> basic-f7c6ff455-vwl56
+```
+
+
+The following code is an example of the output:
+
+```yaml
+SRCFG00040: The config property quarkus.openapi-generator.notifications.auth.BearerToken.bearer-token is defined as the empty String ("") which the following Converter considered to be null: io.smallrye.config.Converters$BuiltInConverter
+java.lang.RuntimeException: Failed to start quarkus
+...
+Caused by: io.quarkus.runtime.configuration.ConfigurationException: Failed to read configuration properties
+```
+
+
+The error indicates a missing property: quarkus.openapi-generator.notifications.auth.BearerToken.bearer-token.
+4. In such a case where the logs show the ConfigurationException: Failed to read configuration properties error or indicate a missing value, retrieve the ConfigMap as shown in the following example:
+
+```bash
+$ oc get -n <your_namespace> configmaps basic-props -o yaml
+```
+
+
+The following code is an example of the sample output:
+
+```yaml
+apiVersion: v1
+data:
+  application.properties: |
+    # Backstage notifications service
+    quarkus.rest-client.notifications.url=${BACKSTAGE_NOTIFICATIONS_URL}
+    quarkus.openapi-generator.notifications.auth.BearerToken.bearer-token=${NOTIFICATIONS_BEARER_TOKEN}
+...
+```
+
+
+Resolve the placeholders using values provided using a Secret.
+5. You must edit the corresponding Secret and provide appropriate base64-encoded values to resolve the placeholders in application.properties as shown in the following example:
+
+```bash
+$ kubectl edit secrets -n <your_namespace> basic-secrets
+```
+
+6. Restart the workflow Pod for Secret changes to take effect in OpenShift Serverless Logic 1.38.0.
+
+1. Verify the deployment status by checking the Pods again as shown in the following example:
+
+```bash
+$ oc get pods -n <your_namespace> -l app=basic
+```
+
+
+The expected status for a successfully deployed workflow Pod is as shown in the following example:
+
+```yaml
+NAME                    READY   STATUS    RESTARTS   AGE
+basic-f7c6ff455-grkxd   1/1     Running   0          47s
+```
+
+2. Once the Pod is in the Running state, the workflow now appears in the Orchestrator plugin inside the Red Hat Developer Hub.
+
+* Inspect the provided build script to extract the actual steps and implement them in your preferred CI/CD tool, for example, GitHub Actions, GitLab CI, Jenkins, and Tekton.
+
+## Best practices when creating serverless workflows
+
+Create effective serverless workflows using thoughtful approaches to design, handle data, and manage error by following these best practices based on the Serverless Workflow Domain Specific Language (DSL) principles. These principles help you to build robust workflows.
+
+Workflow design principles:: 
+
+The Serverless Workflow DSL prioritizes clarity and ease of use when writing workflows.
+Priority of constituencies:: 
+
+When developing workflows or APIs, ensure the needs of the author (workflow writer) come first. The constituencies are prioritized in the following order: Authors &gt; Operators &gt; Implementers &gt; Specifications writers.
+Linguistic fluency and clarity:: 
+* Use imperative verbs such as Call, Emit, For, Fork, Raise, Run, Set, Switch, and Wait. These simple, universally understood terms make your workflow simple to read and understand.
+Structure and extensibility:: 
+* Use implicit default behaviors to reduce redundancy.
+* Declare components inline if they are not reusable to keep the definition self-contained.
+* Use external references to import and reuse shared components, which promotes a modular design.
+* Prioritize flexibility over strict enumerations to ensure extensibility and adaptability across different runtime environments.
+Data flow and runtime management:: 
+
+Controlling data flow is critical for efficient workflows. Tasks are the fundamental computing units of a workflow. The Domain Specific Language (DSL) defines several default task types that runtimes must do. These include Do, Listen, Raise, Run, Try, and Wait.
+Security and error handling:: 
+Secrets:: Use Secrets with caution. Avoid passing them directly in call inputs as this might expose sensitive information.
+Fault tolerance and error handling:: Serverless Workflow is designed with resilience in mind to recover from failures.
+Orchestrator UI integration best practices:: 
+
+For your workflow results to be effectively displayed in the Orchestrator UI and to facilitate chaining of workflows, you must structure the output data according to the WorkflowResult schema. Additionally, include any error information as part of the workflow output so the UI and subsequent workflows can handle them accordingly.
+Workflow output schema:: 
+Results placement:: The primary output intended for subsequent processing must be placed under the data.result property.
+Schema reference:: Your output schema file (schemas/workflow-output-schema.json) must reference the WorkflowResult schema.
+Outputs definition:: Include an outputs section in your workflow definition. This section contains human-readable key/value pairs that the UI will display.
+
+Structure of workflow:
+
+```yaml
+id: my-workflow
+version: "0.8"
+specVersion: "0.8"
+name: My Workflow
+start: ImmediatelyEnd
+dataInputSchema: schemas/basic__main-schema.json
+extensions:
+  - extensionid: workflow-output-schema
+    outputSchema: schemas/workflow-output-schema.json
+functions:
+  - name: print
+    type: custom
+    operation: sysout
+  - name: successResult
+    type: expression
+    operation: '{
+      "result": {
+      "message": "Project " + .projectName + " active",
+      "outputs":[]
+      }
+      }'
+start: "successResult"
+states:
+  - name: successResult
+    type: operation
+    actions:
+      - name: setOutput
+        functionRef:
+          refName: successResult
+    end: true
+```
+
+
+## Unique workflow ID requirements to prevent duplicates
+
+Unique workflow IDs prevent duplicate entries in RHDH. You must use distinct IDs for each deployment to avoid tracking conflicts and maintain clear workflow visibility.
+
+Understand how RHDH identifies workflows:: 
+
+RHDH identifies each workflow by using its unique ID. When you deploy or update workflows, the system uses this ID to track, display, and manage workflow instances. If multiple workflows share the same ID, RHDH cannot distinguish between them, resulting in unexpected behavior.
+Follow workflow ID format requirements:: 
+
+Workflow identifiers must comply with RFC 1123 DNS label standards to function correctly across all deployment configurations. Your workflow IDs must meet these format requirements:
+* Contain only lowercase letters (a-z), digits (0-9), and hyphens (-)
+* Start and end with a lowercase letter or digit
+* Not contain underscores, uppercase letters, or leading or trailing hyphens
+
+Valid workflow ID examples:
+* order-processing
+* invoice123
+* customer-onboarding-flow
+* flow-01
+
+Invalid workflow ID examples:
+* OrderProcessing (contains uppercase letters)
+* order_processing (contains underscore)
+* -orderflow (starts with hyphen)
+* orderflow- (ends with hyphen)
+Maintain workflow ID consistency across configurations:: 
+
+You must use the same workflow identifier consistently across all configurations when you build and deploy your workflow. This requirement proves essential for operator-driven deployments that use the gitops profile.
+
+For gitops profile deployments, the Kubernetes resource name must match the workflow ID field in your workflow definition file (.sw.yaml or .sw.json). This consistency prevents deployment failures and maintains proper workflow tracking in RHDH.
+Recognize version field limitations:: 
+
+Although the Serverless workflow specification allows you to define a workflow version attribute in your workflow definition, the current SonataFlow and RHDH ecosystem does not support multiple versions of a workflow that share the same ID.
+
+[IMPORTANT]
+----
+Deploying multiple workflows with the same ID and different versions is not supported and results in unexpected behavior. Each workflow ID must be unique across all deployments.
+----
+
+The version field serves as metadata and appears in the RHDH UI for informational purposes to help you identify workflow definitions. The backend retrieves version information from the Data Index GraphQL schema and displays it in both the workflow list view and on individual workflow details pages. If you do not specify a version in your workflow definition, the field appears empty in the UI.
+
+The system does not use the version field to differentiate between workflows or manage workflow versions. All workflow operations, including execution, deletion, and API calls, rely solely on the workflow ID.
+Avoid deploying workflows with duplicate IDs:: 
+
+Each workflow ID must be unique across all deployments, regardless of the configured version attribute. Deploying multiple workflows with the same ID and different versions is not supported and can result in the following issues:
+* Duplicate workflow entries appear in the RHDH Orchestrator UI.
+* Workflow deletion operations become unpredictable.
+* Historical workflow data becomes difficult to interpret.
+* Workflow instance tracking becomes unreliable.
+
+Duplicate entries can occur when you deploy workflows with the same ID to different runtime servers over time, or when you redeploy a workflow with a new version by using the same ID. Because the Data Index records all workflow executions regardless of which runtime server executed them, historical records from multiple deployments with the same ID appear as duplicate entries in the RHDH UI.
+Apply workflow version management best practices:: 
+
+To maintain different versions of a workflow, assign a new workflow ID for each version. Incorporate the version identifier into the workflow ID itself using a consistent naming convention.
+
+Recommended naming pattern: Use a naming convention that clearly links related versions of the same workflow:
+* workflow-name-v1 implements and deploys version 1
+* workflow-name-v2 implements and deploys version 2
+* workflow-name-v3 implements and deploys version 3
+
+Example workflow ID evolution:
+
+```
+id: customer-onboarding-v1
+version: "1.0"
+name: Customer Onboarding Workflow
+```
+
+
+When you need to deploy an updated version:
+
+```
+id: customer-onboarding-v2
+version: "2.0"
+name: Customer Onboarding Workflow
+```
+
+
+This approach provides clarity and prevents conflicts when you manage multiple iterations of a workflow.
+Manage workflow transitions between versions:: 
+
+When you transition from one workflow version to another:
+* Deploy the new workflow version with a unique ID (for example, workflow-name-v2).
+* Verify the new workflow operates correctly.
+* Monitor running instances of the old workflow version.
+* After all instances of the old workflow complete, remove the old workflow deployment.
+
+This process helps you maintain workflow history and prevents disruption to running workflow instances.
+
+# Automate workflow deployment with Orchestrator
+
+Automate the software development lifecycle for serverless workflows by using Orchestrator software templates to bootstrap complete workflow projects with Git repositories, deployment configurations, and CI/CD pipelines.
+
+## Orchestrator workflow deployment components
+
+The Orchestrator plugin integrates several components to automate the software development lifecycle for serverless workflows.
+
+
+[NOTE]
+----
+Use the rhdh namespace where the RHDH chart is installed.
+----
+
+The Orchestrator plugin integrates these components:
+
+RHDH Helm chart:: Installs the RHDH Orchestrator.
+Tekton or Red Hat OpenShift Pipelines:: Manages the Kubernetes-native CI pipeline to build images.
+ArgoCD or Red Hat OpenShift GitOps:: Manages the CD pipeline to deploy the workflow on the RHDH instance.
+Quay.io:: Stores the container images generated by the pipelines.
+OpenShift Serverless Logic operator:: Implements serverless workflow specifications
+
+## Install Orchestrator software templates
+
+To enable software templates on RHDH, you must install two additional Helm charts.
+
+* You have installed RHDH and the Orchestrator plugin by using the Helm chart.
+* You have installed the redhat-developer-hub-orchestrator-infra chart.
+
+1. Install the orchestrator-software-templates-infra chart.
+2. Install the orchestrator-software-templates chart.
+
+### Install the Orchestrator Software Templates Infra chart
+
+The orchestrator-software-templates-infra chart installs the Custom Resource Definitions (CRDs) and operators for Tekton (Red Hat OpenShift Pipelines) and Argo CD (Red Hat OpenShift GitOps). These are required to handle the CI/CD automation for serverless workflows.
+
+* You have cluster-admin privileges.
+* You have installed the Helm CLI.
+* You have added the following plugins to the RHDH chart values.yaml file to include the following dynamic plugins:
+* backstage-plugin-scaffolder-backend-module-github-dynamic
+* backstage-plugin-scaffolder-backend-module-gitlab-dynamic
+* backstage-plugin-kubernetes-backend-dynamic
+* backstage-plugin-kubernetes
+* backstage-community-plugin-tekton
+* backstage-community-plugin-redhat-argocd
+* backstage-community-plugin-argocd-backend
+* roadiehq-scaffolder-backend-argocd-dynamic
+
+Edit the values.yaml and upgrade the chart.
+
+* Install the infrastructure chart:
+
+```terminal
+$ helm install <release_name> redhat-developer/redhat-developer-hub-orchestrator-infra
+```
+
+
+* Verify the installation by running the following command:
+
+```terminal
+$ helm test redhat-developer-hub-orchestrator-infra
+```
+
+
+### Install the Orchestrator Software Templates chart
+
+The orchestrator-software-templates chart loads the actual software templates into your RHDH instance. This allows users to select workflow templates from the RHDH Catalog.
+
+* You have installed the orchestrator-software-templates-infra chart to deploy OpenShift Pipelines (Tekton) operator and OpenShift GitOps (ArgoCD) operator in the same namespace as RHDH.
+* You have labeled the rhdh namespace to enable GitOps sync:
+
+```terminal
+$ oc label ns rhdh rhdh.redhat.com/argocd-namespace=true
+```
+
+* You have created a secret named orchestrator-auth-secret in the rhdh namespace containing the following keys:
+* BACKEND_SECRET: Backend authentication secret
+* K8S_CLUSTER_TOKEN: Kubernetes cluster token
+* K8S_CLUSTER_URL: Kubernetes cluster URL
+* GITHUB_TOKEN: GitHub access token (optional)
+* GITHUB_CLIENT_ID: GitHub OAuth client ID (optional)
+* GITHUB_CLIENT_SECRET: GitHub OAuth client secret (optional)
+* GITLAB_HOST: GitLab host URL (optional)
+* GITLAB_TOKEN: GitLab access token (optional)
+* ARGOCD_URL: ArgoCD server URL (optional)
+* ARGOCD_USERNAME: ArgoCD username (optional)
+* ARGOCD_PASSWORD: ArgoCD password (optional)
+
+1. Install the software templates chart:
+
+```terminal
+$ helm repo add redhat-developer https://redhat-developer.github.io/rhdh-chart
+$ helm install my-orchestrator-templates redhat-developer/orchestrator-software-templates --version 0.2.0
+```
+
+2. Create your environment-specific values file:
+1. Retrieve your RHDH route URL:
+
+```terminal
+RHDH_ROUTE="https://$(oc get route -n {{ .Values.orchestratorTemplates.rhdhChartNamespace }} -o jsonpath='{.items[0].spec.host}')"
+```
+
+2. Copy the template and replace placeholders
+
+```yaml
+cp charts/orchestrator-software-templates/orchestrator-templates-values.yaml.template orchestrator-templates-values.yaml
+sed -i "s|RHDH_BASE_URL|$RHDH_ROUTE|g" orchestrator-templates-values.yaml
+```
+
+3. Backup your RHDH configuration:
+
+```terminal
+helm show values charts/backstage \
+     -n {{ .Values.orchestratorTemplates.rhdhChartNamespace }} > current-backstage-values.yaml
+```
+
+4. Upgrade the RHDH chart with both value files:
+
+```terminal
+ helm upgrade {{ .Values.orchestratorTemplates.rhdhChartReleaseName }} charts/backstage \
+     -n {{ .Values.orchestratorTemplates.rhdhChartNamespace }} \
+     -f current-backstage-values.yaml \
+     -f orchestrator-templates-values.yaml
+```
+
+
+1. Wait for the deployment to complete.
+2. Open your RHDH instance and verify the new software templates appear in the Create menu.
+
+## Create a serverless workflow project
+
+Use the Orchestrator software templates to generate a project that includes workflow definitions, Kustomize configurations, and CI/CD pipelines.
+
+* You have installed orchestrator-software-templates-infra and orchestrator-software-templates Helm charts to enable templates.
+* You have installed RHDH and the Orchestrator plugin by using the Helm chart.
+* You have a Quay.io organization and repository for storing the workflow images.
+* You have a GitHub or Gitlab personal access token with repository creation permissions.
+* You have configured a GitOps secret for the target cluster.
+* You have set the target namespace for both the pipeline and the workflow to the rhdh namespace.
+
+1. Prepare the image registry. Before creating the template, configure the target repository in Quay.io.
+1. Log in to your Quay.io organization (for example, orchestrator-testing).
+2. Create a new repository (for example, serverless-workflow-demo).
+3. Add robot account permissions to the repository settings.
+2. Open the Red Hat Developer Hub Catalog.
+![Product catalog]
+3. Select the Basic workflow bootstrap project template and click Launch Template.
+4. Follow the template form to enter required details, including the GitHub organization, source code repository name, and a unique Workflow ID.
+5. For the CI/CD method, select Tekton with Argo CD to generate GitOps resources.
+6. Set the Workflow Namespace to rhdh and the GitOps Namespace to orchestrator-gitops.
+7. Enter your Quay.io registry details.
+8. Click Review, then click Create.
+![Basic workflow bootstrap template form]
+9. Optional: Enable persistence and provide database connection details if the workflow requires a database schema.
+
+* The system creates the following repositories:
+* Source code repository: Contains the serverless workflow project.
+* GitOps repository: Contains GitOps configurations, Tekton pipeline templates, and bootstrap instructions.
+
+* Building and deploying serverless workflows
+
+## Bootstrap GitOps resources and trigger pipelines
+
+You must manually bootstrap the GitOps resources to trigger the continuous integration (CI) pipeline.
+
+1. Open the generated GitOps repository.
+2. Clone the repository and navigate to the bootstrap directory:
+
+```terminal
+$ git clone https://token:<PAT>@${{ values.gitHost }}/${{ values.orgName }}/${{ values.repoName }}.git
+cd <repo_name>/bootstrap
+```
+
+
+[NOTE]
+----
+If you are not authenticated, you must use a personal access token (PAT) in the clone URL. Make sure the PAT has repository access permissions.
+----
+3. Open ${{values.workflowId}}-argocd-repo.yaml and replace the REPLACE_SSH_PRIVATE_KEY string with your SSH private key.
+4. Apply the manifests to the cluster:
+
+```bash
+$ kubectl apply -f .
+```
+
+
+Applying these manifests triggers the following automated sequence:
+1. CI Pipeline (Tekton): Builds the workflow image and pushes it to your Quay.io registry.
+2. CD Pipeline (Argo CD): Deploys the serverless workflow manifests to the cluster.
+
+## Verify the deployment
+
+Verify the status of your continuous integration (CI) and continuous deployment (CD) pipelines in the RHDH component catalog.
+
+1. For CI:
+1. In the RHDH Catalog, select your source code repository component (for example, onboardings).
+2. Click the CI tab and verify that the pipeline run status is Succeeded.
+3. If the pipeline status does not appear in the Red Hat Developer Hub console, verify the CI status directly in your Git provider (GitHub or GitLab).
+4. If the pipeline fails, click the run name to view the logs and identify build errors.
+2. For CD:
+1. Open the GitOps Resources Repository component in the Catalog (for example, onboarding-gitops).
+2. Click the CD tab and make sure the Kubernetes resources are synced and healthy. This confirms that ArgoCD deployed the workflow to the cluster.
+![Workflow deployment successful with synced and healthy status]
+
+## Troubleshooting workflow deployments
+
+Identify and resolve issues related to plugin visibility, pipeline execution, or resource synchronization.
+
+1. Visibility issues
+Missing Orchestrator plugin:: If Orchestrator features do not appear in RHDH, make sure you have updated the RHDH Helm chart with the required plugins.
+Software templates not appearing:: Make sure the orchestrator-software-templates chart is installed and the orchestrator-auth-secret exists in the correct namespace.
+2. Pipeline failure (CI)
+GitHub or GitLab actions failure:: The GitOps automation includes a GitHub Action or GitLab CI step that creates a PipelineRun manifest from a PipelineRun template. Examine the failed GitHub or GitLab actions logs. Failures often occur due to invalid Git credentials or misconfigured runner permissions. You can also create the PipelineRun file manually to bypass automation issues.
+Build or push issues:: Check the CI tab in the RHDH Catalog.
+
+If RHDH does not display the status, use the OpenShift Container Platform console to monitor pipeline instances and triggered jobs. Navigate to Pipelines &gt; PipelineRuns for detailed logs.
+
+If the Tekton pipeline fails during the build or push stages:
+* Verify that your Quay.io robot account has Write permissions.
+* Ensure the docker-registry-credentials secret exists in the rhdh namespace.
+3. Resource visibility and Sync issues (CD)
+Pipeline succeeds but workflows are missing:: If the CI pipeline succeeds but the workflow does not appear in the CD tab:
+* Make sure the target namespace is labeled for Argo CD:
+
+```terminal
+$ oc label ns <target_namespace> rhdh.redhat.com/argocd-namespace=true
+```
+
+* Make sure the ArgoCD ServiceAccount has the required permissions to manage resources in the rhdh namespace.
+Argo CD sync failure:: If resources appear but remain in an OutOfSync state, click Refresh in the Argo CD UI or verify that the AppProject exists in the orchestrator-gitops namespace.
+PostgreSQL authentication failures in Argo CD:: If the Orchestrator fails to connect to the PostgreSQL database when you deploy by using Argo CD, the failure is often due to a mismatch in password generation.
+
+The Orchestrator Helm chart uses the Helm lookup function to check for an existing PostgreSQL secret. Because Argo CD uses helm template to render manifests, it cannot query the live cluster. Consequently, the chart generates a new, random password instead of retrieving the existing one, resulting in an authentication failure.
+
+To resolve this failure, you must complete the following steps:
+1. Create the database secret manually with the correct credentials:
+
+```bash
+$ kubectl create secret generic <backstage-postgresql-svcbind-postgres> --from-literal=password=<your_password>
+```
+
+2. Update your Helm configuration (for example, in values.yaml) to disable automatic service binding generation:
+
+```yaml
+upstream:
+  postgresql:
+    serviceBindings:
+      enabled: false
+    auth:
+      username: postgres
+      database: backstage
+      existingSecret: backstage-postgresql-svcbind-postgres
+      secretKeys:
+        adminPasswordKey: password
+        userPasswordKey: password
+```
+
+3. Sync the application in Argo CD to apply the changes.
+
+# Diagnose and resolve serverless workflow issues
+
+Use the following information to diagnose and resolve serverless workflow and visibility issues.
+
+## Troubleshoot workflow HTTP error codes
+
+Workflow operations fail when a service endpoint returns an HTTP error code. The user interface displays the HTTP code and error message.
+
+The following table lists common HTTP errors encountered during workflow execution:
+
+
+
+* HTTP status codes reference
+
+## Troubleshoot common workflow deployment errors
+
+Use these steps to diagnose and resolve common workflow deployment, connectivity, or configuration failures.
+
+1. If the workflow operation fails, examine the container log of the specific workflow instance to determine the cause by running the following command:
+
+```terminal
+$ oc logs my-workflow-xy73lj
+```
+
+2. If the workflow fails to reach an HTTPS endpoint, check the pod log for an SSL certificate verification failure. This occurs if the target endpoint uses a Certificate Authority (CA) that the workflow cannot verify. The resulting error resembles the following:
+
+```yaml
+sun.security.provider.certpath.SunCertPathBuilderException - unable to find valid certification path to requested target
+```
+
+3. To resolve the SSL certificate error, load the additional CA certificate into the running workflow container.
+
+## Troubleshoot cross-namespace SonataFlow configuration and deployment issues
+
+Use this procedure to resolve configuration and deployment failures when SonataFlow workflows are installed in a namespace separate from the core services, or if the Data Index fails to connect to the PostgreSQL database.
+
+* You have administrator privileges to access the OpenShift cluster.
+
+1. Identify required namespaces.
+2. Retrieve the namespace value where RHDH is running using oc get backstage -A.
+3. Identify the SonataFlow Services Namespace by checking for either a sonataflowclusterplatform or sonataflowplatform instance.
+
+[NOTE]
+----
+By default, the SonataFlow namespace must be the same as the RHDH namespace.
+----
+4. If the workflow is deployed to a namespace outside the core SonataFlow services, configure network policies to permit the necessary inter-namespace traffic.
+
+```
+# Example NetworkPolicy configuration to ingress traffic into the workflow namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-allow-infra-ns-to-workflow-ns
+  # SonataFlow and Workflows are using the RHDH target namespace.
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            # Allow knative events to be delivered to workflows.
+            kubernetes.io/metadata.name: knative-eventing
+      - namespaceSelector:
+          matchLabels:
+            # Allow auxiliary knative function for workflow (such as m2k-save-transformation)
+            kubernetes.io/metadata.name: knative-serving
+      - namespaceSelector:
+          matchLabels:
+            # Allow communication between the serverless logic operator and the workflow namespace.
+            kubernetes.io/metadata.name: openshift-serverless-logic
+```
+
+5. Add SonataFlowClusterPlatform Custom Resource as shown in the following configuration:
+
+```yaml
+oc create -f - <<EOF
+apiVersion: sonataflow.org/v1alpha08
+kind: SonataFlowClusterPlatform
+metadata:
+  name: cluster-platform
+spec:
+  platformRef:
+    name: sonataflow-platform
+    namespace: $RHDH_NAMESPACE
+```
+
+6. To allow communication between RHDH namespace and the workflow namespace, create the following network policies:
+1. Allow RHDH services to accept traffic from workflows. Create an additional network policy within the RHDH instance namespace as shown in the following configuration::
+
+```yaml
+oc create -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-workflows-to-rhdh
+  # Namespace where network policies are deployed
+  namespace: $RHDH_NAMESPACE
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            # Allow SonataFlow services to communicate with new/additional workflow namespace.
+            kubernetes.io/metadata.name: $ADDITIONAL_WORKFLOW_NAMESPACE
+```
+
+2. Allow traffic from RHDH, SonataFlow and Knative. Create a network policy within the additional workflow namespace as shown in the following configuration:
+
+```yaml
+oc create -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-rhdh-and-knative-to-workflows
+  namespace: $ADDITIONAL_WORKFLOW_NAMESPACE
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            # Allows traffic from pods in the RHDH namespace.
+            kubernetes.io/metadata.name: $RHDH_NAMESPACE
+      - namespaceSelector:
+          matchLabels:
+            # Allows traffic from pods in the Knative Eventing namespace.
+            kubernetes.io/metadata.name: knative-eventing
+      - namespaceSelector:
+          matchLabels:
+            # Allows traffic from pods in the Knative Serving namespace.
+            kubernetes.io/metadata.name: knative-serving
+```
+
+7. (Optional) Create an allow-intra-namespace policy in the workflow namespace to enable unrestricted communication among all pods within that namespace.
+8. If workflow persistence is required, perform the following configuration steps:
+1. Create a dedicated PostgreSQL Secret containing database credentials within the workflow namespace as shown in the following configuration:
+
+```yaml
+oc get secret sonataflow-psql-postgresql -n <your_namespace> -o yaml > secret.yaml
+sed -i '/namespace: <your_namespace>/d' secret.yaml
+oc apply -f secret.yaml -n $ADDITIONAL_NAMESPACE
+```
+
+2. Configure the workflow serviceRef property to correctly reference the PostgreSQL service namespace as shown in the following configuration:
+
+```yaml
+apiVersion: sonataflow.org/v1alpha08
+kind: SonataFlow
+  ...
+spec:
+  ...
+  persistence:
+    postgresql:
+      secretRef:
+        name: sonataflow-psql-postgresql
+        passwordKey: postgres-password
+        userKey: postgres-username
+      serviceRef:
+        databaseName: sonataflow
+        databaseSchema: greeting
+        name: sonataflow-psql-postgresql
+        namespace: $POSTGRESQL_NAMESPACE
+        port: 5432
+```
+
+namespace:: Enter the namespace where the PostgreSQL server is deployed.
+9. If the sonataflow-platform-data-index-service cannot connect to the PostgreSQL database on startup, perform the following diagnostic checks:
+1. Verify that the PostgreSQL Pod has fully transitioned to a running and operational status.
+Allow additional time for database initialization before expecting related service pods (DataIndex, JobService) to establish a connection.
+2. If the PostgreSQL Server operates in a dedicated namespace (for example, outside RHDH), verify that network policies are configured to allow ingress traffic from the SonataFlow services namespace. Network policies might prevent the Data Index and Job Service pods from connecting to the database.
+
+## Troubleshoot workflows missing from the RHDH UI
+
+You can perform the following checks to verify the workflow status and connectivity when the deployed workflow is missing from the RHDH Orchestrator UI.
+
+* You have administrator privileges to access the OpenShift cluster where RHDH and SonataFlow services are running.
+
+1. Verify if the workflow uses GitOps profile. The RHDH Orchestrator UI displays only the workflows that use this profile. Make sure the workflow definition and the SonataFlow manifests use the GitOps profile.
+2. Verify that the workflow pod has started and is ready. The readiness of a workflow pod depends on its successful registration with the Data Index. When a workflow initializes, it performs the following actions:
+1. It attempts to create its schema in the database (if persistence is active).
+2. It attempts to register itself to the Data Index. The workflow pod remains in an unready state until it successfully registers to the Data Index.
+
+Check the workflow deployment for additional status and error messages that might be unavailable in the pod log.
+3. Check if the workflow pod can reach the Data Index service. Connect to the workflows pod and send the following GraphQL request to the Data Index:
+
+```
+curl -g -k  -X POST  -H "Content-Type: application/json" \
+                    -d '{"query":"query{ ProcessDefinitions  { id, serviceUrl, endpoint } }"}' \
+                    http://sonataflow-platform-data-index-service.<your_namespace>/graphql
+```
+
+
+Use the Data Index service and namespace as defined in your environment. By default, this is the same namespace where RHDH is installed. If your SonataFlow resources are installed in a separate namespace, use <your_namespace>. Check if the RHDH pod can reach the workflow service by running the following command:
+
+```bash
+curl http://<workflow_service>.<workflow_namespace>/management/processes
+```
+
+4. Connect to the RHDH pod. Verify its connection to the Data Index service and inspect the RHDH pod logs for messages from the Orchestrator plugin.
+
+To inspect the logs, identify the RHDH pod and run the following oc logs command:
+
+```yaml
+oc get pods -n <your_namespace>
+oc logs <rhdh_pod_name> -n <your_namespace>
+```
+
+
+You must find messages indicating it is attempting to fetch workflow information from the Data Index, similar to the following:
+
+```yaml
+{"level":"\u001b[32minfo\u001b[39m","message":"fetchWorkflowInfos() called: http://sonataflow-platform-data-index-service.<your_namespace>","plugin":"orchestrator","service":"backstage","span_id":"fca4ab29f0a7aef9","timestamp":"2025-08-04 17:58:26","trace_flags":"01","trace_id":"5408d4b06373ff8fb34769083ef771dd"}
+```
+
+
+Notice the "plugin":"orchestrator" that can help to filter the messages.
+5. Make sure the Data Index properties are set in the -managed-props ConfigMap of the workflow as shown in the following configuration:
+
+```yaml
+kogito.data-index.health-enabled = true
+kogito.data-index.url = http://sonataflow-platform-data-index-service.<your_namespace>
+...
+mp.messaging.outgoing.kogito-processdefinitions-events.url = http://sonataflow-platform-data-index-service.<your_namespace>/definitions
+mp.messaging.outgoing.kogito-processinstances-events.url = http://sonataflow-platform-data-index-service.<your_namespace>/processes
+```
+
+
+[NOTE]
+----
+The -managed-props ConfigMap is located in the same namespace as the workflow and is generated by the OpenShift Serverless Logic (OSL) Operator.
+----
+
+These properties, along with similar settings for the Job Services, indicate that the (OSL) Operator successfully registered the Data Index service.
+6. Confirm that the workflow is registered in the Data Index database. Connect to the database used by the Data Index and run the following command from the PSQL instance pod:
+
+```bash
+PGPASSWORD=<psql password> psql -h localhost -p 5432 -U < user> -d sonataflow
+```
+
+
+Replace <psql password> and <user> with your database credentials.
+
+Run the following SQL commands to query the registered workflow definitions:
+
+```yaml
+sonataflow=# SET search_path TO "sonataflow-platform-data-index-service";
+sonataflow=# select id, name from definitions;
+```
+
+
+You must see your workflows listed in the query results.
+7. Make sure you have enabled Data Index and Job Service in the SonataFlowPlatform custom resource (CR) as shown in the following configuration:
+
+```yaml
+services:
+    dataIndex:
+      enabled: true
+    jobService:
+      enabled: true
+```
+
+
+If you fail to enable the Data Index and the Job Services in the SonataFlowPlatform custom resource (CR), the Orchestrator plugin fails to fetch the available workflows.
+
+[NOTE]
+----
+You can also manually edit the SonataFlowPlatform CR instance to trigger the re-creation of workflow-related manifests.
+----
+8. Configure role-based access control (RBAC) permissions to ensure workflows are visible in the Orchestrator UI.
+
+[NOTE]
+----
+When the RBAC plugin is enabled, the Orchestrator UI does not display workflows by default. You must explicitly grant read permissions.
+----
+1. Check your RHDH app-config.yaml file to confirm if the RBAC plugin is enabled.
+2. Confirm your user or role has the orchestrator.workflow permission with the read action.
+3. If this permission is missing, add the following to your RBAC CSV (rbac-policy.csv) file:
+
+```csv
+p, role:default/workflowUser, orchestrator.workflow, read, allow
+```
+
+4. Make sure policyFileReload is set to true in your configuration, or restart the RHDH application:
+
+```yaml
+permission:
+  enabled: true
+  rbac:
+    policyFileReload: true
+```
+
+
+* RBAC documentation
+* Managing authorizations in Developer Hub
+* Configuring the application log level by using the Red Hat Developer Hub Operator
+
+## Restore workflow visibility by removing duplicate entries
+
+To restore clear workflow visibility in the Orchestrator UI, identify workflows that share the same ID and assign unique identifiers. When you deploy multiple versions with distinct IDs, you remove duplicate entries and maintain accurate workflow tracking.
+
+* You have administrator access to the RHDH instance.
+* You have access to the workflow definitions and deployment manifests.
+
+1. Identify duplicate workflows in the Orchestrator UI:
+1. Navigate to the Orchestrator plugin in RHDH.
+2. Review the workflow list for entries that appear multiple times with the same workflow name.
+3. Note the version information displayed in the version column of the workflow list and on the workflow details page to distinguish between duplicate entries.
+
+[NOTE]
+----
+The version column displays metadata from the workflow definition, retrieved from the Data Index GraphQL schema. This information helps you identify which workflows share the same ID but does not prevent the duplicate entries. If a workflow definition does not specify a version, the field appears empty in the UI. Duplicate entries can occur when you deploy the same workflow ID to different runtime servers over time, because the Data Index records all executions.
+----
+2. Verify the workflow IDs in your workflow definitions:
+1. Locate the workflow definition files (.sw.yaml or .sw.json files).
+2. Check the id field in each workflow definition.
+3. Identify workflows that use the same id value, even if they have different version values.
+4. Review the version field in each workflow definition to understand how workflows appear in the UI.
+
+Example of problematic workflow definitions:
+
+```yaml
+# First deployment
+id: customer-onboarding
+version: "1.0"
+name: Customer Onboarding
+
+# Second deployment (causes duplicate)
+id: customer-onboarding
+version: "2.0"
+name: Customer Onboarding
+```
+
+3. Determine which workflow version to retain:
+1. Review the workflow instances and their execution history.
+2. Identify which version is currently in active use.
+3. Check for any running instances of older versions that must complete before removal.
+4. Update workflow definitions with unique IDs:
+1. For the new workflow version, modify the id field to include a version identifier:
+
+```yaml
+id: customer-onboarding-v2
+version: "2.0"
+name: Customer Onboarding
+```
+
+2. Maintain the original workflow ID for the current deployment.
+3. Build and deploy the updated workflow definition.
+5. Remove outdated workflow deployments:
+1. After confirming the new workflow operates correctly, remove the old workflow deployment.
+2. Verify that all instances of the old workflow have completed.
+3. Delete the workflow resources from your cluster:
+
+```bash
+oc delete sonataflow <old-workflow-name> -n <workflow-namespace>
+```
+
+
+[NOTE]
+----
+Deleting the workflow deployment removes it from the cluster but preserves historical execution records in the Data Index. Users can still view past workflow runs in RHDH.
+----
+6. Clean historical data if necessary:
+
+If duplicate entries persist in the UI after you remove the workflow deployments, the Data Index database has historical records from earlier workflow executions. These records preserve the execution history of workflows that ran on different runtime servers over time.
+
+[IMPORTANT]
+----
+Back up your workflow execution records before you remove historical data from the Data Index database. Removing this data permanently prevents access to past execution records.
+----
+1. Connect to the Data Index database to verify the duplicate entries.
+2. Query the workflow definitions to identify duplicate entries:
+
+```sql
+SET search_path TO "sonataflow-platform-data-index-service";
+SELECT id, version, name FROM definitions;
+```
+
+3. Evaluate whether to remove the historical data.
+You can keep the historical data to retain past workflow execution records, which allows you to view the execution history and results of completed workflow instances.
+Alternatively, contact your system administrator or Red Hat Support for guidance on safely removing historical duplicate entries from the Data Index without affecting active workflow operations.
+
+1. Navigate to the Orchestrator plugin in RHDH.
+2. Confirm that the UI shows only one entry for each workflow.
+3. Verify that the version information displays correctly for each workflow.
+4. Test workflow execution to confirm the correct version runs.
+
+# Technical appendix
+
+The following appendix provides technical information, and details on non-production tools, such as the RHDH helper script, which might be helpful for understanding setup options or quick testing.
+
+## Install components using the RHDH helper script
+
+You can use the RHDH helper script plugin-infra.sh to quickly install the OpenShift Serverless infrastructure and OpenShift Serverless Logic infrastructure required by the Orchestrator plugin.
+
+
+[WARNING]
+----
+Do not use plugin-infra.sh in production.
+----
+
+1. Download the plugin-infra.sh script as shown in the following example:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/config/profile/rhdh/plugin-infra/plugin-infra.sh # Specify the Red Hat Developer Hub version in the URL or use main
+```
+
+2. Run the script:
+
+```terminal
+$ ./plugin-infra.sh
+```

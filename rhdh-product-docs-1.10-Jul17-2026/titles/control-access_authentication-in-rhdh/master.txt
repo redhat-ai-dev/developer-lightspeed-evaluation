@@ -1,0 +1,2239 @@
+# Authentication in Red Hat Developer Hub
+
+You can enable authentication in Red Hat Developer Hub to allow users to sign in using credentials from an external identity provider, such as RHBK, GitHub, or Microsoft Azure, and provision user and group data to the software catalog.
+
+# Understand authentication and user provisioning
+
+User provisioning and authentication are two independent mechanisms in Red Hat Developer Hub.
+You can configure them separately depending on your requirements.
+
+## User provisioning
+
+To fully enable catalog features, provision user and group data from an Identity Provider (IdP) to the Developer Hub software catalog.
+Catalog provider plugins handle this task asynchronously.
+These plugins query the IdP for relevant user and group information, and create or update corresponding entities in the Developer Hub catalog.
+Scheduled provisioning ensures that the catalog accurately reflects the users and groups in your organization.
+
+You can provision users and groups from any supported source, including Red Hat Build of Keycloak (RHBK), GitHub, GitLab, Microsoft Azure, or LDAP.
+LDAP provisioning works independently of your authentication provider.
+Following associations are supported:
+
+
+
+For example, you can authenticate users with RHBK while provisioning user and group data from your LDAP directory.
+
+Configuring user provisioning is critical for several reasons.
+
+* Enabling authorization by allowing you to define access controls based on user and group memberships synchronized from your IdP.
+* Provisioning user and group data to the catalog is necessary for various catalog features that rely on understanding entity ownership and relationships between users, groups, and software components.
+
+[IMPORTANT]
+----
+Without this provisioning step, features such as displaying who owns a catalog entity might not function correctly.
+----
+
+
+[TIP]
+----
+To explore Developer Hub features in a non-production environment, you can:
+* To use Developer Hub without external IdP, enable the guest user to skip configuring authentication and authorization, log in as the guest user, and access all Developer Hub features.
+* To use Developer Hub without authorization policies and features relying on the software catalog, you can enable the dangerouslyAllowSignInWithoutUserInCatalog resolver option.
+This setting bypasses the check requiring a user to be in the catalog but still enforces authentication.
+----
+
+
+[IMPORTANT]
+----
+Developer Hub uses a one-way synchronization model, where user and group data flow from your Identity Provider to the Developer Hub software catalog.
+As a result,
+deleting users or groups manually through the Developer Hub Web UI or REST API might be ineffective or cause inconsistencies,
+since Developer Hub will create those entities again during the next import.
+----
+
+## Authentication
+
+When a user attempts to access Developer Hub, Developer Hub redirects them to a configured authentication provider, such as Red Hat Build of Keycloak (RHBK), GitHub, GitLab, or Microsoft Azure.
+This external IdP is responsible for authenticating the user.
+
+On successful authentication, the Developer Hub authentication plugin, configured in your app-config.yaml file, processes the response from the IdP, resolves the identity in the Developer Hub software catalog, and establishes a user session within Developer Hub.
+
+Authentication works independently of user provisioning.
+By default you cannot authenticate users without provisioning them to the software catalog.
+You can override this behavior to authenticate users without provisioning them to the software catalog, by using the dangerouslyAllowSignInWithoutUserInCatalog parameter.
+However, provisioning is a prerequisite for full catalog functionality, such as entity ownership and group-based access controls.
+
+# Enable or disable authentication with the Guest user
+
+For trial or non-production environments, you can enable guest access to explore Developer Hub features without configuring authentication. For production environments, disable guest access to ensure security.
+
+## Enable the Guest login
+
+To allow users to log in as a guest on the login page, enable the guest login option.
+
+1. In the app-config.yaml file, set the authentication environment to development:
+
+```yaml
+auth:
+  environment: development
+```
+
+2. Restart the Developer Hub application to apply the changes.
+
+1. Go to the login page of your Developer Hub instance.
+2. Verify that the option to log in as a guest is available.
+
+## Disable the Guest login
+
+To prevent users from logging in as a guest on the login page, disable the guest login option.
+
+1. In the app-config.yaml file, set the authentication environment to production:
+
+```yaml
+auth:
+  environment: production
+```
+
+2. Restart the Developer Hub application to apply the changes.
+
+1. Go to the login page of your Developer Hub instance.
+2. Verify that the option to log in as a guest is no longer available.
+
+# Share a secret with your identity provider
+
+Share credentials between your identity provider and Red Hat Developer Hub to enable secure communication for authentication and user provisioning.
+
+## Share a secret with Red Hat Build of Keycloak (RHBK)
+
+Register your Red Hat Developer Hub application in Red Hat Build of Keycloak (RHBK) and store the credentials in Developer Hub to enable secure communication.
+
+* You added a custom Developer Hub application configuration, and have enough permissions to change it.
+* RHBK version 26.0.
+* You have access to RHBK with an admin user.
+
+[TIP]
+----
+Alternatively, ask your RHBK administrator to prepare in RHBK the required realm and client.
+----
+
+1. Register your Developer Hub app in RHBK:
+1. Use an existing realm, or create a realm, with a distinctive Name such as <my_realm>.
+Save the value for the next step:
+2. RHBK realm base URL, such as: <your_rhbk_URL>/realms/<your_realm>.
+1. In the created realm, secure the first application, with:
+1. Client ID: A distinctive client ID, such as <RHDH>.
+2. Valid redirect URIs: Set to the OIDC handler URL: https://<my_developer_hub_domain>/api/auth/oidc/handler/frame.
+3. Go to the Credentials tab and copy the Client secret.
+4. Save the values for the next step:
+3. Client ID
+4. Client Secret
+1. In the same realm, get the credential information for an existing user or create a user.
+Save the user credential information for the verification steps.
+5. Create a long, complex, and unique string to use as the Developer Hub session secret key.
+6. Add the following key-value pairs to your Developer Hub secrets.
+You can use these secrets in the Developer Hub configuration files by using their environment variable name.
+KEYCLOAK_CLIENT_ID:: Enter the saved Client ID.
+KEYCLOAK_CLIENT_SECRET:: Enter the saved Client Secret.
+KEYCLOAK_BASE_URL:: Enter the saved RHBK realm base URL.
+KEYCLOAK_REALM:: Enter the realm name to provision users.
+KEYCLOAK_LOGIN_REALM:: Enter the realm name to authenticate users.
+SESSION_SECRET:: Enter the created session secret key.
+
+* Verify that the secret key-value pairs are stored in your Developer Hub secrets.
+
+## Share a secret with LDAP
+
+Collect your LDAP credentials and store them in Red Hat Developer Hub to enable user and group provisioning from your LDAP directory.
+
+* You added a custom Developer Hub application configuration, and have enough permissions to change it.
+* You have access to your LDAP server configuration.
+
+1. Collect the following LDAP credentials from your LDAP server:
+LDAP URL:: Your LDAP server URL, such as ldaps://ds.example.net.
+Bind DN:: Your bind distinguished name, such as cn=admin,OU=Users,DC=rhdh,DC=test.
+LDAP secret:: Your LDAP secret.
+2. Optional: To use a secure LDAP connection (ldaps://), store your LDAP certificates in the ldap_certs.pem file and your LDAP keys in the ldap_keys.pem file.
+
+[WARNING]
+----
+In production mode, use a secure LDAP connection.
+----
+3. Add the LDAP_SECRET key-value pair to your Developer Hub secrets.
+You can use this secret in the Developer Hub configuration files by using its environment variable name.
+LDAP_SECRET:: Enter your LDAP secret.
+4. Optional: To use a secure LDAP connection (ldaps://), add your LDAP certificates and keys files to a {a-platform-generic} secret.
+
+```
+$ oc create secret generic my-rhdh-ldap-secrets \
+    --from-file=./ldap_certs.pem \
+    --from-file=./ldap_keys.pem
+```
+
+
+* Verify that the secret key-value pairs are stored in your Developer Hub secrets.
+
+## Share secrets with GitHub
+
+Register GitHub Apps and store the credentials in Red Hat Developer Hub to enable secure communication.
+For security, create two separate GitHub Apps following the principle of least privilege:
+
+Integration App (Developer Hub to GitHub):: Authenticates Developer Hub to GitHub for catalog operations such as importing users, groups, and repositories.
+Requires: GITHUB_APP_APP_ID, GITHUB_APP_CLIENT_ID_INTEGRATION, GITHUB_APP_CLIENT_SECRET_INTEGRATION, and GITHUB_APP_PRIVATE_KEY.
+Authentication App (user to Developer Hub):: Authenticates users signing in to Developer Hub with their GitHub credentials.
+Requires only OAuth credentials: GITHUB_APP_CLIENT_ID and GITHUB_APP_CLIENT_SECRET.
+
+* You have enough permissions in GitHub to create and manage a GitHub App.
+
+[TIP]
+----
+Alternatively, ask your GitHub administrator to prepare the required GitHub App.
+----
+* You have added a custom Developer Hub application configuration, and have enough permissions to change it.
+
+1. Create a GitHub App for integration.
+
+[NOTE]
+----
+Use a GitHub App instead of an OAuth app to use fine-grained permissions and short-lived tokens, scale with the number of installations by avoiding rate limits, and have a more transparent integration by avoiding to request user input.
+----
+1. Register a GitHub App with the following configuration:
+GitHub App name:: Enter a unique name identifying your GitHub App, such as integrating-with-rhdh-<GUID>.
+Homepage URL:: Enter your Developer Hub URL: https://<my_developer_hub_domain>.
+Webhook:: Clear "Active".
+Repository permissions:: 
+Contents:: Read-only
+Commit statuses:: Read-only
+Organization permissions:: 
+Members:: Read-only
+Where can this GitHub App be installed?:: Select Only on this account.
+2. In the General -> Clients secrets section, click Generate a new client secret.
+3. In the General -> Private keys section, click Generate a private key.
+4. In the Install App tab, choose an account to install your GitHub App on.
+5. Save the following values for the next step:
+2. App ID
+3. Client ID
+4. Client secret
+5. Private key
+6. Store the integration app credentials: Add the following key/value pairs to your Developer Hub secrets.
+GITHUB_APP_APP_ID:: Enter the saved App ID.
+GITHUB_APP_CLIENT_ID_INTEGRATION:: Enter the saved Client ID.
+GITHUB_APP_CLIENT_SECRET_INTEGRATION:: Enter the saved Client Secret.
+GITHUB_APP_PRIVATE_KEY:: Enter the saved Private key.
+GITHUB_URL:: Enter the GitHub host domain: https://github.com.
+GITHUB_ORG:: Enter your GitHub organization name, such as <your_github_organization_name>.
+7. Create a separate GitHub App for authentication.
+1. Register a GitHub App with the following configuration:
+GitHub App name:: Enter a unique name identifying your GitHub App, such as authenticating-with-rhdh-<GUID>.
+Homepage URL:: Enter your Developer Hub URL: https://<my_developer_hub_domain>.
+Authorization callback URL:: Enter your Developer Hub authentication backend URL: https://<my_developer_hub_domain>/api/auth/github/handler/frame.
+Webhook:: Clear "Active".
+Organization permissions:: Enable Read-only access to Members.
+Where can this GitHub App be installed?:: Select Only on this account.
+2. In the General -> Clients secrets section, click Generate a new client secret.
+3. Save the following values for the next step:
+8. Client ID
+9. Client secret
+10. Store the authentication app credentials: Add the following key/value pairs to your Developer Hub secrets.
+GITHUB_APP_CLIENT_ID:: Enter the saved Client ID.
+GITHUB_APP_CLIENT_SECRET:: Enter the saved Client Secret.
+
+* Verify that the secret key-value pairs for both apps are stored in your Developer Hub secrets.
+
+## Share a secret with Microsoft Azure
+
+Register your Red Hat Developer Hub application in Microsoft Azure and store the credentials in Developer Hub to enable secure communication.
+
+* You have the permission to register an application in Azure.
+
+[TIP]
+----
+Alternatively, ask your Azure administrator to prepare the required Azure application.
+----
+* You added a custom Developer Hub application configuration, and have enough permissions to change it.
+* Your Developer Hub backend can access the following hosts:
+login.microsoftonline.com:: The Microsoft Azure authorization server, which enables the authentication flow.
+graph.microsoft.com:: The server for retrieving organization data, including user and group data, to import into the Developer Hub catalog.
+
+1. Register your Developer Hub app in Azure, by using the Azure portal.
+1. Sign in to the Microsoft Entra admin center.
+2. Optional: If you have access to multiple tenants, use the Settings icon in the top menu to switch to the tenant in which you want to register the application from the Directories + subscriptions menu.
+3. Browse to Applications > App registrations, and create a New registration with the configuration:
+Name:: Enter a name to identify your application in Azure, such as {my-product-app-name-in-azure}.
+Supported account types:: Select Accounts in this organizational directory only.
+Redirect URI:: 
+Select a platform:: Select Web.
+URL:: Enter the backend authentication URI set in Developer Hub: https://<my_developer_hub_domain>/api/auth/microsoft/handler/frame
+4. On the Applications > App registrations > {my-product-app-name-in-azure} > Manage > API permissions page, Add a Permission, Microsoft Graph, select the following permissions:
+Application Permissions:: 
+GroupMember.Read.All, User.Read.All:: Enter permissions that enable provisioning user and groups to the Developer Hub software catalog.
+
+Optional: Grant admin consent for these permissions.
+Even if your company does not require admin consent, consider doing so as it means users do not need to individually consent the first time they access Developer Hub.
+Delegated Permissions:: 
+User.Read, email, offline_access, openid, profile:: Enter permissions that enable authenticating users.
+
+Optional: Enter optional custom scopes for the Microsoft Graph API that you define both here and in your app-config.yaml Developer Hub configuration file.
+5. On the Applications > App registrations > {my-product-app-name-in-azure} > Manage > Certificates & secrets page, in the Client secrets tab, create a New client secret.
+6. Save the following values for the next step:
+* Directory (tenant) ID
+* Application (client) ID
+* Application (client) Secret ID
+2. Add your Azure credentials to Developer Hub, by adding the following key/value pairs to your Developer Hub secrets:
+MICROSOFT_TENANT_ID:: Enter your saved Directory (tenant) ID.
+MICROSOFT_CLIENT_ID:: Enter your saved Application (client) ID.
+MICROSOFT_CLIENT_SECRET:: Enter your saved Application (client) secret.
+
+* Verify that the secret key-value pairs are stored in your Developer Hub secrets.
+
+## Share secrets with GitLab
+
+Register a GitLab OAuth 2 application and store the credentials in Red Hat Developer Hub to enable secure communication.
+These credentials serve two purposes:
+
+Integration (Developer Hub to GitLab):: GITLAB_HOST and GITLAB_TOKEN authenticate Developer Hub to GitLab for catalog operations such as importing users, groups, and repositories.
+Authentication (user to Developer Hub):: GITLAB_CLIENT_ID and GITLAB_CLIENT_SECRET authenticate users signing in to Developer Hub with their GitLab credentials.
+
+* You have enough permissions in GitLab to create and manage a GitLab OAuth 2 application.
+
+[TIP]
+----
+Alternatively, ask your GitLab administrator to prepare the required GitLab OAuth 2 application.
+----
+* You must create a GitLab personal access token with the read_api scope.
+* You have added a custom Developer Hub application configuration, and have enough permissions to change it.
+
+1. Register the GitLab OAuth 2 application.
+
+[IMPORTANT]
+----
+You must use the required callback URL and permissions.
+----
+1. Register a GitLab OAuth 2 application using the following configuration:
+GitLab OAuth 2 application name:: Enter a unique name, such as authenticating-with-rhdh-<GUID>.
+Redirect URI:: Enter your Developer Hub URL: https://<my_developer_hub_domain>.
+Authorization callback URL:: Enter your authentication backend URL: https://<my_developer_hub_domain>/api/auth/gitlab/handler/frame.
+Authorized application scope:: Enable email, profile, openid, and read_user.
+2. Save the application and record these values for the next step:
+2. OAuth 2 Client ID, available in the Application ID field
+3. OAuth 2 Client secret, accessible by selecting Copy in the Secret field
+4. Set up a GitLab personal access token (PAT) with read_api scope.
+Save the token value for the next step.
+5. Add your GitLab credentials to your RHDH secrets using the following key/value pairs.
+Use these environment variables in your RHDH configuration files.
+GITLAB_HOST:: Enter your GitLab host: <gitlab_host>.
+GITLAB_CLIENT_ID:: Enter the saved OAuth 2 Client ID.
+GITLAB_CLIENT_SECRET:: Enter the saved OAuth 2 Client Secret.
+GITLAB_TOKEN:: Enter the saved Personal access token.
+GITLAB_URL:: Enter the GitLab host domain: `<gitlab_host_domain>`.
+GITLAB_PARENT_ORG:: Enter your GitLab organization name, such as <your_gitlab_organization_name>.
+
+* Verify that the secret key-value pairs are stored in your Developer Hub secrets.
+
+# Import users and groups from your identity provider
+
+Import users and groups from your identity provider to the Red Hat Developer Hub software catalog to enable user identity resolution and role-based access control.
+
+## Import users and groups from Red Hat Build of Keycloak (RHBK)
+
+Import Red Hat Build of Keycloak (RHBK) users and groups to the Red Hat Developer Hub software catalog.
+
+* You have shared a secret with RHBK.
+
+1. Enable the Keycloak catalog provider plugin in your dynamic-plugins.yaml file.
+
+The plugin is named after RHBK upstream project.
+
+```yaml
+plugins:
+  - package: './dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic'
+    disabled: false
+```
+
+2. Add a catalog.providers.keycloakOrg section to your app-config.yaml file:
+
+```yaml
+catalog:
+  providers:
+    keycloakOrg:
+      default:
+        baseUrl: ${KEYCLOAK_BASE_URL}
+        clientId: ${KEYCLOAK_CLIENT_ID}
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+        realm: ${KEYCLOAK_REALM}
+        loginRealm: ${KEYCLOAK_LOGIN_REALM}
+```
+
+baseUrl:: Enter your RHBK server URL, defined earlier.
+clientId:: Enter your Developer Hub application client ID in RHBK, defined earlier.
+clientSecret:: Enter your Developer Hub application client secret in RHBK, defined earlier.
+realm:: Enter the realm name to provision users.
+loginRealm:: Enter the realm name to authenticate users.
+3. Optional: Add optional fields to the keycloackOrg catalog provider section in your app-config.yaml file:
+
+```yaml
+catalog:
+  providers:
+    keycloakOrg:
+      default:
+        baseUrl: ${KEYCLOAK_BASE_URL}
+        clientId: ${KEYCLOAK_CLIENT_ID}
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+        realm: ${KEYCLOAK_REALM}
+        loginRealm: ${KEYCLOAK_LOGIN_REALM}
+        userQuerySize: 100
+        groupQuerySize: 100
+        schedule:
+          frequency: { hours: 1 }
+          timeout: { minutes: 50 }
+          initialDelay: { seconds: 15}
+```
+
+userQuerySize:: Enter the user count to query simultaneously.
+Default value: 100.
+groupQuerySize:: Enter the group count to query simultaneously.
+Default value: 100.
+schedule:: 
+frequency:: Enter the schedule frequency.
+Supports cron, ISO duration, and "human duration" as used in code.
+timeout:: Enter the timeout for the user provisioning job.
+Supports ISO duration and "human duration" as used in code.
+initialDelay:: Enter the initial delay to wait for before starting the user provisioning job.
+Supports ISO duration and "human duration" as used in code.
+
+* Check the console logs.
+
+Successful synchronization example:
+
+```
+2025-06-27T16:02:34.647Z catalog info Read 5 Keycloak users and 3 Keycloak groups in 0.4 seconds. Committing... class="KeycloakOrgEntityProvider" taskId="KeycloakOrgEntityProvider:default:refresh" taskInstanceId="db55c34b-46b3-402b-b12f-2fbc48498e82" trace_id="606f80a9ce00d1c86800718c4522f7c6" span_id="7ebc2a254a546e90" trace_flags="01"
+
+2025-06-27T16:02:34.650Z catalog info Committed 5 Keycloak users and 3 Keycloak groups in 0.0 seconds. class="KeycloakOrgEntityProvider" taskId="KeycloakOrgEntityProvider:default:refresh" taskInstanceId="db55c34b-46b3-402b-b12f-2fbc48498e82" trace_id="606f80a9ce00d1c86800718c4522f7c6" span_id="7ebc2a254a546e90" trace_flags="01"
+```
+
+
+### Create a custom transformer to provision users from Red Hat Build of Keycloak (RHBK) to the software catalog
+
+Customize how Red Hat Developer Hub provisions users and groups to Developer Hub software catalog entities,
+by creating a backend module that uses the keycloakTransformerExtensionPoint to offer custom user and group transformers for the Keycloak backend.
+
+* You have imported users and groups from Red Hat Build of Keycloak (RHBK) to the software catalog.
+
+1. Create a new backend module with the yarn new command.
+
+```
+$ yarn new
+? What type of module would you like to create? backend-plugin-module
+? Enter the ID of the plugin [required] catalog
+? Enter the ID of the module [required] keycloak-org-transformer
+```
+
+
+The command creates a plugin named catalog-backend-module-keycloak-org-transformer.
+2. Install required packages:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-keycloak-org-transformer add @backstage/plugin-catalog-backend-module-keycloak-org
+```
+
+3. Refer to the sample plugin and implement plugins/catalog-backend-module-keycloak-org-transformer/src/module.ts.
+4. Package and export the plugin as a Dynamic Plugin, and embed the required package for the custom transformer.
+
+```shell
+$ npx @red-hat-developer-hub/cli@latest plugin export \
+  --embed-package @backstage/plugin-catalog-backend-module-keycloak-org
+```
+
+
+[IMPORTANT]
+----
+Verify that the installed plugin version is compatible with the Backstage version.
+See the Dynamic plugins reference for the version to import.
+----
+5. Publish and enable the plugin in Developer Hub.
+For more information, see Installing and viewing plugins in Red Hat Developer Hub.
+
+1. Every time that Developer Hub starts, it imports the users and groups.
+Check the console logs to verify the synchronization result.
+
+Successful synchronization example:
+
+```json
+{"class":"KeycloakOrgEntityProvider","level":"info","message":"Read 3 Keycloak users and 2 Keycloak groups in 1.5 seconds. Committing...","plugin":"catalog","service":"backstage","taskId":"KeycloakOrgEntityProvider:default:refresh","taskInstanceId":"bf0467ff-8ac4-4702-911c-380270e44dea","timestamp":"2024-09-25 13:58:04"}
+{"class":"KeycloakOrgEntityProvider","level":"info","message":"Committed 3 Keycloak users and 2 Keycloak groups in 0.0 seconds.","plugin":"catalog","service":"backstage","taskId":"KeycloakOrgEntityProvider:default:refresh","taskInstanceId":"bf0467ff-8ac4-4702-911c-380270e44dea","timestamp":"2024-09-25 13:58:04"}
+```
+
+2. After the first import is complete, go to the Catalog page and select User to view the list of users.
+3. When you select a user, you see the information imported from RHBK.
+Verify that the user entities reflect the custom transformations you defined in the plugin.
+4. You can select a group, view the list, and access or review the information imported from RHBK.
+Verify that the group entities reflect the custom transformations you defined in the plugin.
+5. You can log in with an RHBK account.
+
+## Enable user provisioning with LDAP
+
+You can provision users and groups from a Lightweight Directory Access Protocol (LDAP) directory directly to the Red Hat Developer Hub software catalog.
+
+
+[NOTE]
+----
+LDAP provisioning works with any authentication provider.
+You do not need Red Hat Build of Keycloak (RHBK) to use LDAP for user and group provisioning.
+For example, you can authenticate users with GitHub or Microsoft Azure while provisioning user and group data from your LDAP directory.
+----
+
+* You have configured authentication with a supported provider, such as Red Hat Build of Keycloak (RHBK), GitHub, Microsoft Azure, or GitLab.
+* You have shared a secret with LDAP.
+
+1. Enable the LDAP catalog provider plugin in your dynamic-plugins.yaml file.
+
+```yaml
+plugins:
+  - package: './dynamic-plugins/dist/backstage-plugin-catalog-backend-module-ldap-dynamic'
+    disabled: false
+```
+
+2. Enable provisioning LDAP users and groups to the Developer Hub software catalog, by adding the LDAP catalog provider section to your app-config.yaml file:
+1. Optional: Remove other catalog providers, by removing the other catalog providers section.
+2. Enter the mandatory fields:
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        target: ldaps://ds.example.net
+        bind:
+          dn: cn=admin,ou=Users,dc=rhdh
+          secret: ${LDAP_SECRET}
+        users:
+          - dn: OU=Users,OU=RHDH Local,DC=rhdh,DC=test
+            options:
+              filter: (uid=*)
+        groups:
+          - dn: OU=Groups,OU=RHDH Local,DC=rhdh,DC=test
+        schedule:
+          frequency: PT1H
+          timeout: PT15M
+```
+
+target:: Enter your LDAP server URL, such as ldaps://ds.example.net.
+bind:: Enter your service account information:
+dn:: Enter your service account distinguished name (DN), such as cn=admin,OU=Users,DC=rhdh,DC=test
+secret:: Enter the name of the variable containing your LDAP secret: ${LDAP_SECRET}.
+users:: Enter information about how to find your users:
+dn:: Enter the DN containing the user information.
+options:: 
+filter:: Enter your filter, such as (uid=*) to provision to the RHDH software catalog only users with an existing uid.
+groups:: Enter information about how to find your groups:
+dn:: Enter the DN containing the group information.
+schedule:: Enter your schedule information:
+frequency:: Enter your schedule frequency, in the cron, ISO duration, or "human duration" format.
+timeout:: Enter your schedule timeout, in the ISO duration or "human duration" format.
+initialDelay:: Enter your schedule initial delay, in the ISO duration or "human duration" format.
+3. Optional: To change how Developer Hub maps LDAP user fields to the software catalog, enter optional maps and set fields.
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        target: ldaps://ds.example.net
+        bind:
+          dn: cn=admin,ou=Users,dc=rhdh
+          secret: ${LDAP_SECRET}
+        users:
+          - dn: OU=Users,OU=RHDH Local,DC=rhdh,DC=test
+            options:
+              filter: (uid=*)
+            map:
+              rdn: uid
+              name: uid
+              description: {}
+              displayName: cn
+              email: mail
+              picture: {}
+              memberOf: memberOf
+            set:
+              metadata.customField: 'hello'
+        groups:
+          - dn: OU=Groups,OU=RHDH Local,DC=rhdh,DC=test
+        schedule:
+          frequency: PT1H
+          timeout: PT15M
+```
+
+rdn:: To change the default value: uid, enter the relative distinguished name of each entry.
+name:: To change the default value: uid, enter the LDAP field to map to the RHDH metadata.name field.
+description:: To set a value, enter the LDAP field to map to the RHDH metadata.description field.
+displayName:: To change the default value: cn, enter the LDAP field to map to the RHDH metadata.displayName field.
+email:: To change the default value: mail, enter the LDAP field to map to the RHDH spec.profile.email field.
+picture:: To set a value, enter the LDAP field to map to the RHDH spec.profile.picture field.
+memberOf:: To change the default value: memberOf, enter the LDAP field to map to the RHDH spec.memberOf field.
+set:: To set a value, enter the hard coded JSON to apply to the entities after ingestion, such as metadata.customField: 'hello'.
+4. Optional: To change how Developer Hub maps LDAP group fields to the software catalog, enter optional groups.maps fields.
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        target: ldaps://ds.example.net
+        bind:
+          dn: cn=admin,ou=Users,dc=rhdh
+          secret: ${LDAP_SECRET}
+        users:
+          - dn: OU=Users,OU=RHDH Local,DC=rhdh,DC=test
+            options:
+              filter: (uid=*)
+        groups:
+          - dn: OU=Groups,OU=RHDH Local,DC=rhdh,DC=test
+            map:
+              rdn: uid
+              name: uid
+              description: {}
+              displayName: cn
+              email: mail
+              picture: {}
+              memberOf: memberOf
+              members: member
+              type: groupType
+            set:
+              metadata.customField: 'hello'
+        schedule:
+          frequency: PT1H
+          timeout: PT15M
+```
+
+rdn:: To change the default value: cn, enter the relative distinguished name of each entry.
+name:: To change the default value: cn, enter the LDAP field to map to the RHDH metadata.name field.
+description:: To set a value, enter the LDAP field to map to the RHDH metadata.description field.
+displayName:: To change the default value: cn, enter the LDAP field to map to the RHDH metadata.displayName field.
+email:: To change the default value: mail, enter the LDAP field to map to the RHDH spec.profile.email field.
+picture:: To set a value, enter the LDAP field to map to the RHDH spec.profile.picture field.
+memberOf:: To change the default value: memberOf, enter the LDAP field to map to the RHDH spec.memberOf field.
+members:: To change the default value: member, enter the LDAP field to map to the RHDH spec.children field.
+type:: To change the default value: groupType, enter the LDAP field to map to the RHDH spec.type field.
+set:: To set a value, enter the hard coded JSON to apply to the entities after ingestion, such as metadata.customField: 'hello'.
+5. Recommended: To use a secure LDAP connection (ldaps://), enter optional tls fields.
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        target: ldaps://ds.example.net
+        bind:
+          dn: cn=admin,ou=Users,dc=rhdh
+          secret: ${LDAP_SECRET}
+        users:
+ldapOrg:
+  default:
+    tls:
+      rejectUnauthorized: true
+      keys: '/path/to/keys.pem'
+      certs: '/path/to/certs.pem'
+```
+
+rejectUnauthorized:: Set to false to allow self-signed certificates
+
+[WARNING]
+----
+This option is not recommended for production.
+----
+keys:: Enter a file containing private keys in PEM format
+certs:: Enter a file containing cert chains in PEM format
+6. Optional: Enter configuration for vendor-specific attributes to set custom attribute names for distinguished names (DN) and universally unique identifiers (UUID) in LDAP directories.
+Default values are defined per supported vendor and automatically detected.
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        vendor:
+          dnAttributeName: customDN
+          uuidAttributeName: customUUID
+```
+
+dnAttributeName:: Enter the attribute name that holds the distinguished name (DN) for an entry.
+uuidAttributeName:: Enter the attribute name that holds a universal unique identifier (UUID) for an entry.
+7. Optional: Enter low level users and groups configuration in the options subsection.
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        target: ldaps://ds.example.net
+        bind:
+          dn: cn=admin,ou=Users,dc=rhdh
+          secret: ${LDAP_SECRET}
+        users:
+          options:
+            scope: sub
+            filter: (uid=*)
+            attributes:
+              - cn
+              - uid
+              - description
+            paged:
+            pageSize: 500
+        groups:
+          options:
+            scope: sub
+            filter: (cn=*)
+            attributes:
+              - cn
+              - uid
+              - description
+            paged:
+              pageSize: 500
+              pagePause: true
+```
+
+scope:: To change the default value: one, enter how deep the search should go within the directory tree:
+3. base to search only the base DN.
+4. one to search one level below the base DN.
+5. sub to search all descendant entries.
+filter:: To change the default value: (objectclass=*), enter your LDAP filter.
+With the default mapping:
+6. For users, enter (uid=*) to make sure only users with valid uid field is synced, since users without uid will cause error and ingestion fails.
+7. For groups, enter (cn=*)
+
+[TIP]
+----
+When you change the mapping, also update the filter.
+----
+attributes:: To change the default value: all attributes ['*', '+'], enter the array of attribute names to import from LDAP.
+paged:: Enter a value to enable paged results.
+pageSize:: Enter a value to set the results page size, such as 500.
+pagePause:: Enter true to tell the client to wait for the asynchronous results of the next page, when the page limit has been reached.
+8. Recommended: To use a secure LDAP connection (ldaps://), mount your LDAP certificates and keys files in your Developer Hub deployment, by editing your Backstage custom resource.
+
+```
+kind: Backstage
+spec:
+  application:
+    extraFiles:
+      mountPath: /opt/ldap-secrets
+      secrets:
+        - name: my-rhdh-database-database-secrets
+          key: ldap-certs.pem, ldap-keys.pem
+```
+
+
+* To verify user and group provisioning, check the console logs.
+
+Successful synchronization example:
+
+```json
+2025-10-15T20:45:49.072Z catalog info Read 4 LDAP users and 6 LDAP groups in 0.3 seconds. Committing... class="LdapOrgEntityProvider" taskId="LdapOrgEntityProvider:default:refresh" taskInstanceId="9bb48fd5-2f55-4096-9fd0-61cee6679952" trace_id="6a318e2eadba84e20df773948668aa4c" span_id="cbec568cb6e64985" trace_flags="01"
+2025-10-15T20:45:49.075Z catalog info Committed 4 LDAP users and 6 LDAP groups in 0.0 seconds. class="LdapOrgEntityProvider" taskId="LdapOrgEntityProvider:default:refresh" taskInstanceId="9bb48fd5-2f55-4096-9fd0-61cee6679952" trace_id="6a318e2eadba84e20df773948668aa4c" span_id="cbec568cb6e64985" trace_flags="01"
+```
+
+
+### Create a custom transformer to provision users from LDAP to the software catalog
+
+Customize how Red Hat Developer Hub provisions users and groups to Developer Hub software catalog entities,
+by creating a backend module plugin that uses the ldapOrgEntityProviderTransformsExtensionPoint to offer custom user and group transformers for the LDAP backend.
+
+* You have enabled provisioning users from LDAP to the software catalog.
+
+1. Create a new backend module:
+
+```shell
+$ yarn new
+? What type of module would you like to create? backend-plugin-module
+? Enter the ID if the plugin [required]? catalog
+? Enter the ID of the module [required]? ldap-transformer
+```
+
+
+The command creates a plugin named catalog-backend-module-ldap-transformer.
+2. Install required packages:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-ldap-transformer add @backstage/plugin-catalog-backend-module-ldap
+```
+
+3. Refer to the sample plugin and implement plugins/catalog-backend-module-ldap-transformer/src/module.ts.
+4. Package and export the plugin as a Dynamic Plugin, and embed the required package for the custom transformer.
+
+```shell
+$ npx @red-hat-developer-hub/cli@latest plugin export \
+  --embed-package @backstage/plugin-catalog-backend-module-ldap
+```
+
+
+[IMPORTANT]
+----
+Verify that the installed plugin version is compatible with the Backstage version.
+See the Dynamic plugins reference for the version to import.
+----
+5. Publish and enable the plugin in Developer Hub.
+For more information, see Installing and viewing plugins in Red Hat Developer Hub.
+
+1. Every time that Developer Hub starts, it imports the users and groups.
+Check the console logs to verify the synchronization result.
+2. After the first import is complete, go to the Catalog page and select User to view the list of users.
+3. When you select a user, you see the information imported from LDAP.
+Verify that the user entities reflect the custom transformations you defined in the plugin.
+4. You can select a group, view the list, and access or review the information imported from LDAP.
+Verify that the group entities reflect the custom transformations you defined in the plugin.
+5. You can log in with an LDAP account.
+
+## Import users and groups from GitHub
+
+Import GitHub users and groups to the Red Hat Developer Hub software catalog.
+
+* You have shared secrets with GitHub.
+
+1. Enable the GitHub catalog provider plugin in your dynamic-plugins.yaml file.
+
+```yaml
+plugins:
+  - package: './dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github-org-dynamic'
+    disabled: false
+```
+
+2. Add a GitHub catalog provider and integration section to your app-config.yaml file:
+
+```yaml
+catalog:
+  providers:
+    githubOrg:
+      id: githuborg
+      githubUrl: "${GITHUB_URL}"
+      orgs: [ "${GITHUB_ORG}" ]
+      schedule:
+        frequency:
+          minutes: 30
+        initialDelay:
+          seconds: 15
+        timeout:
+          minutes: 15
+integrations:
+  github:
+    - host: "${GITHUB_URL}"
+      apps:
+        - appId: ${GITHUB_APP_APP_ID}
+          clientId: ${GITHUB_APP_CLIENT_ID_INTEGRATION}
+          clientSecret: ${GITHUB_APP_CLIENT_SECRET_INTEGRATION}
+          privateKey: |
+            ${GITHUB_APP_PRIVATE_KEY}
+```
+
+id:: Enter a stable identifier for this provider, such as githuborg.
+
+[WARNING]
+----
+Entities from this provider are associated with this identifier.
+Therefore, do not to change the identifier over time since that might lead to orphaned entities or conflicts.
+----
+githubUrl:: Enter the configured secret variable name: ${GITHUB_URL}.
+orgs:: Enter the configured secret variable name: ${GITHUB_ORG}.
+schedule.frequency:: Enter your schedule frequency, in the cron, ISO duration, or "human duration" format.
+schedule.timeout:: Enter your schedule timeout, in the ISO duration or "human duration" format.
+schedule.initialDelay:: Enter your schedule initial delay, in the ISO duration or "human duration" format.
+integrations.github.host:: Enter the configured secret variable name: ${GITHUB_URL}.
+integrations.github.apps.appId:: Enter the configured secret variable name: ${GITHUB_APP_APP_ID}.
+integrations.github.apps.clientId:: Enter the configured secret variable name: ${GITHUB_APP_CLIENT_ID_INTEGRATION}.
+integrations.github.apps.clientSecret:: Enter the configured secret variable name: ${GITHUB_APP_CLIENT_SECRET_INTEGRATION}.
+integrations.github.apps.privateKey:: Enter the configured secret variable name: ${GITHUB_APP_PRIVATE_KEY}.
+
+* Check user and group provisioning in the console logs.
+
+Successful synchronization example:
+
+```json
+{"class":"GithubMultiOrgEntityProvider","level":"info","message":"Reading GitHub users and teams for org: rhdh-dast","plugin":"catalog","service":"backstage","target":"https://github.com","taskId":"GithubMultiOrgEntityProvider:githuborg:refresh","taskInstanceId":"801b3c6c-167f-473b-b43e-e0b4b780c384","timestamp":"2024-09-09 23:55:58"}
+{"class":"GithubMultiOrgEntityProvider","level":"info","message":"Read 7 GitHub users and 2 GitHub groups in 0.4 seconds. Committing...","plugin":"catalog","service":"backstage","target":"https://github.com","taskId":"GithubMultiOrgEntityProvider:githuborg:refresh","taskInstanceId":"801b3c6c-167f-473b-b43e-e0b4b780c384","timestamp":"2024-09-09 23:55:59"}
+```
+
+
+### Create a custom transformer to provision users from GitHub to the software catalog
+
+Customize how Red Hat Developer Hub provisions users and groups to Developer Hub software catalog entities,
+by creating a backend module plugin that uses the githubOrgEntityProviderTransformsExtensionPoint to offer custom user and group transformers for the GitHub backend.
+
+* You have imported users and groups from GitHub to the software catalog.
+
+1. Create a new backend module:
+
+```shell
+$ yarn new
+? What type of module would you like to create? backend-plugin-module
+? Enter the ID if the plugin [required]? catalog
+? Enter the ID of the module [required]? github-org-transformer
+```
+
+
+The command creates a plugin named catalog-backend-module-github-org-transformer.
+2. Install required packages:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-github-org-transformer add @backstage/plugin-catalog-backend-module-github-org
+```
+
+3. (Optional) Install recommended packages to extend the default transformers or Transformer type checking:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-github-org-transformer add @backstage/plugin-catalog-backend-module-github
+```
+
+4. (Optional) Install recommended packages for UserEntity or GroupEntity type checking:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-github-org-transformer add @backstage/catalog-model
+```
+
+5. Refer to the sample plugin and implement your custom plugins/catalog-backend-module-github-org-transformer/src/module.ts and make your required transformations to user and group entities.
+6. Package and export the plugin as a Dynamic Plugin, and embed the required package for the custom transformer.
+
+```shell
+$ npx @red-hat-developer-hub/cli@latest plugin export \
+  --embed-package @backstage/plugin-catalog-backend-module-github \
+  --embed-package @backstage/plugin-catalog-backend-module-github-org
+```
+
+
+[IMPORTANT]
+----
+Verify that the installed plugin version is compatible with the Backstage version.
+See the Dynamic plugins reference for the version to import.
+----
+7. Publish and enable the plugin in Developer Hub.
+For more information, see Installing and viewing plugins in Red Hat Developer Hub.
+
+1. Every time that Developer Hub starts, it imports the users and groups.
+Check the console logs to verify the synchronization result.
+2. After the first import is complete, go to the Catalog page and select User to view the list of users.
+3. When you select a user, you see the information imported from GitHub.
+Verify that the user entities reflect the custom transformations you defined in the plugin.
+4. You can select a group, view the list, and access or review the information imported from GitHub.
+Verify that the group entities reflect the custom transformations you defined in the plugin.
+5. You can log in with a GitHub account.
+
+## Import users and groups from Microsoft Azure
+
+Import Microsoft Azure users and groups to the Red Hat Developer Hub software catalog.
+
+* You have shared a secret with Microsoft Azure.
+
+1. Enable the Microsoft Graph catalog provider plugin in your dynamic-plugins.yaml
+file.
+
+```yaml
+plugins:
+  - package: './dynamic-plugins/dist/backstage-plugin-catalog-backend-module-msgraph-dynamic'
+    disabled: false
+```
+
+2. Add a Microsoft Graph catalog provider section to your app-config.yaml file:
+
+```yaml
+catalog:
+  providers:
+    microsoftGraphOrg:
+      providerId:
+        target: https://graph.microsoft.com/v1.0
+        tenantId: ${MICROSOFT_TENANT_ID}
+        clientId: ${MICROSOFT_CLIENT_ID}
+        clientSecret: ${MICROSOFT_CLIENT_SECRET}
+        schedule:
+          frequency:
+            hours: 1
+          timeout:
+            minutes: 50
+          initialDelay:
+            minutes: 50
+```
+
+target:: Enter https://graph.microsoft.com/v1.0 to define the MSGraph API endpoint the provider is connecting to.
+You might change this parameter to use a different version, such as the beta endpoint.
+tenantId:: Enter the configured secret variable name: ${MICROSOFT_TENANT_ID}.
+clientId:: Enter the configured secret variable name: ${MICROSOFT_CLIENT_ID}.
+clientSecret:: Enter the configured secret variable name: ${MICROSOFT_CLIENT_SECRET}.
+schedule:: 
+frequency:: Enter the schedule frequency in the cron, ISO duration, or human duration format.
+In a large organization, user provisioning might take a long time, therefore avoid using a low value.
+timeout:: Enter the schedule timeout in the ISO duration or human duration format.
+In a large organization, user provisioning might take a long time, therefore avoid using a low value.
+initialDelay:: Enter the schedule initial delay in the ISO duration or human duration format.
+3. Optional: Add optional fields to the Microsoft authentication provider section in your app-config.yaml file:
+
+```yaml
+catalog:
+  providers:
+    microsoftGraphOrg:
+      providerId:
+        authority: https://login.microsoftonline.com/
+        queryMode: advanced
+        user:
+          expand: manager
+          filter: accountEnabled eq true and userType eq 'member'
+          loadPhotos: true
+          select: ['id', 'displayName', 'description']
+        userGroupMember:
+          filter: "displayName eq 'Backstage Users'"
+          search: '"description:One" AND ("displayName:Video" OR "displayName:Drive")'
+        group:
+          expand: member
+          filter: securityEnabled eq false and mailEnabled eq true and groupTypes/any(c:c+eq+'Unified')
+          search: '"description:One" AND ("displayName:Video" OR "displayName:Drive")'
+          select: ['id', 'displayName', 'description']
+```
+
+authority:: Enter your Azure authority URL if it is different from the default: https://login.microsoftonline.com.
+queryMode:: Enter advanced when the default basic query mode is insufficient for your queries to the Microsoft Graph API.
+See Microsoft Azure advanced queries.
+user:: Add this section to configure optional user query parameters.
+expand:: Enter your expansion parameter to include the expanded resource or collection referenced by a single relationship (navigation property) in your results.
+A single request can expand only one relationship.
+See Microsoft Graph query expand parameter.
+
+You can combine this parameter with userGroupMember.filter or user.filter.
+filter:: Enter your user filter.
+See Microsoft Graph API and Microsoft Graph API query filter parameters syntax.
+
+This parameter and userGroupMember.filter are mutually exclusive, specify only one.
+loadPhotos:: Developer Hub loads photos by default.
+Enter false to avoid loading user photos.
+select:: Enter the Microsoft Graph resource type list to retrieve.
+userGroupMember:: Add this section to use group membership to get users.
+filter:: Enter your filter to filter groups and fetch their members.
+
+This parameter and user.filter are mutually exclusive, specify only one.
+search:: Enter your search query to search for groups and fetch their members.
+
+This parameter and user.filter are mutually exclusive, specify only one.
+group:: Enter your configuration to get groups.
+expand:: Enter your expansion parameter to include the expanded resource or collection referenced by a single relationship (navigation property) in your results.
+A single request can expand only one relationship.
+See Customize Microsoft Graph responses with query parameters.
+
+You can combine this parameter with
+user.filter or userGroupMember.filter.
+filter:: Enter your group filter parameter.
+See Microsoft Graph API query group syntax.
+search:: Enter your group search parameter.
+See Microsoft Graph API query search parameter.
+select:: Enter the Microsoft Graph resource type list to retrieve.
+
+* Check the console logs for MicrosoftGraphOrgEntityProvider events.
+
+Successful synchronization example:
+
+```
+2025-06-23T13:37:55.804Z catalog info Read 9 msgraph users and 3 msgraph groups in 1.5 seconds. Committing... class="MicrosoftGraphOrgEntityProvider" taskId="MicrosoftGraphOrgEntityProvider:providerId:refresh" taskInstanceId="e104a116-6481-4ceb-9bc4-0f8f9581f959" trace_id="e4c633659cffd6b1529afa55a5bfbad7" span_id="76affd0420e8baa6" trace_flags="01"
+
+2025-06-23T13:37:55.811Z catalog info Committed 9 msgraph users and 3 msgraph groups in 0.0 seconds. class="MicrosoftGraphOrgEntityProvider" taskId="MicrosoftGraphOrgEntityProvider:providerId:refresh" taskInstanceId="e104a116-6481-4ceb-9bc4-0f8f9581f959" trace_id="e4c633659cffd6b1529afa55a5bfbad7" span_id="76affd0420e8baa6" trace_flags="01"
+```
+
+
+### Create a custom transformer to provision users from Azure to the software catalog
+
+Customize how Red Hat Developer Hub provisions users and groups to Developer Hub software catalog entities,
+by creating a backend module plugin that uses the microsoftGraphOrgEntityProviderTransformExtensionPoint to offer custom user and group transformers for the Azure backend.
+
+* You have imported users and groups from Microsoft Azure.
+
+1. Create a new backend module:
+
+```shell
+$ yarn new
+? What type of module would you like to create? backend-plugin-module
+? Enter the ID if the plugin [required]? catalog
+? Enter the ID of the module [required]? msgraph-transformer
+```
+
+
+The command creates a plugin named catalog-backend-module-msgraph-transformer.
+2. Install required packages:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-msgraph-transformer add @backstage/plugin-catalog-backend-module-msgraph
+```
+
+3. (Optional) Install recommended packages for UserEntity or GroupEntity type checking:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-msgraph-transformer add @backstage/catalog-model
+```
+
+4. Refer to the sample plugin and implement plugins/catalog-backend-module-msgraph-transformer/src/module.ts.
+5. Package and export the plugin as a Dynamic Plugin, and embed the required package for the custom transformer.
+
+```shell
+$ npx @red-hat-developer-hub/cli@latest plugin export \
+  --embed-package @backstage/plugin-catalog-backend-module-msgraph
+```
+
+
+[IMPORTANT]
+----
+Verify that the installed plugin version is compatible with the Backstage version.
+See the Dynamic plugins reference for the version to import.
+----
+6. Publish and enable the plugin in Developer Hub.
+For more information, see Installing and viewing plugins in Red Hat Developer Hub.
+
+1. Every time that Developer Hub starts, it imports the users and groups.
+Check the console logs to verify the synchronization result.
+2. After the first import is complete, go to the Catalog page and select User to view the list of users.
+3. When you select a user, you see the information imported from Microsoft Entra ID.
+Verify that the user entities reflect the custom transformations you defined in the plugin.
+4. You can select a group, view the list, and access or review the information imported from Microsoft Azure.
+Verify that the group entities reflect the custom transformations you defined in the plugin.
+5. You can log in with an Entra ID account.
+
+## Import users and groups from GitLab
+
+Import GitLab users and groups to the Red Hat Developer Hub software catalog.
+
+* You have shared secrets with GitLab.
+
+* Add a GitLab catalog provider and integration section to your RHDH app-config.yaml file:
+
+```yaml
+catalog:
+  providers:
+    gitlab:
+      default:
+        host: ${GITLAB_HOST}
+        orgEnabled: true
+        group: ${GITLAB_PARENT_ORG}
+        relations:
+          - INHERITED
+          - DESCENDANTS
+          - SHARED_FROM_GROUPS
+        groupPattern: [\s\S]*
+        restrictUsersToGroup: true
+        includeUsersWithoutSeat: true
+        schedule:
+          initialDelay:
+            seconds: 0
+          frequency:
+            minutes: 50
+          timeout:
+            minutes: 50
+integrations:
+  gitlab:
+    - host: ${GITLAB_HOST}
+      token: ${GITLAB_TOKEN}
+```
+
+host:: Enter your GitLab instance address: ${GITLAB_HOST}.
+orgEnabled:: Set to true to enable the ingestion of GitLab organizational data, such as users and groups. For the GitLab site, you must also provide a value for the group parameter.
+group:: Enter your configured GitLab parent group: ${GITLAB_PARENT_ORG}.
+relations:: Optional. Specify the types of group memberships to include during ingestion. You can use the following values:
+INHERITED:: Optional. Includes members of any ancestor groups as members of the current group.
+DESCENDANTS:: Optional. Includes members of any descendant groups as members of the current group.
+SHARED_FROM_GROUPS:: Optional. Includes members of any invited groups as members of the current group.
+groupPattern:: Optional. Filters found groups based on provided pattern. Defaults to [\s\S]*, which means to not filter anything.
+restrictUsersToGroup:: Set to true to import only users who are direct members of the configured group.
+includeUsersWithoutSeat:: Set to true to include users who do not occupy a paid seat. This setting applies only to GitLab SaaS.
+schedule.initialDelay:: Enter your schedule initial delay, in the ISO duration or HumanDuration format.
+schedule.frequency:: Enter your schedule frequency, in the cron, ISO duration, or HumanDuration format.
+schedule.timeout:: Enter your schedule timeout, in the ISO duration or HumanDuration format.
+integrations.gitlab.host:: Enter your GitLab instance address: ${GITLAB_HOST}.
+integrations.gitlab.token:: Enter the configured secret variable name: ${GITLAB_TOKEN}.
+
+* Open RHDH and wait for first ingestion.
+
+### Create a custom transformer to provision users from GitLab to the software catalog
+
+Customize how Red Hat Developer Hub provisions users and groups to Developer Hub software catalog entities,
+by creating a backend module plugin that uses the gitlabOrgEntityProviderTransformsExtensionPoint to offer custom user and group transformers for the GitLab backend.
+
+* You have imported users and groups from GitLab to the software catalog.
+
+1. Create a new backend module:
+
+```shell
+$ yarn new
+? What type of module would you like to create? backend-plugin-module
+? Enter the ID if the plugin [required]? catalog
+? Enter the ID of the module [required]? gitlab-org-transformer
+```
+
+
+The command creates a plugin named catalog-backend-module-gitlab-org-transformer.
+2. Install required packages:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-gitlab-org-transformer add @backstage/plugin-catalog-backend-module-gitlab-org
+```
+
+3. (Optional) Install recommended packages to extend the default transformers or Transformer type checking:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-gitlab-org-transformer add @backstage/plugin-catalog-backend-module-gitlab
+```
+
+4. (Optional) Install recommended packages for UserEntity or GroupEntity type checking:
+
+```shell
+$ yarn --cwd plugins/catalog-backend-module-gitlab-org-transformer add @backstage/catalog-model
+```
+
+5. Refer to the sample plugin and implement plugins/catalog-backend-module-gitlab-org-transformer/src/module.ts.
+6. Package and export the plugin as a Dynamic Plugin, and embed the required package for the custom transformer.
+
+```shell
+$ npx @red-hat-developer-hub/cli@latest plugin export \
+  --embed-package @backstage/plugin-catalog-backend-module-gitlab \
+  --embed-package @backstage/plugin-catalog-backend-module-gitlab-org \
+  --ignore-version-check @backstage/backend-defaults
+```
+
+
+[IMPORTANT]
+----
+Verify that the installed plugin version is compatible with the Backstage version.
+See the Dynamic plugins reference for the version to import.
+----
+7. Publish and enable the plugin in Developer Hub.
+For more information, see Installing and viewing plugins in Red Hat Developer Hub.
+
+1. Every time that Developer Hub starts, it imports the users and groups.
+Check the console logs to verify the synchronization result.
+2. After the first import is complete, go to the Catalog page and select User to view the list of users.
+3. When you select a user, you see the information imported from GitLab.
+Verify that the user entities reflect the custom transformations you defined in the plugin.
+4. You can select a group, view the list, and access or review the information imported from GitLab.
+Verify that the group entities reflect the custom transformations you defined in the plugin.
+5. You can log in with a GitLab account.
+
+# Enable authentication with your identity provider
+
+Enable authentication with your main identity provider to allow users to sign in to Red Hat Developer Hub using their organizational credentials.
+
+## Enable authentication with Red Hat Build of Keycloak (RHBK)
+
+Configure Red Hat Build of Keycloak (RHBK) as your Red Hat Developer Hub sign-in provider by enabling the OIDC authentication provider.
+
+* You have shared a secret with RHBK.
+* You have provisioned users and groups to the software catalog.
+
+1. The OIDC provider authentication backend plugin requires Developer Hub to support sessions.
+Enable session support by adding the session secret to your app-config.yaml file:
+
+```yaml
+auth:
+  session:
+    secret: ${SESSION_SECRET}
+```
+
+2. Add an OIDC provider section to your  app-config.yaml file:
+
+```yaml
+auth:
+  environment: production
+  providers:
+    oidc:
+      production:
+        metadataUrl: ${KEYCLOAK_BASE_URL}
+        clientId: ${KEYCLOAK_CLIENT_ID}
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+        prompt: auto
+signInPage: oidc
+```
+
+environment: production:: Mark the environment as production to hide the Guest login in the Developer Hub home page.
+metadataUrl, clientId, clientSecret:: Configure the OIDC provider with your secrets.
+prompt:: Enter auto to allow the identity provider to automatically determine whether to prompt for credentials or bypass the login redirect if an active RHBK session exists.
+
+The identity provider defaults to none, which assumes that you are already logged in. Sign-in requests without an active session are rejected.
+signInPage:: Enter oidc to enable the OIDC provider as default sign-in provider.
+3. Optional: Add optional fields to the OIDC authentication provider section in your app-config.yaml file:
+
+```yaml
+auth:
+  providers:
+    oidc:
+      production:
+        metadataUrl: ${KEYCLOAK_BASE_URL}
+        clientId: ${KEYCLOAK_CLIENT_ID}
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+        callbackUrl: ${KEYCLOAK_CALLBACK_URL}
+        tokenEndpointAuthMethod: ${KEYCLOAK_TOKEN_ENDPOINT_METHOD}
+        tokenSignedResponseAlg: ${KEYCLOAK_SIGNED_RESPONSE_ALG}
+        additionalScopes: ${KEYCLOAK_SCOPE}
+        signIn:
+          resolvers:
+            - resolver: oidcSubClaimMatchingKeycloakUserId
+            - resolver: preferredUsernameMatchingUserEntityName
+            - resolver: emailMatchingUserEntityProfileEmail
+            - resolver: emailLocalPartMatchingUserEntityName
+              dangerouslyAllowSignInWithoutUserInCatalog: true
+        sessionDuration: { hours: 24 }
+  backstageTokenExpiration: { minutes: _<user_defined_value>_ }
+signInPage: oidc
+```
+
+callbackUrl:: RHBK callback URL.
+tokenEndpointAuthMethod:: Enter your token endpoint authentication method.
+tokenSignedResponseAlg:: Token signed response algorithm.
+additionalScopes:: Enter additional RHBK scopes to request for during the authentication flow.
+signIn:: 
+resolvers:: After successful authentication, the user signing in must be resolved to an existing user in the Developer Hub catalog.
+To best match users securely for your use case, consider configuring a specific resolver.
+
+Enter the resolver list to override the default resolver: oidcSubClaimMatchingKeycloakUserId.
+
+Available values:
+oidcSubClaimMatchingKeycloakUserId:: Matches the user with the immutable sub parameter from OIDC to the RHBK user ID.
+Consider using this resolver for enhanced security.
+oidcLdapUuidMatchingAnnotation:: Matches the user by their immutable LDAP UUID.
+Requires a custom client scope in Red Hat Build of Keycloak.
+
+For setup instructions, see Match users by LDAP UUID with Red Hat Build of Keycloak.
+emailLocalPartMatchingUserEntityName:: Matches the email local part with the user entity name.
+emailMatchingUserEntityProfileEmail:: Matches the email with the user entity profile email.
+preferredUsernameMatchingUserEntityName:: Matches the preferred username with the user entity name.
+
+The authentication provider tries each sign-in resolver in order until it succeeds, and fails if none succeed.
+
+[WARNING]
+----
+In production mode, configure only one resolver to make sure users are securely matched.
+----
+dangerouslyAllowSignInWithoutUserInCatalog: true:: Configure the sign-in resolver to bypass the user provisioning requirement in the Developer Hub software catalog.
+
+[WARNING]
+----
+In production mode, do not enable the dangerouslyAllowSignInWithoutUserInCatalog option.
+----
+sessionDuration:: Lifespan of the user session.
+Enter a duration in ms library format (such as '24h', '2 days'), ISO duration, or "human duration" as used in code.
+backstageTokenExpiration:: Enter a value to modify the Developer Hub token expiration from its default value of one hour.
+It refers to the validity of short-term cryptographic tokens, not to the session duration.
+The expiration value must be set between 10 minutes and 24 hours.
+
+[WARNING]
+----
+If multiple valid refresh tokens are issued due to frequent refresh token requests, older tokens will remain valid until they expire.
+Enhance security and prevent potential misuse of older tokens by enabling a refresh token rotation strategy in your RHBK realm.
+1. From the Configure section of the navigation menu, click Realm Settings.
+2. From the Realm Settings page, click the Tokens tab.
+3. From the Refresh tokens section of the Tokens tab, toggle the Revoke Refresh Token to the Enabled position.
+----
+4. Optional: Enable {monitoring-and-logging-book-link#rhbk-metrics_monitoring-and-logging[RHBK metrics].
+5. To disable the guest login option, in the app-config.yaml file, set the authentication environment to production:
+
+```yaml
+auth:
+  environment: production
+```
+
+
+1. Go to the Developer Hub login page.
+2. Your Developer Hub sign-in page displays Sign in using OIDC and the Guest user sign-in is disabled.
+3. Log in with OIDC by using the saved Username and Password values.
+
+## Match users by LDAP UUID with Red Hat Build of Keycloak
+
+When you use Red Hat Build of Keycloak with LDAP user federation, configure the oidcLdapUuidMatchingAnnotation sign-in resolver to match users by their immutable LDAP UUID for secure user resolution.
+This requires a custom client scope in Red Hat Build of Keycloak that exposes the LDAP UUID as a token claim.
+
+* LDAP user federation is configured in Red Hat Build of Keycloak.
+* LDAP provisioning is enabled in Red Hat Developer Hub.
+For more information, see Enable user provisioning with LDAP.
+* A Red Hat Developer Hub client is created in Red Hat Build of Keycloak.
+
+1. In the Red Hat Build of Keycloak admin console, go to Client scopes and click Create client scope.
+Name the scope ldap_uuid.
+2. In the ldap_uuid scope, click the Mappers tab, then click Add mapper > Configure a new mapper > User Attribute.
+Configure the mapper with the following values:
+* Name: LDAP_ID
+* User Attribute: LDAP_ID
+* Token Claim Name: ldap_uuid
+* Claim JSON Type: String
+* Add to ID token: ON
+* Add to userinfo: ON
+3. Go to Clients > your Red Hat Developer Hub client > Client scopes.
+Click Add client scope and add ldap_uuid as a Default scope.
+4. Optional: Add the oidcLdapUuidMatchingAnnotation resolver to your app-config.yaml file, to replace the default ldap_uuid resolver:
+
+```yaml
+auth:
+  providers:
+    oidc:
+      production:
+        signIn:
+          resolvers:
+            - resolver: oidcLdapUuidMatchingAnnotation
+              ldapUuidKey: ldap_uuid
+```
+
+ldapUuidKey:: Enter the token claim name containing the LDAP UUID value.
+The default value is ldap_uuid.
+This value must match the Token Claim Name configured in step 2.
+5. Restart the Red Hat Developer Hub application to apply the changes.
+
+## Enable authentication with GitHub
+
+Configure GitHub as your Red Hat Developer Hub sign-in provider.
+
+* You have shared secrets with GitHub.
+* You have provisioned users and groups to the software catalog.
+
+1. Add a GitHub authentication provider section to your app-config.yaml file:
+
+```yaml
+auth:
+  environment: production
+  providers:
+    github:
+      production:
+        clientId: ${GITHUB_APP_CLIENT_ID}
+        clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+signInPage: github
+```
+
+environment:: Enter production to disable the Guest login option in the Developer Hub login page.
+clientId:: Enter the configured secret variable name: ${GITHUB_APP_CLIENT_ID}.
+clientSecret:: Enter the configured secret variable name: ${GITHUB_APP_CLIENT_SECRET}.
+signInPage:: Enter github to enable the GitHub provider as your Developer Hub sign-in provider.
+2. Optional: Add optional fields to the GitHub authentication provider section in your app-config.yaml file:
+
+```yaml
+auth:
+  environment: production
+  providers:
+    github:
+      production:
+        clientId: ${GITHUB_APP_CLIENT_ID}
+        clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+        callbackUrl: <your_intermediate_service_url/handler>
+        sessionDuration: { hours: 24 }
+        signIn:
+          resolvers:
+            - resolver: usernameMatchingUserEntityName
+              dangerouslyAllowSignInWithoutUserInCatalog: true
+signInPage: github
+```
+
+callbackUrl:: Enter the callback URL that GitHub uses when initiating an OAuth flow, such as: <your_intermediate_service_url/handler>.
+Define it when Developer Hub is not the immediate receiver, such as in cases when you use one OAuth app for many Developer Hub instances.
+sessionDuration:: Enter the user session lifespan, in ms library format (such as '24h', '2 days'), ISO duration, or "human duration".
+signIn:: 
+resolvers:: After successful authentication, Developer Hub resolves the user signing in to an existing user in the Developer Hub catalog.
+Configure a specific resolver to best match users securely for your use case..
+
+Enter the resolver list to override the default resolver: usernameMatchingUserEntityName.
+
+The authentication provider tries each sign-in resolver in order until it succeeds. If none of the attempts succeed, the sign-in fails.
+
+[WARNING]
+----
+In production mode, configure only one resolver to make sure users are securely matched.
+----
+resolver:: Enter the sign-in resolver name.
+Available resolvers: usernameMatchingUserEntityName, preferredUsernameMatchingUserEntityName, emailMatchingUserEntityProfileEmail.
+dangerouslyAllowSignInWithoutUserInCatalog:: Enter true to configure the sign-in resolver to bypass the user provisioning requirement in the Developer Hub software catalog.
+
+[WARNING]
+----
+In production mode, do not enable dangerouslyAllowSignInWithoutUserInCatalog.
+----
+3. To disable the guest login option, in the app-config.yaml file, set the authentication environment to production:
+
+```yaml
+auth:
+  environment: production
+```
+
+
+1. Go to the Developer Hub login page.
+2. Your Developer Hub sign-in page displays Sign in using GitHub and the Guest user sign-in is disabled.
+3. Log in with a GitHub account.
+
+## Enable authentication with Microsoft Azure
+
+Configure Microsoft Azure as your Red Hat Developer Hub sign-in provider.
+
+* You have shared a secret with Microsoft Azure.
+* You have provisioned users and groups to the software catalog.
+
+1. Add the Microsoft authentication provider to your app-config.yaml file:
+
+```yaml
+auth:
+  environment: production
+  providers:
+    microsoft:
+      production:
+        clientId: ${MICROSOFT_CLIENT_ID}
+        clientSecret: ${MICROSOFT_CLIENT_SECRET}
+        tenantId: ${MICROSOFT_TENANT_ID}
+signInPage: microsoft
+```
+
+environment:: Enter production to disable the Guest login option in the Developer Hub login page.
+clientId:: Enter the configured secret variable name:  ${MICROSOFT_CLIENT_ID}.
+clientSecret:: Enter the configured secret variable name:
+${MICROSOFT_CLIENT_SECRET}.
+tenantId:: Enter the configured secret variable name: ${MICROSOFT_TENANT_ID}.
+signInPage:: Enter microsoft to set the Azure provider as your Developer Hub sign-in provider.
+2. Optional: Add optional fields to the Microsoft authentication provider section in your app-config.yaml file:
+
+```yaml
+auth:
+  environment: production
+  providers:
+    microsoft:
+      production:
+        clientId: ${MICROSOFT_CLIENT_ID}
+        clientSecret: ${MICROSOFT_CLIENT_SECRET}
+        tenantId: ${MICROSOFT_TENANT_ID}
+        domainHint: ${MICROSOFT_TENANT_ID}
+        additionalScopes:
+           - Mail.Send
+        sessionDuration:
+          hours: 24
+        signIn:
+          resolvers:
+            - resolver: usernameMatchingUserEntityName
+              dangerouslyAllowSignInWithoutUserInCatalog: true
+signInPage: microsoft
+```
+
+domainHint:: Leave this parameter empty, or enter the tenant ID when your application registration is single-tenant.
+
+Leave this parameter empty when your application registration is multitenant.
+
+Enter the tenant ID to reduce login friction for users with accounts in multiple tenants, by automatically filtering out accounts from other tenants.
+For more information, see Home Realm Discovery.
+additionalScopes:: Enter the list of additional scopes to add scopes for the application registration.
+The default and mandatory value lists following scopes: openid, offline_access, profile, email, User.Read.
+sessionDuration:: Lifespan of the user session.
+Enter a duration in ms library (such as '24h', '2 days'), ISO duration, or "human duration" format.
+signIn.resolvers:: After successful authentication, Developer Hub resolves the user signing in to an existing user in the Developer Hub catalog.
+To best match users securely for your use case, consider configuring a specific resolver.
+
+Enter the resolver list to override the default resolver: userIdMatchingUserEntityAnnotation.
+
+The authentication provider tries each sign-in resolver in order until it succeeds, and fails if none succeed.
+
+[WARNING]
+----
+In production mode, configure only one resolver to make sure users are securely matched.
+----
+resolver:: Enter the sign-in resolver name.
+Available resolvers:
+emailMatchingUserEntityAnnotation:: Use this resolver to look up the user by matching their Microsoft email to the email entity annotation.
+emailLocalPartMatchingUserEntityName:: Use this resolver to look up the user by matching their Microsoft email user name to the user entity name.
+emailMatchingUserEntityProfileEmail:: Use this resolver to look up the user by matching their Microsoft email to the user entity profile email.
+dangerouslyAllowSignInWithoutUserInCatalog:: Enter true to configure the sign-in resolver to bypass the user provisioning requirement in the Developer Hub software catalog.
+
+[WARNING]
+----
+In production mode, do not enable dangerouslyAllowSignInWithoutUserInCatalog.
+----
+3. To disable the guest login option, in the app-config.yaml file, set the authentication environment to production:
+
+```yaml
+auth:
+  environment: production
+```
+
+
+1. Go to the Developer Hub login page.
+2. Your Developer Hub sign-in page displays Sign in using Microsoft and the Guest user sign-in is disabled.
+3. Log in with an Azure account.
+
+## Enable authentication with GitLab
+
+Configure GitLab as your Red Hat Developer Hub sign-in provider.
+
+* You have shared secrets with GitLab.
+* You have provisioned users and groups to the software catalog.
+
+1. Add a GitLab authentication provider section to your RHDH app-config.yaml file:
+
+```yaml
+includeTransitiveGroupOwnership: true
+signInPage: gitlab
+auth:
+  environment: production
+  session:
+    secret: <name_of_secret>
+  providers:
+    gitlab:
+      production:
+        audience: https://${GITLAB_HOST}
+        clientId: ${GITLAB_CLIENT_ID}
+        clientSecret: ${GITLAB_CLIENT_SECRET}
+        callbackUrl: https://__<my_developer_hub_domain>__/api/auth/gitlab/handler/frame
+```
+
+audience:: Enter your GitLab instance address: https://${GITLAB_HOST}
+clientId:: Enter the configured client ID: ${GITLAB_CLIENT_ID}.
+clientSecret:: Enter the configured secret variable name: ${GITLAB_CLIENT_SECRET}.
+callbackUrl:: Enter your Developer Hub authentication backend URL: https://<my_developer_hub_domain>/api/auth/gitlab/handler/frame
+2. To disable the guest login option, in the app-config.yaml file, set the authentication environment to production:
+
+```yaml
+auth:
+  environment: production
+```
+
+
+1. Go to the Developer Hub login page.
+2. Your Developer Hub sign-in page displays Sign in using GitLab and the Guest user sign-in is disabled.
+3. Log in with a GitLab account.
+
+## Enable authentication with PingFederate
+
+You can enable authentication with PingFederate to allow users to sign in to Developer Hub by using their PingFederate credentials and match authenticated users to their LDAP catalog entities.
+
+* You have administrative access to PingFederate with a configured LDAP Data Store.
+* You have configured the LDAP catalog provider in Developer Hub.
+* You have added a custom Developer Hub application configuration, and have enough permissions to modify it.
+
+1. Configure the LDAP Data Store for binary attributes.
+
+Configure the Data Store to treat unique identifiers as binary data to ensure they are processed correctly for OGNL transformations.
+1. In PingFederate, go to System > Data Stores and edit your LDAP store.
+2. In Advanced options > LDAP Binary Attributes, add objectGUID to the list.
+3. In the Attribute Source lookup configuration, set the Encoding Type for objectGUID to Hex.
+2. Create the Authentication Policy Contract.
+
+The contract bridges the LDAP directory and the OIDC policy, transforming the binary GUID into a string format.
+1. Create a new contract named rhdh-contract.
+2. Add an Attribute Source linked to your LDAP Data Store.
+3. Set the Search Filter to sAMAccountName=${username}.
+4. Expose the LDAP UUID attribute (for example, objectGUID for Active Directory) within the contract.
+Under Contract Fulfillment, map the sub claim to the objectGUID from LDAP by using an Expression source.
+5. Enter the following OGNL expression to format the binary GUID as a UUID string:
+
+```
+#GUID = #this.get("ds.<ldap-data-source-id>.objectGUID").toString(),
+#GUID.substring(6,8) + #GUID.substring(4,6) + #GUID.substring(2,4) + #GUID.substring(0,2) + "-" +
+#GUID.substring(10,12) + #GUID.substring(8,10) + "-" +
+#GUID.substring(14,16) + #GUID.substring(12,14) + "-" +
+#GUID.substring(16,20) + "-" + #GUID.substring(20,32)
+```
+
+
+Replace <ldap-data-source-id> with the ID of your LDAP Data Store in PingFederate.
+3. Configure OAuth and OIDC scopes.
+
+Ensure PingFederate allows the standard OIDC scopes requested by Developer Hub.
+1. Navigate to System > OAuth Scopes.
+2. Ensure email and profile are added to the Common Scopes list.
+4. Bridge the contract to the OIDC policy.
+
+Configure the policy to deliver the transformed UUID through the sub claim in the ID token and UserInfo endpoint.
+1. Access Token Mapping: Map the sub field from rhdh-contract to your Access Token Manager.
+2. OIDC Policy Fulfillment: Fulfill the sub claim by selecting Access Token as the source and sub as the value.
+3. Enable Delivery: In the OIDC Policy Attribute Contract, select the ID Token and UserInfo checkboxes for the sub claim.
+4. Extend Contract: Add ldap_uuid to the Attribute Contract and map it to the sub value by using the Access Token to ensure consistency.
+5. Create the OIDC client.
+1. In PingFederate, go to Applications > OAuth Clients and click Add Client.
+2. Under Client Authentication, select Client Secret, generate a secret, and save it.
+3. Enter the Redirect URI: https://<my_developer_hub_domain>/api/auth/oidc/handler/frame.
+4. Under Allowed Grant Types, select Authorization Code.
+5. Under OpenID Connect > Policy, select the OIDC policy you created.
+6. Save the following values for the next step:
+1. Client ID
+2. Client Secret
+3. OIDC metadata URL: The .well-known/openid-configuration endpoint URL for your PingFederate instance.
+6. Create a long, complex, and unique string to use as the Developer Hub session secret key.
+7. Add your PingFederate credentials and the session secret key to Developer Hub, by adding the following key-value pairs to your Developer Hub secrets.
+You can use these secrets in the Developer Hub configuration files by using their environment variable name.
+AUTH_OIDC_CLIENT_ID:: Enter the saved Client ID.
+AUTH_OIDC_CLIENT_SECRET:: Enter the saved Client Secret.
+AUTH_OIDC_METADATA_URL:: Enter the saved OIDC metadata URL.
+SESSION_SECRET:: Enter the created session secret key.
+8. Enable session support by adding the session secret to your app-config.yaml file:
+
+```yaml
+auth:
+  session:
+    secret: ${SESSION_SECRET}
+```
+
+9. Enable the PingFederate authentication provider with the LDAP UUID matching resolver by adding the OIDC provider section in your app-config.yaml file:
+
+```yaml
+auth:
+  environment: production
+  providers:
+    oidc:
+      production:
+        metadataUrl: ${AUTH_OIDC_METADATA_URL}
+        clientId: ${AUTH_OIDC_CLIENT_ID}
+        clientSecret: ${AUTH_OIDC_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: oidcLdapUuidMatchingAnnotation
+              ldapUuidKey: sub
+signInPage: oidc
+```
+
+environment: production:: Mark the environment as production to hide the Guest login on the Developer Hub home page.
+metadataUrl:: Enter your PingFederate OIDC metadata URL, defined earlier.
+clientId:: Enter your Developer Hub application client ID in PingFederate, defined earlier.
+clientSecret:: Enter your Developer Hub application client secret in PingFederate, defined earlier.
+oidcLdapUuidMatchingAnnotation:: Match the authenticated user to an LDAP catalog entity by using the LDAP UUID.
+By default, Developer Hub attempts to match the ldap_uuid claim from the UserInfo endpoint to the LDAP catalog entity.
+ldapUuidKey:: Enter the claim key containing the LDAP UUID.
+Set to sub to use the sub claim, which contains the transformed UUID from the PingFederate policy contract.
+signInPage:: Enter oidc to enable the OIDC provider as the default sign-in provider.
+
+1. Go to the Developer Hub login page.
+2. Verify that the Developer Hub sign-in page displays Sign in using OIDC and the Guest user sign-in is disabled.
+3. Log in with OIDC by using your PingFederate user credentials.
+
+# Enable authentication with external services
+
+Enable authentication with external services to allow Red Hat Developer Hub to communicate with secondary identity providers and external APIs.
+
+## Enable user authentication with GitHub as an auxiliary authentication provider
+
+If your primary authentication provider is not GitHub, you can configure GitHub as an auxiliary provider to grant users the GitHub permissions needed for templates or plugins, without re-resolving user identities.
+
+* You have enough permissions in GitHub to create and manage a GitHub App.
+
+[TIP]
+----
+Alternatively, ask your GitHub administrator to prepare the required GitHub App.
+----
+* You have added a custom Developer Hub application configuration, and have enough permissions to change it.
+* You have configured a primary authentication provider to provision user and group identities to the Red Hat Developer Hub software catalog, and establish Developer Hub user sessions.
+
+1. Add the auth.providers.github section to your app-config.yaml file:
+
+```yaml
+auth:
+  providers:
+    github:
+      production:
+        clientId: ${GITHUB_APP_CLIENT_ID}
+        clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+        disableIdentityResolution: true
+```
+
+where:
+clientId::
+Enter the configured secret variable name: ${GITHUB_APP_CLIENT_ID}.
+clientSecret:: Enter the configured secret variable name: ${GITHUB_APP_CLIENT_SECRET}.
+disableIdentityResolution:: Enter true to skip user identity resolution for this provider to enable sign-in from an auxiliary authentication provider.
+
+[WARNING]
+----
+Do not enable this setting on the primary authentication provider you plan on using for sign-in and identity management.
+----
+2. To disable the guest login option, in the app-config.yaml file, set the authentication environment to production:
+
+```yaml
+auth:
+  environment: production
+```
+
+
+1. Go to the Developer Hub login page.
+2. Log in with your primary authentication provider account.
+3. In the top user menu, go to Settings > Authentication Providers.
+4. In the GitHub line, click the Sign in button and log in.
+5. In the GitHub line, the button displays Sign out.
+
+* Integrating Red Hat Developer Hub with your Git provider
+
+## Enable service-to-service authentication
+
+You can configure service-to-service authentication to secure communication between services, including plugin-to-plugin and external-service-to-plugin communication.
+
+
+[IMPORTANT]
+----
+The availability of service-to-service authentication might vary for REST APIs.
+Each plugin defines the restrictions on this feature.
+Consult your specific plugin's documentation for detailed limitations.
+For example, the RBAC plugin supports exclusively all GET requests, but no POST requests.
+----
+
+### Enable service-to-service authentication by using a static token
+
+You can use a static token to enable service-to-service authentication. This method is simpler to set up than JWKS tokens but requires careful token management to ensure security.
+* Following security best practices.
+
+Some security best practices when using static tokens include:
+
+Regular rotation:: Rotate tokens on a regular schedule to limit the impact of potential leaks.
+Document the rotation process to ensure consistency.
+Secure storage:: Never store tokens in plain text in the app-config.yaml configuration file. Instead, use the environment variable mechanism available in Developer Hub.
+Access control:: Implement the principle of least privilege, restricting tokens to specific plugins and operations; regularly review and update access permissions.
+Analyze logs:: Monitor and track token usage to identify unusual patterns and set up alerts for failed authentication attempts if you have a monitoring system integration available.
+Documentation:: Document all authentication methods in use and keep an inventory of all tokens and their purposes, and keep security policies up to date.
+
+Static token authentication might be a good solution for simple, non-critical scenarios, such as:
+
+Development and testing environments:: These require quick setup and configuration, simple debugging and troubleshooting, and easy integration with development tools. Static token authentication can be an easy option, especially when using ephemeral testing environments.
+Simple automation tasks:: Basic CI/CD pipelines, simple maintenance scripts, and basic monitoring systems.
+Internal tools and utilities:: Development tools, testing frameworks, and internal automation scripts.
+
+However, static token authentication might not be suitable for:
+
+* Production environments with high security requirements.
+* Systems handling sensitive data.
+* Large-scale deployments with many external services.
+* Environments requiring frequent token rotation.
+
+* You have administrative access to configure Developer Hub in your OpenShift cluster.
+
+1. Generate a secure token.
+
+You can use a tool such as Node.js:
+
+```terminal
+$ node -p'require('crypto').randomBytes(24).toString('base64')'
+```
+
+
+This command generates a 24-byte random value and encodes it in base64 format.
+The resulting token is sufficiently strong for authentication purposes, and properly encoded for use in HTTP headers.
+2. Add the generated token in your Developer Hub secrets in OpenShift to define the <YOUR_SERVICE_TOKEN_ENV_VAR> environment variable where your services can access it.
+3. Add the generated token or JWKS URL to your app-config.yaml Developer Hub configuration file in OpenShift.
+
+```yaml
+backend:
+  auth:
+    - type: static
+      options:
+        token: "$<YOUR_SERVICE_TOKEN_ENV_VAR>"
+        subject: "<your_service_name>"
+      accessRestrictions:
+        - plugin: "<target_plugin_name>"
+```
+
+type:: Enter static to specify that authentication is using a static token.
+options:: Enter the configuration options for static token authentication.
+token:: Enter the environment variable name from the earlier step.
+subject:: (Optional) Enter a unique identifier for the service that will be using this token.
+plugin:: (Optional) Enter the name of the target plugin that the service will communicate with.
+4. Use the token in the Authorization header of your service requests.
+
+When making requests from one service to another, include the static token in the Authorization header as follows:
+
+```http
+Authorization: Bearer <your_generated_token>
+```
+
+
+Replace <your_generated_token> with the actual token you generated in step 1.
+
+For instance, to list all available locations in the catalog by using the  curl command, you would use:
+
+```terminal
+$ curl --location --request GET 'https://<my_developer_hub_domain>/api/catalog/locations' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <your_generated_token>'
+```
+
+
+* In the Audit Logs of the service receiving the request, verify that Developer Hub authenticated the request successfully by using the subject value as the actor.
+
+### Enable service-to-service authentication by using JSON web key sets (JWKS) tokens
+
+You can use JSON Web Key Sets (JWKS) tokens to enable service-to-service authentication.
+
+Consider using JWKS tokens when you need a more secure and scalable authentication method compared to static tokens.
+While JWKS tokens require more setup and configuration, they offer enhanced security features that are crucial for production environments and sensitive applications:
+
+Asymmetric encryption:: Your trusted Identity Provider issues JWKS tokens by using asymmetric encryption.
+JWKS uses a pair of shared keys: one public, one private, instead of a single shared static token.
+The Identity Provider signs the JSON Web Token (JWT) with its private key, then Developer Hub verifies it using the public key fetched from the JWKS endpoint.
+Developer Hub can validate these tokens without sharing secret keys directly.
+This means Developer Hub never has access to the private signing key, reducing the risk of compromise.
+Easy key rotation:: The Identity Provider can rotate signing keys regularly without requiring changes to Developer Hub afterward.
+This minimizes downtime and enhances security.
+Ability to validate claims:: JWKS tokens include claims such as issuer and audience. Developer Hub can verify these claims to ensure the token is from a trusted source and prevent the external service from using the token in unintended contexts.
+
+The diagram illustrates the authentication flow between an external service and Developer Hub:
+
+* The external service requests, receives, and returns an access token from the identity provider to request a resource from Developer Hub.
+* The identity provider issues a JWKS token signed with its private key, and provides the public key via the JWKS endpoint.
+* Developer Hub receives and validates the token and its claims.
+
+![The diagram illustrates the authentication flow between an external service and Developer Hub.]
+
+* You have administrative access to configure Developer Hub in your OpenShift cluster.
+* Developer Hub can access a JWKS endpoint available from your Identity Provider.
+* You have configured the external service to obtain a JWT from your Identity Provider and include it in the Authorization header of requests to Developer Hub.
+
+* Add the JWKS URL to your app-config.yaml Developer Hub configuration file:
+
+```yaml
+backend:
+  auth:
+    externalAccess:
+      - type: jwks
+        options:
+          url: <your_jwks_endpoint>
+          algorithm: RS256
+          issuer: <your_issuer_claim>
+          audience: <your_audience_claim>
+          subjectPrefix: <your_subject_prefix>
+```
+
+
+where:
+type:: Enter jwks to specify that authentication is using JWKS tokens.
+options:: Enter the configuration options for JWKS authentication.
+url:: Enter the URL of your JWKS endpoint, such as http://your-idp.example.com/well-known/jwks.json.
+algorithm:: (Optional) Enter the signing algorithm used by your Identity Provider, such as RS256.
+issuer:: (Optional) Enter the expected issuer claim in the token  iss field, such as http://your-idp.example.com.
+audience:: (Optional) Enter the expected audience claim in the token aud field, such as management.
+subjectPrefix:: (Optional) Enter a prefix to add to the subject claim, and to display in the Audit Log for debugging and tracking purposes, such as your_prefix.
+
+### Set access restrictions to external service tokens
+
+By default, when you configure service-to-service access in Red Hat Developer Hub, any external service with a valid token has unrestricted access to all backend plugins and actions.
+To limit the scope of an external service, you can define access restrictions.
+
+1. Restrict access to specific plugins.
+For example, to restrict access to the catalog plugin for the static tokens, add the following accessRestrictions section to your app-config.yaml Developer Hub configuration file:
+
+```yaml
+backend:
+  auth:
+    externalAccess:
+      - type: static
+          accessRestrictions:
+          - plugin: catalog
+```
+
+type:: Specify whether this is a jwks or static token.
+plugin:: Specify the allowed plugin, such as catalog, scaffolder, or techdocs.
+With this configuration:
+1. The token is only allowed to make requests to the catalog plugin.
+2. The token has unrestricted access to all actions within the catalog plugin.
+2. Restrict access by action attributes, to filter permissions based on what kind of action to allow.
+
+List the specific actions defined by the permission, such as create and read.
+
+```yaml
+backend:
+  auth:
+    externalAccess:
+      - type: jwks
+        accessRestrictions:
+          - plugin: catalog
+            permissionAttribute:
+              action:
+                - create
+                - read
+```
+
+3. Restrict access by explicit permission IDs, to control access at the permission rule level.
+
+List the exact ID of the permission to allow.
+
+```yaml
+backend:
+  auth:
+    externalAccess:
+      - type: jwks
+        accessRestrictions:
+          - plugin: catalog
+            permission:
+              - catalog.entity.create
+              - catalog.entity.read
+```
+
+
+By choosing between explicit permission IDs and action-based attributes, you can strike the right balance between precision and flexibility depending on your external service needs.
+
+# Manage session expiration
+
+You can manage how long users stay authenticated in Red Hat Developer Hub by configuring session duration and auto-logout settings.
+
+## Understand session management in Developer Hub
+
+Session management in Red Hat Developer Hub involves multiple mechanisms that control how long users stay authenticated and what happens when sessions expire.
+
+### What happens when a session expires
+
+When a session approaches expiration, Developer Hub can display a pre-expiration warning dialog that includes a countdown timer.
+The timing of this warning depends on how you configure the auto-logout feature.
+
+After the session expires, Developer Hub redirects the user to the login page.
+To continue working, the user must re-authenticate with the configured identity provider and is then returned to Developer Hub.
+
+### AutoLogout (frontend inactivity)
+
+The AutoLogout feature monitors user activity in the browser and logs out the user after a configurable idle period.
+AutoLogout revokes the refresh token for Developer Hub, but does not end the Identity Provider (IdP) session.
+The logout mechanism is the same as if you manually logout from the user settings page.
+
+You configure AutoLogout under the auth.autologout section of your app-config.yaml file.
+
+### Session duration (provider-level)
+
+Session duration controls the absolute session lifetime regardless of user activity.
+This is a backend HTTP-only cookie configuration.
+When this duration elapses, no warning popup is displayed.
+Instead, the user is redirected to the sign-in page the next time they interact with Developer Hub, such as navigating to a new page or refreshing the browser.
+
+You configure session duration per provider by using the auth.providers.<name>.<env>.sessionDuration parameter in your app-config.yaml file.
+This parameter accepts milliseconds, ISO duration, or human-readable duration values (for example, 24h, 2 days).
+
+### Identity Provider session settings
+
+Your Identity Provider (IdP), such as Red Hat Build of Keycloak, GitHub, Microsoft Azure, or GitLab, maintains its own session timeout independently of Developer Hub.
+
+Signing out of Developer Hub does not end the IdP SSO session.
+This is expected behavior.
+If the IdP session is still active when a user signs back in to Developer Hub, re-authentication might be seamless, with no password prompt.
+
+### How the mechanisms interact
+
+The three session management mechanisms operate at different layers:
+
+AutoLogout:: Triggers on user inactivity in the browser.
+Frontend-only: does not revoke tokens or end server-side sessions.
+Session duration:: Controls the absolute session lifetime on the server side.
+The session expires after the configured duration regardless of user activity.
+No warning popup is displayed; the user is redirected to the sign-in page on next interaction.
+Identity Provider session:: Outlives Developer Hub sign-out.
+A user might re-enter Developer Hub without a password prompt if the IdP session is still active.
+
+The mechanism with the shortest timeout takes effect first.
+For example, if AutoLogout is set to 30 minutes of idle time but the session duration is set to 15 minutes, the session expires after 15 minutes regardless of user activity.
+
+* Enable auto-logout for inactive users
+
+## Configure session management
+
+You can configure the session duration for your authentication provider in Red Hat Developer Hub.
+
+* You have administrative access to the Red Hat Developer Hub configuration files.
+
+1. To set the absolute session lifetime for an authentication provider, add the sessionDuration parameter to your app-config.yaml file:
+
+```yaml
+auth:
+  providers:
+    <name>:
+      <env>:
+        sessionDuration: 24h
+```
+
+sessionDuration:: Enter the session lifetime in milliseconds, ISO duration, or human-readable format (for example, 24h, 2 days).
+When this duration elapses, the session expires regardless of user activity.
+
+This parameter is not set by default.
+2. Restart the Red Hat Developer Hub application to apply the changes.
+
+* Enable auto-logout for inactive users
+
+## Enable auto-logout for inactive users
+
+To enhance security, you can configure Red Hat Developer Hub to automatically log out users after a specified period of inactivity.
+This helps prevent unauthorized access to stale user sessions.
+
+* You have added a custom Developer Hub application configuration.
+
+1. Add the auth.autologout section to your {my-app-config.yaml} file.
+
+```yaml
+auth:
+  autologout:
+    enabled: true
+    idleTimeoutMinutes: 60
+    promptBeforeIdleSeconds: 10
+    useWorkerTimers: false
+    logoutIfDisconnected: true
+```
+
+
+where:
+enabled:: Enter true to enable auto-logout.
+
+Enter false to disable auto-logout.
+
+The default value is false.
+idleTimeoutMinutes:: (Optional) Enter the number of minutes of inactivity before automatically logging out the user.
+
+The default value is 60 minutes.
+promptBeforeIdleSeconds:: (Optional) Enter the number of seconds before the auto-logout occurs to prompt the user about the pending logout.
+
+The default value is 10 seconds.
+useWorkerTimers:: (Optional) Enter false to use main thread timers, when your browser does not support web workers. Your browser might stop timers in inactive tabs, which can affect the auto-logout functionality.
+
+Enter true to use web worker timers for tracking user activity, and avoid issues when your browser stops timers in inactive tabs.
+
+The default value is false.
+logoutIfDisconnected:: (Optional) Enter true to log out the users with no active connection, in case of network issues, or when they have no active Developer Hub tab open in their browser.
+
+Enter false to keep the user logged in during temporary disconnections, or when they have no active Developer Hub tab open in their browser.
+
+The default value is true.
+2. Restart the Red Hat Developer Hub application to apply the changes.
+
+1. Log in to the Red Hat Developer Hub application.
+2. Remain inactive for the duration specified in idleTimeoutMinutes.
+3. Observe that a prompt is displayed before the auto-logout occurs, as specified in promptBeforeIdleSeconds.
+4. Confirm that you are automatically logged out after the inactivity period.
+
+# Troubleshoot authentication issues
+
+Learn how to troubleshoot common authentication issues.
+
+## Reduce the size of issued tokens
+
+If user identity tokens grow large and cause HTTP errors, you can use the omitIdentityTokenOwnershipClaim flag to remove the ent claim from the JWT payload and reduce token size.
+
+* In the app-config.yaml file, set omitIdentityTokenOwnershipClaim to true as follows:
+
+```yaml
+auth:
+  omitIdentityTokenOwnershipClaim: true
+```
+
+
+## Troubleshoot unexpected session expiration
+
+If sessions expire sooner than expected, check the following settings.
+The mechanism with the shortest timeout takes effect first.
+
+1. Check the Identity Provider (IdP) session timeout: the IdP might have a shorter session lifetime than Developer Hub.
+2. Check the sessionDuration parameter for your authentication provider.
+3. Check the AutoLogout idleTimeoutMinutes setting, if auto-logout is enabled.
+
+* Configure session management
+
+## Troubleshoot missing session expiration warning
+
+If users receive no warning before their session expires, auto-logout might not be enabled.
+Without auto-logout, sessions expire silently based on sessionDuration or IdP settings.
+
+* To enable pre-expiration warnings, configure the auth.autologout settings in your app-config.yaml file.
+
+* Enable auto-logout for inactive users
+
+## Troubleshoot missing login redirect after session expiration
+
+If users are not redirected to the login page after their session expires, verify the following.
+
+1. Verify that your Developer Hub version includes the upstream session expiration fix.
+2. Verify that your authentication provider is correctly configured with valid metadataUrl, clientId, and clientSecret settings.
+
+## Troubleshoot login failed errors
+
+When a user cannot sign in to Developer Hub, the sign-in page displays a "Login failed" error message.
+The following sections describe common login errors and their solutions.
+
+### Login failed: unable to resolve user identity
+
+
+```
+Login failed; caused by Error: Failed to sign-in, unable to resolve user identity. Please verify that your catalog contains the expected User entities that would match your configured sign-in resolver.
+```
+
+
+This error indicates that the user signing in does not match a user entity in the Developer Hub software catalog.
+
+To resolve this issue:
+
+1. Check that the corresponding catalog provider plugin is set up correctly and is successfully syncing users and groups into the catalog.
+
+In the backend logs, look for a successful synchronization message such as:
+
+```
+catalog info Read 114 GitHub users and 22 GitHub groups in 3.4 seconds. Committing...
+catalog info Committed 114 GitHub users and 22 GitHub groups in 0.0 seconds.
+```
+
+2. If users and groups have been ingested into the catalog, verify that the sign-in resolver used (default or configured) matches the correct user attributes.
+3. Optionally, use guest login to look into the user entity in the catalog and verify the attributes.
+
+### Login failed: provider not configured to support sign-in
+
+
+```
+Login failed; caused by Error: The <providerId> provider is not configured to support sign-in.
+```
+
+
+This error indicates that the authentication provider has disableIdentityResolution set to true, meaning it is configured as an auxiliary provider, not for primary sign-in.
+
+To resolve this issue:
+
+* In your app-config.yaml file, ensure that disableIdentityResolution is not set to true for your primary sign-in authentication provider.
+
+### Login failed: user profile does not contain an email
+
+
+```
+Login failed, user profile does not contain an email
+```
+
+
+This error indicates that the authentication client does not have permission to read the user&#8217;s email from the identity provider.
+
+To resolve this issue:
+
+* Grant the necessary email-reading permissions to the authentication client in the identity provider.
+* Or, use a sign-in resolver that does not rely on email, such as preferredUsernameMatchingUserEntityName instead of emailMatchingUserEntityProfileEmail.
+
+## Troubleshoot catalog provider errors
+
+Catalog provider plugins can fail to ingest users and groups into the Developer Hub software catalog.
+The following sections describe common catalog provider errors visible in the backend logs and their solutions.
+
+### LDAP: Malformed entity envelope
+
+
+```
+LdapOrgEntityProvider:default refresh failed, TypeError: Malformed entity envelope, TypeError: /metadata/name must NOT have fewer than 1 characters - limit: 1
+```
+
+
+This error occurs when a user being ingested from LDAP has no value for the name field, which is mapped to the uid LDAP attribute by default.
+
+To resolve this issue:
+
+* Add a filter to the LDAP users configuration to exclude users without a uid:
+
+```yaml
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          - dn: OU=Users,DC=example,DC=com
+            options:
+              filter: (uid=*)
+```
+
+
+For more information about LDAP user filters, see Enable user provisioning with LDAP.
+
+### GitHub: API rate limit exceeded
+
+
+```
+GithubMultiOrgEntityProvider:default refresh failed, HttpError: API rate limit exceeded
+```
+
+
+This error occurs when Developer Hub makes unauthenticated API calls to GitHub, which are limited to 60 requests per hour.
+Authenticated requests using a GitHub App get up to 5,000 requests per hour.
+
+To resolve this issue:
+
+* Verify that the integrations.github section is configured in your app-config.yaml file with valid GitHub App credentials.
+For more information, see Import users and groups from GitHub.
+
+### GitLab: API rate limit exceeded
+
+This error occurs when Developer Hub makes unauthenticated API calls to GitLab, which are subject to rate limits.
+
+To resolve this issue:
+
+* Verify that the integrations.gitlab section is configured in your app-config.yaml file with a valid GitLab personal access token.
+For more information, see Import users and groups from GitLab.

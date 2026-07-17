@@ -1,0 +1,1895 @@
+# Configuring dynamic plugins
+
+As a platform engineer, you can configure dynamic plugins in Red Hat Developer Hub (RHDH) to access your development infrastructure or software development tools.
+
+# Installing Ansible plugins for Red Hat Developer Hub
+
+Access Ansible-specific portal experience with curated learning paths, push-button content creation, and integrated development tools.
+
+Ansible plugins for Red Hat Developer Hub deliver an Ansible-specific portal experience with curated learning paths,
+push-button content creation, integrated development tools, and other opinionated resources.
+
+* Installing Ansible plug-ins for Red Hat Developer Hub
+
+# Install and configure Argo CD
+
+You can use the Argo CD plugin to visualize the Continuous Delivery (CD) workflows in OpenShift GitOps.
+
+## Enable the Argo CD plugin
+
+The Argo CD plugin provides a visual overview of the application&#39;s status, deployment details, commit message, author of the commit, container image promoted to environment and deployment history.
+
+1. Add Argo CD instance information to your app-config.yaml configmap as shown in the following example:
+
+```yaml
+argocd:
+  appLocatorMethods:
+    - type: 'config'
+      instances:
+        - name: argoInstance1
+          url: https://argoInstance1.com
+          username: ${ARGOCD_USERNAME}
+          password: ${ARGOCD_PASSWORD}
+        - name: argoInstance2
+          url: https://argoInstance2.com
+          username: ${ARGOCD_USERNAME}
+          password: ${ARGOCD_PASSWORD}
+```
+
+
+[NOTE]
+----
+Avoid using a trailing slash in the url, as it might cause unexpected behavior.
+----
+2. Add the following annotation to the entity&#39;s catalog-info.yaml file to identify the Argo CD applications.
+
+```yaml
+annotations:
+  ...
+  # The label that Argo CD uses to fetch all the applications. The format to be used is label.key=label.value. For example, rht-gitops.com/janus-argocd=quarkus-app.
+
+  argocd/app-selector: '${ARGOCD_LABEL_SELECTOR}'
+```
+
+3. (Optional) Add the following annotation to the entity&#39;s catalog-info.yaml file to switch between Argo CD instances as shown in the following example:
+
+```yaml
+ annotations:
+   ...
+    # The Argo CD instance name used in `app-config.yaml`.
+
+    argocd/instance-name: '${ARGOCD_INSTANCE}'
+```
+
+
+[NOTE]
+----
+If you do not set this annotation, the Argo CD plugin defaults to the first Argo CD instance configured in app-config.yaml.
+----
+4. To enable the Argo CD plugin, set the disabled property to false in your dynamic-plugins.yaml file as follows:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd-backend:<tag>
+    disabled: false
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd:<tag>
+    disabled: false
+```
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+[IMPORTANT]
+----
+Argo CD contains multiple plugin options you can choose from for your Argo CD configuration:
+* Community Argo CD:
+* @backstage-community/plugin-argocd
+* @backstage-community/plugin-argocd-backend
+* Roadie Argo CD:
+* @roadiehq/backstage-plugin-argo-cd
+* @roadiehq/backstage-plugin-argo-cd-backend
+Community and Roadie plugins are comparable in functionality but have different features.
+For example, both versions feature scaffolder actions, however, their implementation is different:
+the Community version contains scaffolder actions by default, the Roadie version requires an additional plugin.
+The recommended combination is to use @backstage-community/plugin-argocd together with @backstage-community/plugin-argocd-backend.
+However, you can also combine @roadiehq/backstage-plugin-argo-cd together with @roadiehq/backstage-plugin-argo-cd-backend.
+Mixing Community and Roadie plugins is not recommended.
+----
+
+## Enable Argo CD Rollouts
+
+Enable advanced deployment strategies such as blue-green and canary deployments by integrating Argo CD Rollouts with the Red Hat Developer Hub Kubernetes plugin.
+
+The optional Argo CD Rollouts feature enhances Kubernetes by providing advanced deployment strategies, such as blue-green and canary deployments, for your applications.
+When integrated into the backstage Kubernetes plugin, it allows developers and operations teams to visualize and manage Argo CD Rollouts seamlessly within the Developer Hub interface.
+
+* The Developer Hub Kubernetes plugin (@backstage/plugin-kubernetes) is installed and configured.
+* To install and configure Kubernetes plugin in Developer Hub, see Installation and Configuration guide.
+* You have access to the Kubernetes cluster with the necessary permissions to create and manage custom resources and ClusterRoles.
+* The Kubernetes cluster has the argoproj.io group resources (for example, Rollouts and Analysis Runs) installed.
+
+1. In the app-config.yaml file in your Developer Hub instance, add the following customResources component under the kubernetes configuration to enable Argo Rollouts and Analysis Runs:
+
+```yaml
+kubernetes:
+  ...
+  customResources:
+    - group: 'argoproj.io'
+      apiVersion: 'v1alpha1'
+      plural: 'Rollouts'
+    - group: 'argoproj.io'
+      apiVersion: 'v1alpha1'
+      plural: 'analysisruns'
+```
+
+2. Grant ClusterRole permissions for custom resources.
+
+[NOTE]
+----
+1. If the Developer Hub Kubernetes plugin is already configured, the ClusterRole permissions for Rollouts and AnalysisRuns might already be granted.
+2. Use the prepared manifest to give read-only ClusterRole access to both the Kubernetes and ArgoCD plugins.
+----
+1. If the ClusterRole permission is not granted, use the following YAML manifest to create the ClusterRole:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage-read-only
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - rollouts
+      - analysisruns
+    verbs:
+      - get
+      - list
+```
+
+1. Apply the manifest to the cluster using kubectl:
+
+```bash
+$ kubectl apply -f <your_cluster_role_file>.yaml
+```
+
+2. Ensure the ServiceAccount accessing the cluster has this ClusterRole assigned.
+3. Add annotations to catalog-info.yaml to identify Kubernetes resources for Backstage.
+1. For identifying resources by entity ID:
+
+```yaml
+annotations:
+  ...
+  backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME>
+```
+
+2. (Optional) For identifying resources by namespace:
+
+```yaml
+annotations:
+  ...
+  backstage.io/kubernetes-namespace: <RESOURCE_NAMESPACE>
+```
+
+3. For using custom label selectors, which override resource identification by entity ID or namespace:
+
+```yaml
+annotations:
+  ...
+  backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end'
+```
+
+
+[NOTE]
+----
+Ensure you specify the labels declared in backstage.io/kubernetes-label-selector on your Kubernetes resources.
+This annotation overrides entity-based or namespace-based identification annotations, such as backstage.io/kubernetes-id and backstage.io/kubernetes-namespace.
+----
+4. Add label to Kubernetes resources to enable Developer Hub to find the appropriate Kubernetes resources.
+1. Developer Hub Kubernetes plugin label: Add this label to map resources to specific Developer Hub entities.
+
+```yaml
+labels:
+  ...
+  backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME>
+```
+
+2. GitOps application mapping: Add this label to map Argo CD Rollouts to a specific GitOps application
+
+```yaml
+labels:
+  ...
+  app.kubernetes.io/instance: <GITOPS_APPLICATION_NAME>
+```
+
+
+[NOTE]
+----
+If using the label selector annotation (backstage.io/kubernetes-label-selector), ensure the specified labels are present on the resources.
+The label selector will override other annotations such as kubernetes-id or kubernetes-namespace.
+----
+
+1. Push the updated configuration to your GitOps repository to trigger a rollout.
+2. Open Red Hat Developer Hub interface and navigate to the entity you configured.
+3. Select the CD tab and then select the GitOps application. The side panel opens.
+4. In the Resources table of the side panel, verify that the following resources are displayed:
+* Rollouts
+* Analysis Runs (optional)
+5. Expand a rollout resource and review the following details:
+* The Revisions row displays traffic distribution details for different rollout versions.
+* The Analysis Runs row displays the status of analysis tasks that evaluate rollout success.
+
+# Enable and configure the JFrog plugin
+
+Enable and configure the JFrog Artifactory plugin to display container images from your repository in Red Hat Developer Hub.
+
+## Enable the JFrog Artifactory plugin
+
+To enable the JFrog Artifactory plugin, set the disabled property to false.
+
+* To enable the JFrog Artifactory plugin, set the disabled property to false in your dynamic-plugins.yaml file as follows:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-jfrog-artifactory:<tag>
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+## Configure the JFrog Artifactory plugin
+
+Configure proxy settings and annotations to display container images stored in your JFrog Artifactory repository.
+
+1. Set the proxy to the required JFrog Artifactory server in the app-config.yaml file as follows:
+
+```yaml
+proxy:
+  endpoints:
+    '/jfrog-artifactory/api':
+      target: http://<hostname>:8082 # or https://<customer>.jfrog.io
+      headers:
+      # Authorization: 'Bearer <YOUR TOKEN>'
+      # Change to "false" in case of using a self-hosted Artifactory instance with a self-signed certificate
+      secure: true
+```
+
+2. Add the following annotation to the entity's catalog-info.yaml file to enable the JFrog Artifactory plugin features in RHDH components:
+
+```yaml
+metadata:
+    annotations:
+      'jfrog-artifactory/image-name': '<IMAGE-NAME>'
+```
+
+
+# Enable and configure the Nexus Repository Manager plugin
+
+Use the Nexus Repository Manager plugin to view build artifacts in your Developer Hub application. You can find this community-sourced plugin in the Community plugins migration table.
+
+## Enable the Nexus Repository Manager plugin
+
+To enable the Nexus Repository Manager plugin, set the disabled property to false.
+
+* To enable the Nexus Repository Manager plugin, set the disabled property to false in your dynamic-plugins.yaml file as follows:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-nexus-repository-manager:<tag>
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+## Configure the Nexus Repository Manager plugin
+
+Configure the Nexus Repository Manager plugin to display artifact information from your Nexus Repository Manager instance.
+
+1. Set the proxy to the required Nexus Repository Manager server in the app-config.yaml file as follows:
+
+```yaml
+proxy:
+    '/nexus-repository-manager':
+    target: 'https://<NEXUS_REPOSITORY_MANAGER_URL>'
+    headers:
+        X-Requested-With: 'XMLHttpRequest'
+        # Uncomment the following line to access a private Nexus Repository Manager using a token
+        # Authorization: 'Bearer <YOUR TOKEN>'
+    changeOrigin: true
+    # Change to "false" in case of using self hosted Nexus Repository Manager instance with a self-signed certificate
+    secure: true
+```
+
+2. Optional: Change the base URL of Nexus Repository Manager proxy as follows:
+
+```yaml
+nexusRepositoryManager:
+    # default path is `/nexus-repository-manager`
+    proxyPath: /custom-path
+```
+
+3. Optional: Enable the following experimental annotations:
+
+```yaml
+nexusRepositoryManager:
+    experimentalAnnotations: true
+```
+
+4. Annotate your entity using the following annotations:
+
+```yaml
+metadata:
+    annotations:
+    # insert the chosen annotations here
+    # example
+    nexus-repository-manager/docker.image-name: `<ORGANIZATION>/<REPOSITORY>`,
+```
+
+
+# Enable the Tekton plugin
+
+The Tekton plugin enables you to monitor CI/CD pipeline results across your Kubernetes or OpenShift clusters. It provides a high-level overview of all associated tasks, allowing you to track the real-time status of your application pipelines.
+
+* You have installed and configured the @backstage/plugin-kubernetes and @backstage/plugin-kubernetes-backend dynamic plugins.
+* You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount.
+* The ClusterRole must be granted for custom resources (PipelineRuns and TaskRuns) to the ServiceAccount accessing the cluster.
+
+[NOTE]
+----
+If you have the RHDH Kubernetes plugin configured, then the ClusterRole is already granted.
+----
+* To view the pod logs, you have granted permissions for pods/log.
+* You can use the following code to grant the ClusterRole for custom resources and pod logs:
+
+```yaml
+kubernetes:
+   ...
+   customResources:
+     - group: 'tekton.dev'
+       apiVersion: 'v1'
+       plural: 'pipelineruns'
+     - group: 'tekton.dev'
+       apiVersion: 'v1'
+
+
+ ...
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: backstage-read-only
+  rules:
+    - apiGroups:
+        - ""
+      resources:
+        - pods/log
+      verbs:
+        - get
+        - list
+        - watch
+    ...
+    - apiGroups:
+        - tekton.dev
+      resources:
+        - pipelineruns
+        - taskruns
+      verbs:
+        - get
+        - list
+```
+
+You can use the prepared manifest for a read-only ClusterRole, which provides access for both Kubernetes plugin and Tekton plugin.
+* Add the following annotation to the entity's catalog-info.yaml file to identify whether an entity contains the Kubernetes resources:
+
+```yaml
+annotations:
+  ...
+
+  backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME>
+```
+* You can also add the backstage.io/kubernetes-namespace annotation to identify the Kubernetes resources using the defined namespace.
+
+```yaml
+annotations:
+  ...
+
+  backstage.io/kubernetes-namespace: <RESOURCE_NS>
+```
+* Add the following annotation to the catalog-info.yaml file of the entity to enable the Tekton related features in RHDH. The value of the annotation identifies the name of the RHDH entity:
+
+```yaml
+annotations:
+  ...
+
+  janus-idp.io/tekton : <BACKSTAGE_ENTITY_NAME>
+```
+* Add a custom label selector, which RHDH uses to find the Kubernetes resources. The label selector takes precedence over the ID annotations.
+
+```yaml
+annotations:
+  ...
+
+  backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end'
+```
+* Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity:
+
+```yaml
+labels:
+  ...
+
+  backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME>
+```
+
+[NOTE]
+----
+When you use the label selector, the mentioned labels must be present on the resource.
+----
+
+* To enable the Tekton plugin, set the disabled property to false in your dynamic-plugins.yaml file as follows:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-tekton:<tag>
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+# Install the Topology plugin
+
+Install and configure the Topology plugin to visualize Kubernetes workloads and manage labels and annotations.
+
+## Install the Topology plugin
+
+Visualize Kubernetes workloads like Deployments, Pods, and Virtual Machines by enabling the Topology plugin.
+
+The Topology plugin enables you to visualize the workloads such as Deployment, Job, Daemonset, Statefulset, CronJob, Pods and Virtual Machines powering any service on your Kubernetes cluster.
+
+* You have installed and configured the @backstage/plugin-kubernetes-backend dynamic plugins.
+* You have configured the Kubernetes plugin to connect to the cluster using a ServiceAccount.
+* The ClusterRole must be granted to ServiceAccount accessing the cluster.
+
+[NOTE]
+----
+If you have the Developer Hub Kubernetes plugin configured, then the ClusterRole is already granted.
+----
+
+* The Topology plugin is pre-loaded in Developer Hub with basic configuration properties.
+To enable it, set the disabled property to false as follows:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-topology:<tag>
+    disabled: false
+```
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+## Configure the Topology plugin
+
+Configure the Topology plugin to view OpenShift routes, pod logs, Tekton PipelineRuns, and virtual machines.
+
+### View OpenShift routes
+
+Grant read access to routes resource in ClusterRole to view OpenShift routes in the Topology plugin.
+
+1. To view OpenShift routes, grant read access to the routes resource in the ClusterRole:
+
+```yaml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: backstage-read-only
+  rules:
+    ...
+    - apiGroups:
+        - route.openshift.io
+      resources:
+        - routes
+      verbs:
+        - get
+        - list
+```
+
+2. Also add the following in kubernetes.customResources property in your app-config.yaml file:
+
+```yaml
+kubernetes:
+    ...
+    customResources:
+      - group: 'route.openshift.io'
+        apiVersion: 'v1'
+        	  plural: 'routes'
+```
+
+
+### View pod logs
+
+Grant ClusterRole permissions to pods and pods/log resources to view pod logs in the Topology plugin.
+
+* To view pod logs, you must grant the following permission to the ClusterRole:
+
+```yaml
+ apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: backstage-read-only
+  rules:
+    ...
+    - apiGroups:
+        - ''
+      resources:
+        - pods
+        - pods/log
+      verbs:
+        - get
+        - list
+        - watch
+```
+
+
+### View Tekton PipelineRuns
+
+Grant ClusterRole access to Tekton resources to view PipelineRuns status in the Topology plugin.
+
+1. To view the Tekton PipelineRuns, grant read access to the pipelines, pipelineruns, and taskruns resources in the ClusterRole:
+
+```yaml
+ ...
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: backstage-read-only
+  rules:
+    ...
+    - apiGroups:
+        - tekton.dev
+      resources:
+        - pipelines
+        - pipelineruns
+        - taskruns
+      verbs:
+        - get
+        - list
+```
+
+2. To view the Tekton PipelineRuns list in the side panel and the latest PipelineRuns status in the Topology node decorator, add the following code to the kubernetes.customResources property in your app-config.yaml file:
+
+```yaml
+kubernetes:
+    ...
+    customResources:
+      - group: 'tekton.dev'
+        apiVersion: 'v1'
+        plural: 'pipelines'
+      - group: 'tekton.dev'
+        apiVersion: 'v1'
+        plural: 'pipelineruns'
+      - group: 'tekton.dev'
+        apiVersion: 'v1'
+        plural: 'taskruns'
+```
+
+
+### View virtual machines
+
+Grant ClusterRole access to VirtualMachines resources to view virtual machine nodes in the Topology plugin.
+
+* The OpenShift Virtualization operator is installed and configured on a Kubernetes cluster.
+
+1. Grant read access to the VirtualMachines resource in the ClusterRole:
+
+```yaml
+ ...
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: backstage-read-only
+  rules:
+    ...
+    - apiGroups:
+        - kubevirt.io
+      resources:
+        - virtualmachines
+        - virtualmachineinstances
+      verbs:
+        - get
+        - list
+```
+
+2. To view the virtual machine nodes on the topology plugin, add the following code to the kubernetes.customResources property in the app-config.yaml file:
+
+```yaml
+kubernetes:
+    ...
+    customResources:
+      - group: 'kubevirt.io'
+        apiVersion: 'v1'
+        plural: 'virtualmachines'
+      - group: 'kubevirt.io'
+        apiVersion: 'v1'
+        plural: 'virtualmachineinstances'
+```
+
+
+### Enable the source code editor
+
+Enable the source code editor to allow developers to open source code directly from RHDH.
+
+1. Grant read access to the CheClusters resource in the ClusterRole:
+
+```yaml
+ ...
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: backstage-read-only
+  rules:
+    ...
+    - apiGroups:
+        - org.eclipse.che
+      resources:
+        - checlusters
+      verbs:
+        - get
+        - list
+```
+
+2. Add the following configuration to the kubernetes.customResources property in your app-config.yaml file:
+
+```yaml
+ kubernetes:
+    ...
+    customResources:
+      - group: 'org.eclipse.che'
+        apiVersion: 'v2'
+        plural: 'checlusters'
+```
+
+
+## Manage labels and annotations for Topology plugins
+
+Configure labels and annotations to customize Kubernetes resource identification and visualization in the Topology plugin.
+
+### Link to the source code editor or the source
+
+Add annotations to workload resources to enable navigation to the Git repository of the associated application using the source code editor.
+
+1. Add the following annotations to workload resources, such as Deployments, to navigate to the Git repository of the associated application using the source code editor:
+
+```yaml
+annotations:
+  app.openshift.io/vcs-uri: <GIT_REPO_URL>
+```
+
+2. Optional: Add the following annotation to navigate to a specific branch:
+
+```yaml
+annotations:
+  app.openshift.io/vcs-ref: <GIT_REPO_BRANCH>
+```
+
+3. Optional: Add the app.openshift.io/edit-link annotation with the edit URL that you want to access using the decorator.
+
+[NOTE]
+----
+If Red Hat OpenShift Dev Spaces is installed and configured and Git URL annotations are also added to the workload YAML file, then clicking on the edit code decorator redirects you to the Red Hat OpenShift Dev Spaces instance.
+----
+
+[NOTE]
+----
+When you deploy your application using the OCP Git import flows, you do not need to add the labels as import flows do that. Otherwise, you need to add the labels manually to the workload YAML file.
+----
+
+### Add entity annotations and labels for the Kubernetes plugin
+
+Add annotations and labels to enable RHDH to detect that an entity has Kubernetes components.
+
+1. Add the following annotation to the catalog-info.yaml file of the entity:
+
+```yaml
+annotations:
+  backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME>
+```
+
+2. Add the following label to the resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity:
+
+```yaml
+labels:
+  backstage.io/kubernetes-id: <BACKSTAGE_ENTITY_NAME>
+```
+
+
+[NOTE]
+----
+When using the label selector, the mentioned labels must be present on the resource.
+----
+
+### Namespace annotation
+
+Identify Kubernetes resources by namespace using the backstage.io/kubernetes-namespace annotation.
+
+* To identify the Kubernetes resources using the defined namespace, add the backstage.io/kubernetes-namespace annotation:
+
+```yaml
+annotations:
+  backstage.io/kubernetes-namespace: <RESOURCE_NS>
+```
+
+
+The Red Hat OpenShift Dev Spaces instance is not accessible using the source code editor if the backstage.io/kubernetes-namespace annotation is added to the catalog-info.yaml file.
+
+To retrieve the instance URL, you require the CheCluster custom resource (CR). As the CheCluster CR is created in the openshift-devspaces namespace, the instance URL is not retrieved if the namespace annotation value is not openshift-devspaces.
+
+### Add a label selector query annotation
+
+Add a custom label selector annotation so that RHDH uses your custom labels to find Kubernetes resources.
+
+1. Add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file of the entity. The label selector takes precedence over the ID annotations:
+
+```yaml
+annotations:
+  backstage.io/kubernetes-label-selector: 'app=my-app,component=front-end'
+```
+
+2. Optional: If you have many entities while Red Hat Dev Spaces is configured and want multmanyities to support the edit code decorator that redirects to the Red Hat Dev Spaces instance, add the backstage.io/kubernetes-label-selector annotation to the catalog-info.yaml file for each entity:
+
+```yaml
+annotations:
+  backstage.io/kubernetes-label-selector: 'component in (<BACKSTAGE_ENTITY_NAME>,che)'
+```
+
+3. If you are using the previous label selector, add the following labels to your resources so that the Kubernetes plugin gets the Kubernetes resources from the requested entity:
+
+```yaml
+labels:
+  component: che # add this label to your che cluster instance
+labels:
+  component: <BACKSTAGE_ENTITY_NAME> # add this label to the other resources associated with your entity
+```
+
+
+You can also write your own custom query for the label selector with unique labels to differentiate your entities. However, you need to ensure that you add those labels to the resources associated with your entities including your CheCluster instance.
+
+### Display a runtime icon in the topology node
+
+Add a label to workload resources to display a runtime icon in the topology nodes.
+
+* Add the following label to workload resources, such as Deployments:
+
+```yaml
+labels:
+  app.openshift.io/runtime: <RUNTIME_NAME>
+```
+
+
+Alternatively, you can include the following label to display the runtime icon:
+
+```yaml
+labels:
+  app.kubernetes.io/name: <RUNTIME_NAME>
+```
+
+
+Supported values of <RUNTIME_NAME> include django, dotnet, drupal, go-gopher, golang, grails, jboss, jruby, js, nginx, nodejs, openjdk, perl, phalcon, php, python, quarkus, rails, redis, rh-spring-boot, rust, java, rh-openjdk, ruby, spring, and spring-boot. Other values result in icons not being rendered for the node.
+
+### Group applications in the topology view
+
+Add a label to workload resources to display them in a visual group in the topology view.
+
+* Add the following label to workload resources, such as deployments or pods, to display them in a visual group:
+
+```yaml
+labels:
+  app.kubernetes.io/part-of: <GROUP_NAME>
+```
+
+
+### Node connector
+
+Display visual connectors between workload resources like deployments and pods using annotations.
+
+* To display the workload resources such as deployments or pods with a visual connector, add the following annotation:
+
+```yaml
+annotations:
+  app.openshift.io/connects-to: '[{"apiVersion": <RESOURCE_APIVERSION>,"kind": <RESOURCE_KIND>,"name": <RESOURCE_NAME>}]'
+```
+
+
+### Additional resources
+
+* Guidelines for labels and annotations for OpenShift applications
+
+# Bulk importing in Red Hat Developer Hub
+
+Automate onboarding of GitHub repositories and GitLab projects to Red Hat Developer Hub catalog, and monitor import status by using bulk import capabilities.
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+## Repository visibility in Bulk Import
+
+View and bulk-import only the repositories you have permission to access and have not yet added to your catalog.
+
+### User-scoped repository access
+
+When you use Bulk Import, Red Hat Developer Hub retrieves the list of available repositories using your authenticated user credentials through OAuth. Repository and organization listing API calls use your OAuth token for each configured source code management (SCM) host, ensuring that results match your personal access permissions rather than server-wide integration credentials.
+
+This approach provides several benefits:
+
+User-scoped access:: You see only repositories you can access in GitHub or GitLab, matching your experience in those platforms.
+Enhanced security:: Import operations use your personal access token, maintaining audit trails tied to your user account.
+Permission alignment:: Repository visibility respects your organizational access policies and role-based permissions.
+
+This differs from catalog discovery providers, which use service account credentials to automatically discover and import repositories containing catalog-info.yaml files across an entire organization.
+
+### Technical implementation
+
+Bulk Import requires user authentication for all repository and organization listing operations. The following API endpoints require a valid OAuth token:
+
+* GET /repositories - List all accessible repositories
+* GET /organizations/{org}/repositories - List repositories in a specific organization
+
+These endpoints use the X-SCM-Tokens header to pass user OAuth tokens for GitHub and GitLab hosts. There is no fallback to server-wide integration credentials (GitHub App, PAT, or GitLab token) for these listing operations. Requests without valid user OAuth tokens are rejected with HTTP 401 Unauthorized.
+
+
+[IMPORTANT]
+----
+Deployments that previously relied on integration-only listing must configure SCM authentication providers for user authentication. See the Bulk Import plugin documentation for configuration details.
+----
+
+### Automatic filtering of imported repositories
+
+The Bulk Import interface automatically excludes repositories that are already present in your Developer Hub catalog, showing only repositories that have not yet been imported. This filtering helps you:
+
+* Avoid duplicate catalog entries.
+* Focus on new repositories that need onboarding.
+* Identify which repositories remain to be imported from your Git provider.
+
+
+[NOTE]
+----
+If a repository is removed from the catalog, it will reappear in the Bulk Import repository list and can be imported again.
+----
+
+### Prerequisites for repository visibility
+
+User authentication with OAuth is a mandatory requirement for the Bulk Import feature. To view and import repositories through Bulk Import, you must:
+
+* Configure GitHub or GitLab authentication using one of the following approaches:
+* As your primary authentication provider for Developer Hub.
+* As an auxiliary
+authentication provider if you use another primary provider, for example, OIDC or Red Hat build of Keycloak.
+* Configure SCM authentication providers with OAuth support for your Git hosts
+* Have the bulk.import permission configured in RBAC policies.
+* Maintain an active OAuth session with your Git provider.
+
+
+[WARNING]
+----
+Repository and organization listing operations require user OAuth tokens. There is no fallback to server-wide integration credentials. Deployments without user authentication configured will receive HTTP 401 errors when accessing Bulk Import.
+----
+
+### Troubleshooting repository visibility
+
+If you cannot see expected repositories in the Bulk Import interface, verify the following:
+
+User access:: Your user account has access to those repositories in GitHub or GitLab
+Catalog status:: The repositories are not already imported into the Developer Hub catalog
+Session validity:: Your Developer Hub OAuth session has not expired
+Authentication configuration:: GitHub or GitLab authentication provider is correctly configured
+ScmAuthApi registration:: The ScmAuthApi is properly registered for your SCM hosts
+
+If you receive HTTP 401 Unauthorized errors when accessing the Bulk Import page, this indicates that user OAuth tokens are not available. Verify that:
+
+* You have authenticated to Developer Hub using GitHub or GitLab as your authentication provider
+* Your authentication provider includes OAuth scopes required for repository access
+* The SCM authentication provider is configured and registered in your Developer Hub deployment
+
+## Enable and authorize Bulk Import capabilities in Red Hat Developer Hub
+
+Enable Bulk Import plugins and configure RBAC permissions to allow users to import multiple GitHub repositories and GitLab projects into the catalog.
+
+* You have configured user authentication with GitHub or GitLab as your authentication provider. This is a mandatory requirement for Bulk Import, as repository listings use user OAuth tokens.
+* For GitHub only: You have enabled GitHub repository discovery.
+
+
+[IMPORTANT]
+----
+Bulk Import requires user OAuth tokens for all repository and organization listing operations. Deployments without user authentication configured will receive HTTP 401 Unauthorized errors when accessing the Bulk Import feature.
+----
+
+1. The Bulk Import plugins are installed but disabled by default.
+To enable the ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import-backend-dynamic and ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import plugins, edit your dynamic-plugins.yaml with the following content:
+
+```yaml
+plugins:
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import-backend-dynamic
+    disabled: false
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import
+    disabled: false
+```
+
+
+See Installing and viewing plugins in Red Hat Developer Hub.
+2. Configure the required bulk.import RBAC permission for the users who are not administrators as shown in the following code:
+rbac-policy.csv fragment
+
+```csv
+p, role:default/bulk-import, bulk.import, use, allow
+g, user:default/<your_user>, role:default/bulk-import
+```
+
+
+Note that only Developer Hub administrators or users with the bulk.import permission can use the Bulk Import feature.
+See Permission policies in Red Hat Developer Hub.
+
+1. The sidebar displays a Bulk Import option.
+2. The Bulk Import page shows a list of added GitHub repositories and GitLab projects.
+
+## Import multiple GitHub repositories
+
+Select and import multiple GitHub repositories that you can access into the Red Hat Developer Hub catalog, automatically creating pull requests with required catalog-info.yaml files.
+
+* You have enabled the Bulk Import feature and configured access permissions.
+* You have authenticated to Developer Hub using GitHub as your authentication provider.
+
+
+[NOTE]
+----
+The Bulk Import feature displays only repositories that your GitHub user account can access and that are not already imported into the Developer Hub catalog. Repository visibility is determined by your GitHub permissions, not the Developer Hub GitHub App configuration.
+----
+
+1. Click Bulk Import in the Developer Hub left sidebar.
+2. If your RHDH instance has multiple source control tools configured, select GitHub from the Source control tool list.
+The interface displays GitHub repositories that your authenticated user account can access, excluding repositories already present in the catalog.
+3. Select the repositories to import, and click Add.
+
+Developer Hub creates a pull request in each selected repository to add the required catalog-info.yaml file using your GitHub credentials.
+4. For each repository to import, click PR to review and merge the changes in GitHub.
+
+1. Click Bulk Import in the Developer Hub left sidebar.
+2. Verify that each imported GitHub repository in the Selected repositories list has the status Waiting for approval or Imported.
+3. For each Waiting for approval repository, click the pull request link to review and merge the catalog-info.yaml file in the corresponding repository.
+
+The pull request is created using your GitHub user account, ensuring proper attribution in the repository history.
+
+## Import multiple GitLab repositories
+
+Select and import multiple GitLab projects that you can access into the Red Hat Developer Hub catalog, automatically creating merge requests with required catalog-info.yaml files.
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+* You have enabled the Bulk Import feature and configured access permissions.
+* You have authenticated to Developer Hub using GitLab as your authentication provider.
+* You have set up a GitLab personal access token (PAT).
+* You configured the GitLab integration by adding the following section to your RHDH app-config.yaml file:
+
+```yaml
+integrations:
+  gitlab:
+    - host: ${GITLAB_HOST}
+      token: ${GITLAB_TOKEN}
+```
+
+* You enabled the GitLab catalog provider plugin in your dynamic-plugins.yaml file to import GitLab users and groups:
+
+```yaml
+plugins:
+  - package: './dynamic-plugins/dist/backstage-plugin-catalog-backend-module-gitlab-org-dynamic'
+    disabled: false
+```
+
+
+
+[NOTE]
+----
+The Bulk Import feature displays only projects that your GitLab user account can access and that are not already imported into the Developer Hub catalog. Project visibility is determined by your GitLab permissions, not the Developer Hub GitLab integration token configuration.
+----
+
+1. In the Developer Hub left sidebar, click Bulk Import.
+2. If your RHDH instance has multiple source control tools configured, select GitLab from the Source control tool list.
+
+The interface displays GitLab projects that your authenticated user account can access, excluding projects already present in the catalog.
+3. Select the projects to import, and click Add.
+
+Developer Hub creates a merge request in each selected project to add the required catalog-info.yaml file using your GitLab credentials.
+4. For each project to import, click MR to review and merge the changes in GitLab.
+
+1. Click Bulk Import in the Developer Hub left sidebar.
+2. Verify that each imported GitLab project in the Selected projects list has the status Waiting for approval or Imported.
+3. For projects with the Waiting for approval status, click the merge request link to review and add the catalog-info.yaml file to the project repository.
+
+The merge request is created using your GitLab user account, ensuring proper attribution in the project history.
+
+## Monitor Bulk Import actions using audit logs
+
+Review Bulk Import backend plugin audit log events to monitor repository import operations, track API requests, and troubleshoot import issues.
+
+1. Access your Developer Hub backend logs where audit log events are recorded.
+2. Review the following Bulk Import audit log events to monitor repository operations:
+BulkImportUnknownEndpoint:: Tracks requests to unknown endpoints.
+BulkImportPing:: Tracks GET requests to the /ping endpoint, which allows us to make sure the bulk import backend is up and running.
+BulkImportFindAllOrganizations:: Tracks GET requests to the /organizations endpoint, which returns the list of organizations accessible from all configured GitHub Integrations.
+BulkImportFindRepositoriesByOrganization:: Tracks GET requests to the /organizations/:orgName/repositories endpoint, which returns the list of repositories for the specified organization (accessible from any of the configured GitHub Integrations).
+BulkImportFindAllRepositories:: Tracks GET requests to the /repositories endpoint, which returns the list of repositories accessible from all configured GitHub Integrations.
+BulkImportFindAllImports:: Tracks GET requests to the /imports endpoint, which returns the list of existing import jobs along with their statuses.
+BulkImportCreateImportJobs:: Tracks POST requests to the /imports endpoint, which allows to submit requests to bulk-import one or many repositories into the Developer Hub catalog, by eventually creating import pull requests in the target repositories.
+BulkImportFindImportStatusByRepo:: Tracks GET requests to the /import/by-repo endpoint, which fetches details about the import job for the specified repository.
+BulkImportDeleteImportByRepo:: Tracks DELETE requests to the /import/by-repo endpoint, which deletes any existing import job for the specified repository, by closing any open import pull request that could have been created.
+
+Example audit log output:
+
+```json
+{
+  "actor": {
+    "actorId": "user:default/myuser",
+    "hostname": "localhost",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+  },
+  "eventName": "BulkImportFindAllOrganizations",
+  "isAuditLog": true,
+  "level": "info",
+  "message": "'get /organizations' endpoint hit by user:default/myuser",
+  "meta": {},
+  "plugin": "bulk-import",
+  "request": {
+    "body": {},
+    "method": "GET",
+    "params": {},
+    "query": {
+      "pagePerIntegration": "1",
+      "sizePerIntegration": "5"
+    },
+    "url": "/api/bulk-import/organizations?pagePerIntegration=1&sizePerIntegration=5"
+  },
+  "response": {
+    "status": 200
+  },
+  "service": "backstage",
+  "stage": "completion",
+  "status": "succeeded",
+  "timestamp": "2024-08-26 16:41:02"
+}
+```
+
+
+## Input parameters for Bulk Import Scaffolder template
+
+Define Scaffolder template parameters such as repository URL, name, organization, and branch details to customize bulk import automation workflows for your repositories.
+
+As an administrator, you can use the Bulk Import plugin to run a Scaffolder template task with specified parameters, which you must define within the template.
+
+The Bulk Import plugin analyzes Git repository information and provides the following parameters for the Scaffolder template task:
+
+repoUrl:: Normalized repository URL in the following format:
+
+```yaml
+  ${gitProviderHost}?owner=${owner}&repo=${repository-name}
+```
+
+name:: The repository name.
+organization:: The repository owner, which can be a user nickname or organization name.
+branchName:: The proposed repository branch. By default, the proposed repository branch is bulk-import-catalog-entity.
+targetBranchName:: The default branch of the Git repository.
+gitProviderHost:: The Git provider host parsed from the repository URL. You can use this parameter to write Git-provider-agnostic templates.
+
+Example of a Scaffolder template:
+
+
+```yaml
+parameters:
+  - title: Repository details
+    required:
+      - repoUrl
+      - branchName
+      - targetBranchName
+      - name
+      - organization
+    properties:
+      repoUrl:
+        type: string
+        title: Repository URL ({product-short} format)
+        description: github.com?owner=Org&repo=repoName
+      organization:
+        type: string
+        title: Owner of the repository
+      name:
+        type: string
+        title: Name of the repository
+      branchName:
+        type: string
+        title: Branch to add the catalog entity to
+      targetBranchName:
+        type: string
+        title: Branch to target the PR/MR to
+      gitProviderHost:
+        type: string
+        title: Git provider host
+```
+
+
+## Set up a custom Scaffolder workflow for Bulk Import
+
+Create custom Scaffolder templates aligned with your organization&#8217;s repository conventions to automate bulk import tasks such as entity imports, pull request creation, and webhook integration.
+
+As an administrator, you can create a custom Scaffolder template inline with the repository conventions of your organization and add the template into the Red Hat Developer Hub catalog for use by the Bulk Import plugin on many selected repositories.
+
+You can define various custom tasks, including, but not limited to the following:
+
+* Importing existing catalog entities from a repository
+* Creating pull requests for cleanup
+* Calling webhooks for external system integration
+
+* You created a custom Scaffolder template for the Bulk Import plugin.
+* You have run your RHDH instance with the following environment variable enabled to allow the use of the Scaffolder functionality:
+
+```yaml
+export NODE_OPTIONS=--no-node-snapshot
+```
+
+
+* Configure your app-config.yaml configuration to instruct the Bulk Import plugin to use your custom template as shown in the following example:
+
+```yaml
+bulkImport:
+  importTemplate: <your_template_entity_reference_or_template_name>
+  importAPI: `open-pull-requests` | `scaffolder`;
+```
+
+
+where:
+importTemplate::: Enter your Scaffolder template entity reference.
+importAPI:: Set the API to 'scaffolder' to trigger the defined workflow for high-fidelity automation. This field defines the import workflow and currently supports two following options:
+open-pull-requests:: This is the default import workflow, which includes the logic for creating pull requests for every selected repository.
+scaffolder:: This workflow uses an import scenario defined in the Scaffolder template to create import jobs. Select this option to use the custom import scenario defined in your Scaffolder template.
+
+Optional: You can direct the Bulk Import plugin to hand off the entire list of selected repositories to a custom Orchestrator workflow.
+
+[IMPORTANT]
+----
+The Scaffolder template must be generic and not specific to a single repository if you want your custom Scaffolder template to run successfully for every repository in the bulk list.
+----
+
+* The Bulk Import plugin runs the custom Scaffolder template for the list of repositories using the /task-imports API endpoint.
+
+## Run Orchestrator workflows for bulk imports
+
+Configure Bulk Import to use Orchestrator workflows for advanced bulk operations across multiple repositories, enabling automated pull request creation and configuration publishing at scale.
+
+As a platform engineer, you can configure the Bulk Import plugin to run Orchestrator workflows for bulk import operations. This mode uses the Orchestrator engine to provide advanced capabilities, such as creating pull requests or publishing configurations across multiple repositories.
+
+* You have installed and configured the Orchestrator plugin in your Developer Hub instance.
+* You have registered a generic custom workflow (for example, universal-pr) in the Orchestrator plugin.
+* You have added a custom Developer Hub application configuration.
+
+1. Configure the Bulk Import plugin by editing your app-config.yaml file to enable Orchestrator mode.
+
+```yaml
+bulkImport:
+  orchestratorWorkflow: your_workflow_id
+  importAPI: 'orchestrator'
+```
+
+
+where:
+orchestratorWorkflow:: The ID of the workflow to run for each repository.
+importAPI:: The execution mode for the workflow. Enter orchestrator to enable workflow execution.
+2. Verify that the Orchestrator workflow receives the following input:
+
+```yaml
+{
+  "inputData": {
+    "owner": "redhat-developer",
+    "repo": "rhdh-plugins",
+    "baseBranch": "main",
+    "targetBranch": "bulk-import-orchestrator"
+  },
+  "authTokens": [
+    {
+      "token": "<github_token>",
+      "provider": "github"
+    }
+  ]
+}
+```
+
+
+where:
+owner:: Specifies the repository owner (organization or user name).
+repo:: Specifies the repository name.
+baseBranch:: Specifies the default branch of the Git repository (for example, main).
+targetBranch:: Specifies the target branch for the import operation. By default, this is set to bulk-import-orchestrator.
+authTokens:: Specifies the authentication tokens for the Git provider:
+3. For GitHub: { token: <github_token>, provider: github }
+4. For GitLab: { token: <gitlab_token>, provider: gitlab }
+5. Navigate to the Bulk Import page in the sidebar and complete the following steps:
+1. Select your Git provider (for example, GitHub or GitLab).
+2. Select the projects you want to import.
+6. Click import to run the workflow.
+
+* Locate your repository and confirm status is COMPLETED.
+
+## Data handoff and custom workflow design
+
+Design Scaffolder templates to receive repository data as parameters and automate repository-specific tasks when using Scaffolder mode for bulk imports.
+
+When you configure the Bulk Import plugin by setting the importAPI field to scaffolder, the Bulk Import Backend passes all necessary context directly to the Scaffolder API.
+
+As an administrator, you can define the Scaffolder template workflow and structure the workflow to do the following:
+
+Define template parameters to consume input:: Structure the Scaffolder template to receive the repository data as template parameters for the current workflow run. The template must be generic, and not specific to a single repository, so that it can successfully run for every repository in the bulk list.
+Automate processing for each repository:: Implement the custom logic needed for a single repository within the template. The Orchestrator iterates through the repository list, launching the template once for each repository and passes only the data for that single repository to the template run. This allows you to automate tasks such as creating the catalog-info.yaml, running compliance checks, or registering the entity with the catalog.
+
+# ServiceNow custom actions in Red Hat Developer Hub
+
+Integrate ServiceNow with Red Hat Developer Hub to manage ServiceNow records by using Scaffolder actions and view ServiceNow data on entity pages.
+
+In Red Hat Developer Hub, you can use ServiceNow custom actions to fetch and register resources within the catalog.
+
+The custom actions in Developer Hub help you automate the management of records. By using the custom actions, you can:
+
+* Create, update, or delete a record
+* Retrieve information about a single record or many records
+
+The ServiceNow custom actions plugin is community-sourced.
+
+## ServiceNow entity linking methods
+
+To view and manage ServiceNow incidents directly in Red Hat Developer Hub (RHDH), you must link an entity to your ServiceNow records. Linking ensures that incident data is accurately synchronized and visible within the relevant component or system.
+
+Red Hat Developer Hub provides two methods for linking these entities. You can choose the method that best fits your organization&#8217;s security requirements and your ability to modify the ServiceNow schema.
+
+### Direct mapping (Backstage Entity ID column)
+
+The default method requires adding a custom column named backstage_entity_id to your ServiceNow incident table. You then manually or programmatically assign the specific RHDH entity reference (for example, component:default/my-service) to this column in ServiceNow.
+
+* Advantages:
+* Highly secure and precise
+* Ensures data is only exposed to the intended entity
+* Limitations:
+* Requires a schema change in ServiceNow
+* Requires manual data entry for each incident
+
+### Flexible mapping (Custom column mapping)
+
+The flexible mapping approach is an opt-in feature that allows you to use any existing column in your ServiceNow incident table to link to RHDH entities. Instead of creating a new column, you configure the ServiceNow plugin to look at an existing field (such as short_description, cmdb_ci, or a custom organizational ID) to match the entity.
+
+* Advantages:
+* Does not require ServiceNow schema changes
+* Faster to implement for organizations with strict ServiceNow governance
+* Limitations:
+* Requires careful configuration to ensure that the search criteria in the chosen column are unique enough to prevent displaying unrelated incidents
+
+### Comparison of linking methods
+
+
+
+### Configure the ServiceNow plugin in the ConfigMap
+
+Update the Red Hat Developer Hub ConfigMap to enable the ServiceNow backend, frontend, and Scaffolder actions. This configuration defines the connection parameters and UI components required to integrate ServiceNow with your software catalog.
+
+* You have provisioned a custom configuration by following the steps in Provisioning and using your custom Developer Hub configuration, including the section on authoring a custom dynamic-plugins.yaml file.
+* You have administrator access to an Red Hat OpenShift Container Platform cluster.
+* Red Hat Developer Hub is installed on the cluster.
+
+1. Open your Red Hat Developer Hub ConfigMap for editing.
+2. Add the ServiceNow backend and frontend plugin packages to the dynamic-plugins.yaml section, including the connection and UI configuration:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rhdh-plugin-config
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      # -----------------------------------------------------------------
+      # ... Your pre-existing custom dynamic plugins would be listed here
+      # -----------------------------------------------------------------
+
+      # ServiceNow Backend Plugin
+      - package: 'oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-servicenow-backend:bs_1.45.3__1.6.1'
+        disabled: false
+        pluginConfig:
+          servicenow:
+            instanceUrl: ${SERVICENOW_BASE_URL}
+            basicAuth:
+              username: ${SERVICENOW_USERNAME}
+              password: ${SERVICENOW_PASSWORD}
+
+      # ServiceNow Scaffolder Module / Actions
+      - package: 'oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-scaffolder-backend-module-servicenow:bs_1.49.4__2.15.0'
+        disabled: false
+        pluginConfig:
+          servicenow:
+            baseUrl: ${SERVICENOW_BASE_URL}
+            username: ${SERVICENOW_USERNAME}
+            password: ${SERVICENOW_PASSWORD}
+
+      # ServiceNow Frontend Plugin
+      - package: 'oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-servicenow:bs_1.45.3__1.6.0'
+        disabled: false
+```
+
+3. Save the changes to the ConfigMap.
+4. Wait for the RHDH Operator to redeploy the pods. The plugins are available once the pods are in a Running state.
+
+### Link ServiceNow tickets to catalog entities
+
+The ServiceNow integration in Red Hat Developer Hub uses software catalog annotations to associate entities with ServiceNow records. By defining these identifiers, the ServiceNow plugin can retrieve and display relevant tickets and incidents directly within the component dashboard.
+
+* The ServiceNow plugin is installed and configured in your Red Hat Developer Hub instance.
+* You have the unique identifier (such as a Service ID or Category) for the ServiceNow resource you want to link.
+
+1. Open the catalog-info.yaml file of the component you want to link to ServiceNow.
+2. Add the servicenow.com/service-id annotation to the metadata.annotations section.
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: example-component
+  annotations:
+    servicenow.com/service-id: <your-service-id>
+```
+
+servicenow.com/<field-name>:: Annotation pattern for linking to ServiceNow records. Replace <field-name> with any ServiceNow table column name (such as service-id, category, company). The servicenow.com/ prefix enables the ServiceNow tab. You can add multiple annotations to filter by different fields.
+3. Optional: If your organization uses different categories to filter tickets, you can also add the category annotation:
+
+```yaml
+metadata:
+  annotations:
+    servicenow.com/category: "software"
+```
+
+metadata.annotations.servicenow.com/category:: Specifies the ServiceNow category used to filter the displayed incidents.
+4. Save the changes to catalog-info.yaml and commit them to your repository.
+5. If the changes do not appear automatically, manually refresh the entity in the Red Hat Developer Hub catalog.
+
+1. Log in to your Red Hat Developer Hub and navigate to the Catalog.
+2. Select the component you updated.
+3. Select the ServiceNow tab.
+4. Confirm that the tab displays ServiceNow tickets or incidents associated with the provided ID.
+
+### Use ServiceNow scaffolder actions in software templates
+
+Add ServiceNow actions to your software templates to automate the creation, retrieval, and modification of ServiceNow records during the software scaffolding process.
+
+* You have configured the ServiceNow instance parameters in the Red Hat Developer HubConfigMap or app-config.yaml file.
+* You have the required permissions to edit Software Templates in the source repository.
+* You have registered the Software Template in the Red Hat Developer Hub catalog.
+
+1. Open your software template YAML file.
+2. In the spec.steps section, add the ServiceNow action that corresponds to your goal.
+3. Define the tableName and the requestBody containing the fields to populate or modify. The following example demonstrates how to use the servicenow:now:table:createRecord action to generate an incident ticket:
+
+```yaml
+steps:
+  - id: create-incident
+    name: Create ServiceNow Incident
+    action: servicenow:now:table:createRecord
+    input:
+      tableName: incident
+      requestBody:
+        short_description: "Printer is offline"
+        description: "The office printer is not accessible via the network"
+        severity: "3"
+```
+
+4. Optional: To perform other operations, use the appropriate action ID and parameters:
+
+
+[TIP]
+----
+To view the full schema and all available ServiceNow actions for your specific installation, navigate to Create > Installed Actions in the Red Hat Developer Hub interface.
+----
+
+### ServiceNow configuration parameters
+
+The ServiceNow integration requires specific parameters in your configuration files to establish a connection between Red Hat Developer Hub and your ServiceNow instances. Use these parameters to define authentication methods, instance URLs, and UI layouts.
+
+#### ServiceNow backend and frontend configuration
+
+Define the following parameters in the app-config.yaml file or the dynamic-plugins.yaml section of the Red Hat Developer Hub ConfigMap to enable the backend and frontend plugins.
+
+
+
+#### ServiceNow scaffolder configuration
+
+The ServiceNow Scaffolder module requires a separate configuration block. Note that this module uses baseUrl instead of instanceUrl.
+
+
+
+#### Authentication examples
+
+The following examples demonstrate how to structure different authentication methods in your configuration.
+
+#### Basic authentication example
+
+
+```yaml
+servicenow:
+  baseUrl: ${SERVICENOW_PROD_URL}
+  username: ${SERVICENOW_USER}
+  password: ${SERVICENOW_PASS}
+```
+
+
+#### OAuth with Client Credentials
+
+
+```yaml
+servicenow:
+  instanceUrl: ${SERVICENOW_INSTANCE_URL}
+  oauth:
+    grantType: client_credentials
+    clientId: ${SERVICENOW_CLIENT_ID}
+    clientSecret: ${SERVICENOW_CLIENT_SECRET}
+```
+
+
+#### OAuth with Password Grant
+
+
+```yaml
+servicenow:
+  instanceUrl: ${SERVICENOW_INSTANCE_URL}
+  oauth:
+    grantType: password
+    clientId: ${SERVICENOW_CLIENT_ID}
+    clientSecret: ${SERVICENOW_CLIENT_SECRET}
+    username: ${SERVICENOW_USER}
+    password: ${SERVICENOW_PASS}
+```
+
+
+#### Frontend UI configuration
+
+The frontend plugin configuration defines how ServiceNow data appears on component entity pages.
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    backstage-community.plugin-servicenow:
+      entityTabs:
+        - path: /servicenow
+          title: ServiceNow
+          mountPoint: entity.page.servicenow
+      mountPoints:
+        - mountPoint: entity.page.servicenow/cards
+          importName: ServicenowPage
+          config:
+            layout:
+              gridColumn: 1 / -1
+              height: 75vh
+```
+
+
+## Enable ServiceNow custom actions plugin in Red Hat Developer Hub
+
+To use ServiceNow custom actions, you must first activate the plugin.
+
+* Red Hat Developer Hub is installed and running.
+* You have created a project in the Developer Hub.
+
+1. Add a package with plugin name and update the disabled field in your dynamic-plugins.yaml file as follows:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-scaffolder-backend-module-servicenow:<tag>
+    disabled: false
+```
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+[NOTE]
+----
+The default configuration for a plugin is extracted from the dynamic-plugins.default.yaml file, however, you can use a pluginConfig entry to override the default configuration.
+----
+2. Set the following variables in your app-config.yaml file to access the custom actions:
+
+```yaml
+servicenow:
+  # The base url of the ServiceNow instance.
+  baseUrl: ${SERVICENOW_BASE_URL}
+  # The username to use for authentication.
+  username: ${SERVICENOW_USERNAME}
+  # The password to use for authentication.
+  password: ${SERVICENOW_PASSWORD}
+```
+
+## Supported ServiceNow custom actions in Red Hat Developer Hub
+
+The ServiceNow custom actions enable you to manage records in the Red Hat Developer Hub.
+
+The custom actions support the following HTTP methods for API requests:
+
+* GET: Retrieves specified information from a specified resource endpoint
+* POST: Creates or updates a resource
+* PUT: Modify a resource
+* PATCH: Updates a resource
+* DELETE: Deletes a resource
+[GET] servicenow:now:table:retrieveRecord:: 
+Retrieves information of a specified record from a table in the Developer Hub.
+The following table describes the input parameters:
+
+The following table describes the output parameters:
+[GET] servicenow:now:table:retrieveRecords:: 
+Retrieves information about multiple records from a table in the Developer Hub.
+The following table describes the input parameters:
+
+The following table describes the output parameters:
+[POST] servicenow:now:table:createRecord:: 
+Creates a record in a table in the Developer Hub.
+The following table describes the input parameters:
+
+The following table describes the output parameters:
+[PUT] servicenow:now:table:modifyRecord:: 
+Modifies a record in a table in the Developer Hub.
+The following table describes the input parameters:
+
+The following table describes the output parameters:
+[PATCH] servicenow:now:table:updateRecord:: 
+Updates a record in a table in the Developer Hub.
+The following table describes the input parameters:
+
+The following table describes the output parameters:
+[DELETE] servicenow:now:table:deleteRecord:: 
+Deletes a record from a table in the Developer Hub.
+The following table describes the input parameters:
+
+# Kubernetes custom actions in Red Hat Developer Hub
+
+You can create and manage Kubernetes resources by using custom scaffolder actions in Red Hat Developer Hub templates. The Kubernetes custom actions plugin is preinstalled in a disabled state.
+
+## Enable Kubernetes custom actions plugin in Red Hat Developer Hub
+
+Enable the preinstalled Kubernetes custom actions plugin by updating the dynamic plugins configuration.
+
+In Red Hat Developer Hub, the Kubernetes custom actions are provided as a preinstalled plugin, which is disabled by default. You can enable the Kubernetes custom actions plugin by updating the disabled key value in your dynamic-plugins.yaml file.
+
+* Add a package with the Kubernetes custom action plugin name and update the disabled field in your dynamic-plugins.yaml file to enable the plugin. For example:
+
+```yaml
+plugins:
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-scaffolder-backend-module-kubernetes:<tag>
+    disabled: false
+```
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+[NOTE]
+----
+The default configuration for a plugin is extracted from the dynamic-plugins.default.yaml file, however, you can use a pluginConfig entry to override the default configuration.
+----
+
+## Use Kubernetes custom actions plugin in Red Hat Developer Hub
+
+Add Kubernetes actions to your custom templates to create namespaces and manage cluster resources.
+
+In Red Hat Developer Hub, the Kubernetes custom actions enable you to run template actions for Kubernetes.
+
+* To use a Kubernetes custom action in your custom template, add the following Kubernetes actions to your template:
+
+```yaml
+action: kubernetes:create-namespace
+id: create-kubernetes-namespace
+name: Create kubernetes namespace
+input:
+  namespace: my-rhdh-project
+  clusterRef: bar
+  token: TOKEN
+  skipTLSVerify: false
+  caData: Zm9v
+  labels: app.io/type=ns; app.io/managed-by=org;
+```
+
+
+* Configuring templates
+
+## Create a template using Kubernetes custom actions in Red Hat Developer Hub
+
+Define a Template object with Kubernetes actions to automate namespace creation and resource management.
+
+* To create a template, define a Template object as a YAML file.
+
+The Template object describes the template and its metadata. It also contains required input variables and a list of actions that are executed by the scaffolding service.
+
+```yaml
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-kubernetes-namespace
+  title: Create a kubernetes namespace
+  description: Create a kubernetes namespace
+spec:
+  type: service
+  parameters:
+    - title: Information
+      required: [namespace, token]
+      properties:
+        namespace:
+          title: Namespace name
+          type: string
+          description: Name of the namespace to be created
+        clusterRef:
+          title: Cluster reference
+          type: string
+          description: Cluster resource entity reference from the catalog
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              kind: Resource
+        url:
+          title: Url
+          type: string
+          description: Url of the kubernetes API, will be used if clusterRef is not provided
+        token:
+          title: Token
+          type: string
+          ui:field: Secret
+          description: Bearer token to authenticate with
+        skipTLSVerify:
+          title: Skip TLS verification
+          type: boolean
+          description: Skip TLS certificate verification, not recommended to use in production environment, default to false
+        caData:
+          title: CA data
+          type: string
+          ui:field: Secret
+          description: Certificate Authority base64 encoded certificate
+        labels:
+          title: Labels
+          type: string
+          description: Labels to be applied to the namespace
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+          ui:help: 'Hint: Separate multiple labels with a semicolon!'
+          ui:placeholder: 'kubernetes.io/type=namespace; app.io/managed-by=org'
+  steps:
+    - id: create-kubernetes-namespace
+      name: Create kubernetes namespace
+      action: kubernetes:create-namespace
+      input:
+        namespace: ${ parameters.namespace }
+        clusterRef: ${ parameters.clusterRef }
+        url: ${ parameters.url }
+        token: ${ secrets.token }
+        skipTLSVerify: ${ parameters.skipTLSVerify }
+        caData: ${ secrets.caData }
+        labels: ${ parameters.labels }
+```
+
+
+## Supported Kubernetes custom actions in Red Hat Developer Hub
+
+Access parameter specifications and requirements for the kubernetes:create-namespace scaffolder action.
+
+In Red Hat Developer Hub, you can use custom Kubernetes actions in Scaffolder templates.
+
+Action: kubernetes:create-namespace:: Creates a namespace for the Kubernetes cluster in the Developer Hub.
+
+
+
+# Configure Red Hat Developer Hub events module
+
+You can enable real-time updates for GitHub entities by configuring the Events Module with webhooks together with scheduled updates.
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+## Configure the GitHub Events Module plugin
+
+Configure GitHub webhooks to trigger real-time updates for GitHub Discovery and organizational data.
+
+Learn how to configure Events Module for use with the RHDH GitHub Discovery feature and GitHub organization data.
+
+* You have added your GitHub integration credentials in the app-config.yaml file.
+* You have defined the schedule.frequency in the app-config.yaml file as longer time period, such as 24 hours.
+* For GitHub Discovery only: You have enabled GitHub Discovery.
+* For GitHub Organizational Data only: You have enabled Github Authentication with user ingestion.
+
+1. Add the GitHub Events Module to your dynamic-plugins.yaml configuration file as follows:
+
+```yaml
+data:
+dynamic-plugins.yaml: |
+includes:
+- dynamic-plugins.default.yaml
+plugins:
+- package: oci://registry.access.redhat.com/rhdh/backstage-plugin-events-backend-module-github:<tag>
+disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version and the plugin version, in the format <rhdh-version>--<plugin-version>.
+To find these versions, complete the following steps:
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.10, use the format 1.10--<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+3. To create HTTP endpoints to receive events for the github, add the following to your app-config.yaml file:
+
+```yaml
+events:
+  http:
+   topics:
+    - github
+  modules:
+    github:
+      webhookSecret: ${GITHUB_WEBHOOK_SECRET}
+```
+
+
+[IMPORTANT]
+----
+Secure your workflow by adding a webhook secret token to validate webhook deliveries.
+----
+4. Create a GitHub webhook with the following specifications:
+* For GitHub Discovery Events: push, repository
+* For GitHub Organizational Data Events: organization, team and membership
+* Content Type: application/json
+* Payload URL: https://<my_developer_hub_domain>/api/events/http/github
+
+[NOTE]
+----
+Payload URL is the URL exposed after configuring the HTTP endpoint.
+----
+
+* Check the log for an entry that confirms that http endpoint was set up successfully to receive events from the GitHub webhook.
+Example of a log of successfully set up http endpoint:: 
+
+```code
+{"level":"\u001b[32minfo\u001b[39m","message":"Registered /api/events/http/github to receive events","plugin":"events","service":"backstage","timestamp":"2025-11-03 02:19:12"}
+```
+
+* For GitHub Discovery only:
+* Trigger a GitHub push event by adding,
+modifying or deleting the  catalog-info.yaml file in the repository where you set up your webhook.
+A record of this event should appear in the pod logs of your RHDH instance.
+Example of a log with changes to catalog-info.yaml file:: 
+
+```code
+{"level":"\u001b[32minfo\u001b[39m","message":"Processed Github push event: added 0 - removed 0 - modified 1","plugin":"catalog","service":"backstage","span_id":"47534b96c4afc654","target":"github-provider:providerId","timestamp":"2025-06-15 21:33:14","trace_flags":"01","trace_id":"ecc782deb86aed2027da0ae6b1999e5c"}
+```
+
+* For GitHub Organizational Data only:
+* Newly added users and teams appear in the RHDH catalog.
+
+# Override Core Backend Service Configuration
+
+Customize core backend services by installing them as BackendFeatures using dynamic plugin functionality.
+
+The Red Hat Developer Hub (RHDH) backend platform consists of several core services that are well encapsulated.
+The RHDH backend installs these default core services statically during initialization.
+
+Customize a core service by installing it as a BackendFeature by using the dynamic plugin functionality.
+
+1. Configure Developer Hub to allow a core service override, by setting the corresponding core service ID environment variable to true in the Developer Hub app-config.yaml configuration file.
+
+The following table describes the environment variables and their corresponding core service IDs:
+
+2. Install your custom core service as a BackendFeature as shown in the following example:
+
+```javascript
+// Create the BackendFeature
+$ export const customRootHttpServerFactory: BackendFeature =
+  rootHttpRouterServiceFactory({
+    configure: ({ app, routes, middleware, logger }) => {
+      logger.info(
+        'Using custom root HttpRouterServiceFactory configure function',
+      );
+      app.use(middleware.helmet());
+      app.use(middleware.cors());
+      app.use(middleware.compression());
+      app.use(middleware.logging());
+      // Add a the custom middleware function before all
+      // of the route handlers
+      app.use(addTestHeaderMiddleware({ logger }));
+      app.use(routes);
+      app.use(middleware.notFound());
+      app.use(middleware.error());
+    },
+  });
+
+// Export the BackendFeature as the default entrypoint
+$ export default customRootHttpServerFactory;
+```
+
+
+In the previous example, as the BackendFeature overrides the default implementation of the HTTP router service, you must set the ENABLE_CORE_ROOTHTTPROUTER_OVERRIDE environment variable to true so that the Developer Hub does not install the default implementation automatically.

@@ -1,0 +1,418 @@
+# Monitoring and logging
+
+Monitor performance and gather insights from Developer Hub by configuring log levels, enabling metrics on OpenShift Container Platform, and integrating with cloud monitoring services on AWS and AKS.
+
+# Log levels
+
+Control the amount and type of information that Developer Hub writes to its logs by configuring the LOG_LEVEL environment variable using the Operator or Helm chart.
+
+## Configure the log level with the Red Hat Developer Hub Operator
+
+Configure the application log level through the LOG_LEVEL environment variable by using the Red Hat Developer Hub Operator to control the minimum severity level of events that your application logs.
+
+* You have access to the Backstage custom resource (CR) used to deploy the application.
+
+* Include the environment variable LOG_LEVEL in your Backstage CR. For example:
+
+```yaml
+spec:
+  # Other fields omitted
+  application:
+    extraEnvs:
+      envs:
+        - name: LOG_LEVEL
+          value: debug
+```
+
+
+You can use any of the values in the following table.
+LOG_LEVEL values in order of increasing severity
+
+
+## Configure the log level with the Red Hat Developer Hub Helm chart
+
+Configure the application log level through the LOG_LEVEL environment variable by using the Red Hat Developer Hub Helm chart to control the minimum severity level of events that your application logs.
+
+* You have installed Red Hat Developer Hub on OpenShift Container Platform using the Helm chart.
+
+* Add LOG_LEVEL to your Helm chart values.yaml file. For example:
+
+```yaml
+upstream:
+  backstage:
+    # --- Truncated ---
+    extraEnvVars:
+      - name: LOG_LEVEL
+        value: debug
+```
+
+
+You can use any of the values in the following table.
+LOG_LEVEL values in order of increasing severity
+
+
+# Enable observability for Red Hat Developer Hub on OpenShift Container Platform
+
+Enable metrics monitoring for Developer Hub on OpenShift Container Platform by creating a ServiceMonitor custom resource (CR) to scrape metrics from the /metrics service endpoint.
+
+## Enable metrics monitoring in a Red Hat Developer Hub Operator installation on an OpenShift Container Platform cluster
+
+Enable and view metrics for an Operator-installed Red Hat Developer Hub instance from the OpenShift Container Platform web console by setting the spec.monitoring.enabled field in your custom resource (CR).
+
+* Your OpenShift Container Platform cluster has monitoring for user-defined projects enabled.
+* You have installed Red Hat Developer Hub on OpenShift Container Platform using the Red Hat Developer Hub Operator.
+* You have installed the OpenShift CLI (oc).
+
+1. Use the OpenShift CLI (oc) to edit your existing Red Hat Developer Hub CR.
+
+```terminal
+$ oc edit Backstage <instance_name>
+```
+
+2. In the CR, locate the spec field and add the monitoring configuration block.
+
+```yaml
+spec:
+  monitoring:
+    enabled: true
+```
+
+3. Save the RHDH CR. The RHDH Operator detects the configuration and automatically creates the corresponding ServiceMonitor custom resource (CR).
+
+[NOTE]
+----
+The Operator automatically configures the ServiceMonitor with the correct labels (app.kubernetes.io/instance and app.kubernetes.io/name) that match your Backstage CR. The ServiceMonitor will be named metrics-<cr_name>. No additional label configuration is required.
+----
+
+1. From the OpenShift Container Platform web console, select the Observe view.
+2. Click the Dashboard tab to view metrics for Red Hat Developer Hub pods.
+3. From the OpenShift Container Platform web console, click Project > Services and verify the labels for backstage-developer-hub.
+
+## Enable metrics monitoring in a Helm chart installation on an OpenShift Container Platform cluster
+
+Enable and view metrics for a Red Hat Developer Hub Helm deployment from the OpenShift Container Platform web console by configuring metrics monitoring during a chart upgrade.
+
+* Your OpenShift Container Platform cluster has monitoring for user-defined projects enabled.
+* You have installed Red Hat Developer Hub on OpenShift Container Platform using the Helm chart.
+
+1. From the OpenShift Container Platform web console, select the Topology view.
+2. Click the overflow menu of the Red Hat Developer Hub Helm chart, and select Upgrade.
+![Helm chart overflow menu showing the Upgrade option]
+3. On the Upgrade Helm Release page, select the YAML view option in Configure via, then configure the metrics section in the YAML, as shown in the following example:
+
+```yaml
+upstream:
+# ...
+  metrics:
+    serviceMonitor:
+      enabled: true
+      path: /metrics
+# ...
+```
+
+4. Click Upgrade.
+
+1. From the OpenShift Container Platform web console, select the Observe view.
+2. Click the Dashboard tab to view metrics for Red Hat Developer Hub pods.
+
+## Additional resources
+
+* Configuring and using the monitoring stack in Red Hat OpenShift Container Platform
+
+# Monitoring and logging Red Hat Developer Hub on Amazon Web Services (AWS)
+
+Configure Developer Hub to use Amazon Prometheus for metrics monitoring and Amazon CloudWatch for logging when hosting on Amazon Web Services (AWS) infrastructure.
+
+## Monitor with Amazon Prometheus
+
+Configure Developer Hub to use Amazon Prometheus for metrics monitoring by setting the required pod annotations.
+
+### Configure annotations for monitoring with Amazon Prometheus by using the Red Hat Developer Hub Operator
+
+Configure the required pod annotations by using the Red Hat Developer Hub Operator to enable monitoring with Amazon Prometheus.
+
+* You have configured Prometheus for your Elastic Kubernetes Service (EKS) clusters.
+* You have created an Amazon managed service for the Prometheus workspace.
+* You have configured Prometheus to import the Developer Hub metrics.
+* You have ingested Prometheus metrics into the created workspace.
+
+1. As an administrator of the Red Hat Developer Hub Operator, edit the default configuration to add Prometheus annotations as follows:
+
+```
+# Update OPERATOR_NS accordingly
+$ OPERATOR_NS=rhdh-operator
+$ kubectl edit configmap backstage-default-config -n "${OPERATOR_NS}"
+```
+
+2. Find the deployment.yaml key in the config map and add the annotations to the spec.template.metadata.annotations field as follows:
+
+```yaml
+deployment.yaml: |-
+  apiVersion: apps/v1
+  kind: Deployment
+  # --- truncated ---
+  spec:
+    template:
+      # --- truncated ---
+      metadata:
+        labels:
+         rhdh.redhat.com/app:  # placeholder for 'backstage-<cr_name>'
+        # --- truncated ---
+        annotations:
+          prometheus.io/scrape: 'true'
+          prometheus.io/path: '/metrics'
+          prometheus.io/port: '9464'
+          prometheus.io/scheme: 'http'
+  # --- truncated ---
+```
+
+3. Save your changes.
+
+To verify if the scraping works:
+
+1. Use kubectl to port-forward the Prometheus console to your local machine as follows:
+
+```
+$ kubectl --namespace=prometheus port-forward deploy/prometheus-server 9090
+```
+
+2. Open your web browser and navigate to http://localhost:9090 to access the Prometheus console.
+3. Monitor relevant metrics, such as process_cpu_user_seconds_total.
+
+* Configuring Prometheus for EKS clusters
+* Creating an Amazon managed service for Prometheus workspace
+* Configuring Prometheus to import metrics
+
+### Configure annotations for monitoring with Amazon Prometheus by using the Red Hat Developer Hub Helm chart
+
+Configure the required pod annotations by using the Red Hat Developer Hub Helm chart to enable monitoring with Amazon Prometheus.
+
+* You have configured Prometheus for your Elastic Kubernetes Service (EKS) clusters.
+* You have created an Amazon managed service for the Prometheus workspace.
+* You have configured Prometheus to import the Developer Hub metrics.
+* You have ingested Prometheus metrics into the created workspace.
+
+* To annotate the backstage pod for monitoring, update your values.yaml file as follows:
+
+```yaml
+upstream:
+  backstage:
+    # --- TRUNCATED ---
+    podAnnotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path: '/metrics'
+      prometheus.io/port: '9464'
+      prometheus.io/scheme: 'http'
+```
+
+
+To verify if the scraping works:
+
+1. Use kubectl to port-forward the Prometheus console to your local machine as follows:
+
+```bash
+$ kubectl --namespace=prometheus port-forward deploy/prometheus-server 9090
+```
+
+2. Open your web browser and navigate to http://localhost:9090 to access the Prometheus console.
+3. Monitor relevant metrics, such as process_cpu_user_seconds_total.
+
+* Configuring Prometheus for EKS clusters
+* Creating an Amazon managed service for Prometheus workspace
+* Configuring Prometheus to import metrics
+
+## Log with Amazon CloudWatch
+
+Retrieve and query Developer Hub logs by using Amazon CloudWatch Container Insights and the WinstonJS logging library.
+
+### Retrieve logs from Amazon CloudWatch
+
+Retrieve and query logs from your Developer Hub instance by using Amazon CloudWatch Container Insights and Logs Insights.
+
+* CloudWatch Container Insights is used to capture logs and metrics for Amazon Elastic Kubernetes Service.
+For more information, see Logging for Amazon Elastic Kubernetes Service documentation.
+* To capture the logs and metrics, install the Amazon CloudWatch Observability EKS add-on in your cluster.
+Following the setup of Container Insights, you can access container logs using Logs Insights or Live Tail views.
+* CloudWatch names the log group where all container logs are consolidated in the following manner:
+
+```
+/aws/containerinsights/<cluster_name>/application
+```
+
+
+* To retrieve logs from the Developer Hub instance, run a query such as:
+
+```sql
+fields @timestamp, @message, kubernetes.container_name
+| filter kubernetes.container_name in ["install-dynamic-plugins", "backstage-backend"]
+```
+
+
+# Monitor and log with Azure Kubernetes Service (AKS) in Red Hat Developer Hub
+
+Monitor resource utilization, diagnose issues, and collect logs for Developer Hub on Azure Kubernetes Service (AKS) by using Managed Prometheus Monitoring and Azure Monitor.
+
+## Enable Azure Monitor metrics
+
+Enable managed Prometheus monitoring for your Azure Kubernetes Service (AKS) cluster to collect metrics and monitor Developer Hub performance through Azure Monitor.
+
+* You have an AKS cluster.
+* You have the Azure CLI installed.
+
+* To enable managed Prometheus monitoring, use the --enable-azure-monitor-metrics option with either the az aks create or az aks update command:
+
+```bash
+$ az aks create/update --resource-group <your_resource_group> --name <your_cluster> --enable-azure-monitor-metrics
+```
+
+
+This command installs the metrics add-on, which gathers Prometheus metrics.
+
+* In the Azure portal, navigate to Monitoring -> Insights to view the monitoring results. For more information, see Monitor Azure resources with Azure Monitor.
+
+* Linking a Grafana workspace
+* Default Prometheus metrics configuration in Azure Monitor
+* Customizing scraping of Prometheus metrics in Azure Monitor managed service for Prometheus
+
+## Configure annotations for AKS monitoring by using the Operator
+
+Configure the pod annotations for monitoring Developer Hub specific metrics on Azure Kubernetes Service (AKS) by using the Red Hat Developer Hub Operator.
+
+1. As an administrator of the Operator, edit the default configuration to add Prometheus annotations:
+
+```bash
+# Update OPERATOR_NS accordingly
+OPERATOR_NS=rhdh-operator
+$ kubectl edit configmap backstage-default-config -n "${OPERATOR_NS}"
+```
+
+2. Find the deployment.yaml key in the ConfigMap and add the annotations to the spec.template.metadata.annotations field:
+
+```yaml
+deployment.yaml: |-
+  apiVersion: apps/v1
+  kind: Deployment
+  # --- truncated ---
+  spec:
+    template:
+      # --- truncated ---
+      metadata:
+        labels:
+         rhdh.redhat.com/app:  # placeholder for 'backstage-<cr_name>'
+        # --- truncated ---
+        annotations:
+          prometheus.io/scrape: 'true'
+          prometheus.io/path: '/metrics'
+          prometheus.io/port: '9464'
+          prometheus.io/scheme: 'http'
+  # --- truncated ---
+```
+
+3. Save your changes.
+
+* Navigate to the corresponding Azure Monitor Workspace and view the metrics under Monitoring -> Metrics.
+
+## Configure annotations for AKS monitoring by using the Helm chart
+
+Configure the pod annotations for monitoring Developer Hub specific metrics on Azure Kubernetes Service (AKS) by using the Helm chart.
+
+* Update your values.yaml file to annotate the backstage pod for monitoring:
+
+```yaml
+upstream:
+  backstage:
+    # --- TRUNCATED ---
+    podAnnotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path: '/metrics'
+      prometheus.io/port: '9464'
+      prometheus.io/scheme: 'http'
+```
+
+
+* Navigate to the corresponding Azure Monitor Workspace and view the metrics under Monitoring -> Metrics.
+
+## View live logs with Azure Kubernetes Service (AKS)
+
+Access live data logs generated by Kubernetes objects for your Developer Hub instance on AKS.
+
+* You have deployed Developer Hub on AKS.
+
+For more information, see Installing Red Hat Developer Hub on Microsoft Azure Kubernetes Service (AKS).
+
+1. Navigate to the Azure Portal.
+2. Search for the resource group <your_resource_group> and locate your AKS cluster <your_cluster>.
+3. Select Kubernetes resources -> Workloads from the menu.
+4. Select the <your_rhdh_cr>-developer-hub (in case of Helm Chart installation) or <your_rhdh_cr>-backstage (in case of Operator-backed installation) deployment.
+5. Click Live Logs in the left menu.
+6. Select the pod.
+
+[NOTE]
+----
+There must be only single pod.
+----
+
+* Live log data is collected and displayed.
+
+## View real-time log data with Azure Kubernetes Service (AKS)
+
+View real-time log data from the Container Engine for your Developer Hub instance on AKS.
+
+* You have deployed Developer Hub on AKS.
+
+For more information, see Installing Red Hat Developer Hub on Microsoft Azure Kubernetes Service (AKS).
+
+1. Navigate to the Azure Portal.
+2. Search for the resource group <your_resource_group> and locate your AKS cluster <your_cluster>.
+3. Select Monitoring -> Insights from the menu.
+4. Go to the Containers tab.
+5. Find the backend-backstage container and click it to view real-time log data as it is generated by the Container Engine.
+
+# Red Hat Build of Keycloak metrics
+
+Monitor Red Hat Build of Keycloak (RHBK) fetch operations and diagnose issues by using OpenTelemetry metrics with Prometheus or Grafana.
+
+The RHBK backend plugin supports OpenTelemetry metrics that you can use to monitor fetch operations and diagnose potential issues.
+
+## Available Counters
+
+RHBK metrics:
+
+
+
+## Labels
+
+All counters include the taskInstanceId label, which uniquely identifies each scheduled fetch task. You can use this label to trace failures back to individual task executions.
+
+Users can enter queries in the Prometheus UI or Grafana to explore and manipulate metric data.
+
+In the following examples, a Prometheus Query Language (PromQL) expression returns the number of backend failures.
+
+To get the number of backend failures associated with a taskInstanceId:
+
+
+```
+backend_keycloak_fetch_data_batch_failure_count_total{taskInstanceId="df040f82-2e80-44bd-83b0-06a984ca05ba"} 1
+```
+
+
+To get the number of backend failures during the last hour:
+
+
+```
+sum(backend_keycloak_fetch_data_batch_failure_count_total) - sum(backend_keycloak_fetch_data_batch_failure_count_total offset 1h)
+```
+
+
+
+[NOTE]
+----
+PromQL supports arithmetic operations, comparison operators, logical/set operations, aggregation, and various functions. Users can combine these features to analyze time-series data effectively.
+Additionally, the results can be visualized using Grafana.
+----
+
+## Exporting Metrics
+
+You can export metrics by using any OpenTelemetry-compatible backend, such as Prometheus.
+
+* Backstage OpenTelemetry setup guide

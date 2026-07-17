@@ -1,0 +1,245 @@
+# Adoption Insights in Red Hat Developer Hub
+
+As a platform engineer, you can configure Adoption Insights in Red Hat Developer Hub (RHDH) to visualize key metrics and trends to get information about the usage of RHDH in your organization.
+
+# Adoption Insights overview
+
+The Red Hat Developer Hub instance includes the Adoption Insights plugin preinstalled and enabled by default.
+
+As organizations generate an increasing number of data events, there is a growing need for detailed insights into the adoption and engagement metrics of the internal developer portal. These insights help platform engineers make data-driven decisions to improve performance and usability, and convert them into actionable insights.
+
+You can use Adoption Insights in Red Hat Developer Hub to visualize key metrics and trends to get information about the usage of Developer Hub in your organization. The information provided by Adoption Insights in Developer Hub helps you pinpoint areas of improvement, highlights popular features, and evaluates progress toward adoption goals. You can also monitor user growth against licensed users and identify trends over time.
+
+The Adoption Insights dashboard in Developer Hub includes the following cards:
+
+* Active users
+* Total number of users
+* Top catalog entities
+* Top 3 templates
+* Top 3 techdocs
+* Top 3 plugins
+* Portal searches
+
+![Adoption Insights dashboard in Developer Hub]
+
+# Enable the Adoption Insights plugin
+
+Adoption Insights is enabled by default on Developer Hub instances.
+If you are migrating from a Developer Preview or you have installed Adoption Insights manually before, update your configuration.
+
+1. Remove legacy plugins, because Adoption Insights is now built-in. Delete the following references from your dynamic-plugins.yaml file:
+2. red-hat-developer-hub-backstage-plugin-adoption-insights
+3. red-hat-developer-hub-backstage-plugin-adoption-insights-backend
+4. red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights
+5. Enable the backstage-community-plugin-analytics-provider-segment plugin by setting disabled to false:
+
+```yaml
+plugins:
+  - package: ./dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
+    disabled: false
+```
+
+
+# Disable the Adoption Insights plugin
+
+Disable the Adoption Insights plugin by updating the dynamic plugins configuration file.
+
+* In your dynamic-plugins.yaml file, update the package.disabled value of the plugin to true:
+
+```yaml
+plugins:
+  - package: ./dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
+    disabled: true
+```
+
+
+# Customize the Adoption Insights plugin in Red Hat Developer Hub
+
+Customize buffer size, flush interval, debug settings, and licensed users for the Adoption Insights plugin.
+
+* You have the adoption-insights.events.read permission.
+
+* To customize maxBufferSize, flushInterval, debug, and licensedUsers in the Adoption Insights plugin, in your Red Hat Developer Hub app-config.yaml file, update the relevant settings as shown in the following code:
+
+```yaml
+app:
+  analytics:
+    adoptionInsights:
+      maxBufferSize: _<maximum_buffer_size>_
+      flushInterval: _<flush_interval>_
+      debug: _<debug_value>_
+      licensedUsers: _<licensed_users>_
+```
+
+maxBufferSize:: (Optional) Enter the maximum buffer size for event batching.
+The default value is 20.
+flushInterval:: (Optional) Enter the flush interval in milliseconds for event batching.
+The default value is 5000ms.
+debug:: (Optional) Enter true to enable debug logging for the Adoption Insights plugin, or false to disable it.
+The default value is false.
+licensedUsers:: (Optional) Enter the maximum number of licensed users who can access the RHDH instance.
+The default value is 100.
+
+# Use Adoption Insights in Red Hat Developer Hub
+
+Access the Adoption Insights dashboard through the Administration menu to view usage metrics and analytics.
+
+* In the Developer Hub application, on the navigation menu, click Administration -> Adoption Insights.
+
+## Set the duration of data metrics
+
+Set the time range for viewing metrics data, including today, last week, last month, last 28 days, last year, or a custom date range.
+
+You can set the data metrics duration by using any of the following time ranges:
+
+* Today
+* Last week
+* Last month
+* Last 28 days (default)
+* Last year
+* Date range&#8230;&#8203;
+
+1. On the top of the screen, click the dropdown list to display the choices.
+2. Select the duration choice for which you want to see the data metrics.
+![Date range selector in the Adoption Insights plugin]
+
+# View the Adoption Insights card
+
+View detailed analytics through individual dashboard cards including active users, total users, and top catalog entities.
+
+
+[NOTE]
+----
+For the top catalog entities, templates, and techdocs dashboard cards:
+* The Name column displays metadata.title if it exists. If the metadata.title is missing or empty, the UI falls back to the metadata.name.
+* Hover over the titles to display a tooltip with entityRef | type | description.
+* To avoid breaking the layout, long titles are truncated with an ellipsis.
+----
+
+* Navigate to Administration -> Adoption Insights to access the dashboard cards.
+
+## View the active users
+
+View the total number of active users over time, including returning and new users, and export the data in CSV format.
+
+The Active users card displays the total number of active users over a specified date and time period. You can export the user data in a CSV format.
+
+![Active users in the Adoption Insights plugin]
+
+Returning users:: Existing users who have logged into Developer Hub before
+New users:: New users who have registered and logged into Developer Hub for the first time
+
+1. To view the list of active users in your Red Hat Developer Hub instance, go to Administration -> Adoption Insights, and see the Active users card.
+2. To view the exact number of users for a particular day, hover over the corresponding date in the Active users card.
+3. To export the user data in CSV format, click the Export CSV link.
+
+## View the total number of users
+
+View the total number of licensed users, and compare logged-in users versus licensed users in numeric and percentage format.
+
+This card displays the total number of users who have license to use Red Hat Developer Hub. It also provides a comparison of the number of Logged-in users and Licensed users in numeric and percentage form.
+
+Logged-in users:: Total number of users, including licensed and unlicensed users, currently logged in to Developer Hub.
+Licensed users:: Total number of licensed users logged in to Developer Hub.
+You can set the target for the number of licensed users in your Developer Hub app-config.yaml file.
+
+1. To view the total number of users in your Developer Hub instance in numeric and percentage forms, go to Administration -> Adoption Insights and see the Total number of users card.
+2. To view a percentage representation of the total number of logged-in users among the total number of licensed users, hover over the tooltip in the Total number of users card.
+
+## View the top catalog entities
+
+View the most-viewed catalog entities including name, type, last used date, and total views in the Top catalog entities card.
+
+This card lists the most-viewed catalog entities (such as components, APIs, and so on) and documentation entries, including usage statistics, in a table.
+
+Each item displays the following details:
+
+Name:: Name of the catalog
+Kind:: Type of the catalog
+Last used:: The last time a user accessed the catalog entity
+Views:: The number of times users viewed the catalog entity
+
+1. To view the most commonly used catalog entities in your Developer Hub instance, go to Administration -> Adoption Insights and see the Top catalog entities card.
+2. To know more about the displayed catalog entity, hover over the catalog entity name.
+
+## View the top 3 templates
+
+View the most commonly used templates including name, most frequent user type, and total executions in the Top 3 templates card.
+
+This card lists the three most commonly used templates in a table. You can click the down arrow next to 3 rows to view the full list of the commonly used templates.
+
+Name:: Name of the template
+Mostly in use by:: Type of user who uses this template most often
+Executions:: Number of times users ran this template
+
+1. To view the most commonly used templates in your Developer Hub instance, go to Administration -> Adoption Insights and see the Top 3 templates card.
+2. To know more about the displayed template, hover over the template name.
+
+## View the top 3 TechDocs documents
+
+View the most-viewed TechDocs documentation entries including name, entity type, last used date, and total views.
+
+This card lists the most-viewed documentation entries, including the total views, in a table.
+
+Name:: Title of the document
+Entity:: Type of document
+Last used:: The last time a user viewed the document
+Views:: Number of times users visited the document
+
+1. To view the most commonly used templates in your Developer Hub instance, go to Administration -> Adoption Insights and see the Top 3 techdocs card.
+2. To learn more about the documents, hover over each name.
+
+## View the top 3 plugins
+
+View the most commonly used plugins, including name, popularity trend, and total views in the Top 3 plugins card.
+
+This card lists the three most commonly used plugins in a table. You can click the down arrow next to 3 rows to view the full list of the commonly used plugins.
+
+Name:: Name of the plugin
+Trend:: Popularity of the plugin as a graph
+Views:: Number of times users viewed this plugin
+
+1. To view the most commonly used plugins and the plugin page visit trends in your Developer Hub instance, go to Administration -> Adoption Insights and see the Top 3 plugins card.
+2. To know more about the displayed plugin, hover over the plugin name.
+
+# Change the number of displayed records
+
+Change the number of displayed records from top 3 to top 5, 10, or 20 for catalog entities, templates, TechDocs, and plugins cards.
+
+You can change the number of displayed records in Adoption Insights for the following cards:
+
+* Top catalog entities
+* Top 3 templates
+* Top 3 techdocs
+* Top 3 plugins
+
+You can select any of the following number of records for display:
+
+* Top 3
+* Top 5
+* Top 10
+* Top 20
+
+By default, the top three most-viewed catalog entities are displayed.
+
+* Go to Administration -> Adoption Insights and click the Down arrow next to 3 rows to change the number of displayed records.
+![Catalog Entities dropdown in the Adoption Insights plugin]
+
+# Filter records to display specific catalog entities in Top catalog entities
+
+By default, the Top catalog entities card displays all of the items in your Developer Hub instance.
+Filter the Top catalog entities card to display specific entity types.
+
+* To view a specific catalog entity in the table, go to Administration -> Adoption Insights, click the drop-down list on the Top catalog entities card, and select the item that you want to view.
+
+# View searches
+
+View portal search trends over time, including total searches and average searches per time period in the Searches card.
+
+In the Searches card, you can view the following data:
+
+* Visualizes the number of portal searches and trends over time as a graph
+* Displays the total for the period in the card title
+* Clarifies the average number each hour/day/week/month depending on the time period chosen
+
+* Go to Administration -> Adoption Insights to view the Searches card.
