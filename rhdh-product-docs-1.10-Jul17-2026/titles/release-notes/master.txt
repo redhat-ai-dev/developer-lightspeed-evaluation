@@ -1,0 +1,627 @@
+# Red Hat Developer Hub release notes
+
+Red Hat Developer Hub (Developer Hub) 1.10 is now generally available. Developer Hub is a fully supported, enterprise-grade productized version of upstream Backstage, compatible with version 1.49.4. Plugins might be compatible with a newer Backstage version. You can access and download the Red Hat Developer Hub application from the Red Hat Customer Portal or from the Ecosystem Catalog.
+
+# New features and enhancements
+
+This section highlights new features in Red Hat Developer Hub 1.10.
+
+Browser tab displays Scaffolder's template title:: 
+With this update, the Scaffolder dynamically displays the title of the software template in the browser tab when navigating to the Backstage application.
+
+Bulk Import preserves selected approval tool across page refreshes:: 
+With this update, the Bulk Import process preserves the selected approval tool (GitHub or GitLab) across page refreshes. This helps prevent unnecessary searches against the wrong SCM providers. The selection is stored in a URL parameter.
+
+Improved documentation for entity types:: 
+With this update, RHDH entity types documentation includes following topics:
+* mandatory fields
+* entity tabs
+* conditional UI
+For more information, see Catalog entity descriptor reference.
+
+PingFederate available as an authentication provider:: 
+With this update, you can sign in to RHDH by using PingFederate credentials, where the user is resolved to the organization data in the software catalog.
+Authentication with PingFederate is enabled by user and group provisioning with the LDAP catalog provider plugin.
+
+Personalized homepages for RHDH user groups:: 
+With this update, you can create and deploy persona-specific homepages tailored for different user groups within RHDH.
+This enhancement delivers personalized and targeted content, streamlines workflows, and improves user engagement by enabling platform engineers to attach homepages to specific Backstage or RBAC groups and configure layouts with dynamic plugins.
+Additionally, visibility rules let you to control access to these persona-specific homepages, providing a customized starting experience for each user persona.
+For more information, see Attaching homepages to groups.
+
+Helm Chart and Operator deployment methods comparison:: 
+This update introduces a comparison table of deployment methods for RHDH: Helm Chart and Operator. The table outlines benefits and drawbacks of each approach, aiding informed decisions.
+See Compare the Helm chart and Operator to choose the optimal deployment method.
+
+Trigger workflows through cloud events:: 
+With this update, you can dynamically manage tasks by emitting cloud events to Kafka instances, enabling workflow triggers.
+
+Default RBAC role and baseline permissions configuration:: 
+With this update, administrators can configure a default RBAC role and baseline permissions for all authenticated users by using permission.rbac.defaultPermissions in app-config.yaml. This removes the need to manually create all-employee groups or assign every user to a role individually.
+
+Human-readable entity titles in Adoption Insights:: 
+With this update, the Adoption Insights plugin displays human-readable entity titles instead of technical names in "Top 3" widgets (catalog entities, templates, and TechDocs), making it easier for users to identify popular resources at a glance.
+
+[NOTE]
+----
+The plugin automatically falls back to the technical name if no title is defined.
+----
+
+RHDH Dynamic Plugin Factory enhancement:: 
+With this update, RHDH Dynamic Plugin Factory received multiple enhancements:
+* Building multiple workspaces is supported.
+* The plugins-list.yaml can be automatically generated for most common workspace scenarios.
+* A --clean argument is available to let you re-use a mounted workspace when fetching remote repositories.
+* Git repository references can be referenced with the CLI for single repository cases.
+
+Red Hat Developer Lightspeed for Red Hat Developer Hub available as a default plugin:: 
+This update introduces Red Hat Developer Lightspeed for Red Hat Developer Hub as a default plugin when you deploy Red Hat Developer Hub with the Operator or the Helm chart.
+In this release, Red Hat Developer Lightspeed for Red Hat Developer Hub uses version 1.9 RAG embeddings. A future update will provide version 1.10 RAG embeddings to resolve this limitation.
+
+[IMPORTANT]
+----
+After RHDH deployment,Developer Lightspeed for RHDH is installed but remains unavailable until a platform engineer configures a compatible large language model (LLM).
+Customers who prefer to disable this feature can opt out by excluding the lightspeed flavour for the Operator or by toggling the enabled parameter in the RHDH Helm chart.
+----
+See Interacting with Red Hat Developer Lightspeed for Red Hat Developer Hub.
+
+Updated documentation clarifies session expiration behavior:: 
+This release provides clearer session expiration documentation for RHDH, including pre-expiration warnings, session timeout configuration, and troubleshooting. This update aims to reduce user confusion and improve recovery from expired sessions.
+
+MCP servers available from Developer Lightspeed for RHDH chat interface:: 
+With this update, Developer Lightspeed for RHDH lets users manage MCP servers directly from the chat interface. Administrators define available MCP servers in app-config.yaml, and users can personalize their experience through a settings panel accessible from the chat header.
+You can view all configured MCP servers with their connection status and tool counts, toggle individual servers on or off, and provide personal access tokens for servers that require authentication. A token configuration modal validates credentials inline with real-time feedback as the user saves, and saved tokens can be cleared or replaced at any time.
+On the backend, user-provided tokens are encrypted at rest using AES-256-GCM when backend.auth.keys is configured, with support for transparent key rotation and automatic migration of legacy plaintext tokens. New API endpoints handle server listing, per-user preference management, and on-demand server validation. Only servers that are enabled and have a valid token are included in requests to the Developer Lightspeed for RHDH Core Service.
+Access is governed by the following two permissions:
+* lightspeed.mcp.read for viewing server listings
+* lightspeed.mcp.manage for toggling servers and managing tokens.
+
+Additional Scaffolder capabilities available as MCP tools:: 
+With this update, RHDH exposes additional Scaffolder capabilities as MCP tools through the Backstage scaffolder and scaffolder-mcp-extras plugins. This enhancement centralizes access to Scaffolder actions.
+As a result, you can use MCP to discover actions, validate and execute templates securely, and monitor task progress.
+See Installing
+  MCP server and tool plugins.
+
+File-level compliance checks for Scorecard:: 
+With this update, Scorecard supports file-level compliance checks for repositories. Platform engineers can configure checks for the presence of specific files ( such as LICENSE, CODEOWNERS, Dockerfile, or .gitignore), across repositories known to the platform. The file paths and names are fully configurable, letting customers customize checks for their own standards and workflows.
+File-level compliance helps organizations verify that development teams are following repository best practices and identify repositories that are missing required files.
+
+Bulk Import repository list scoped to the signed-in user and pending imports:: 
+This update changes how Bulk Import discovers repositories. Listings are fetched on behalf of the signed-in user through SCM OAuth, so that each user sees only repositories and organizations their own GitHub or GitLab account can access.
+The list also hides repositories that are already in the software catalog, so that only repositories that haven't been imported yet are visible.
+
+[IMPORTANT]
+----
+Administrators must configure GitHub and GitLab OAuth for repository listing. Deployments that used only server-side SCM credentials for the picker must add OAuth providers.
+----
+
+Spanish localization for RHDH:: 
+With this update, Spanish language is available across the RHDH portal and core plugins.
+
+German localization for RHDH:: 
+With this update, German language is available across the RHDH portal and core plugins.
+
+Customized aggregated metric cards:: 
+With this update, you can create aggregated cards to assess overall technical health, compliance, and risk without manually checking each service's individual scorecard.
+Additionally, this update introduces aggregation type: average. The average type rolls up each owned entity’s metric into status keys, applies weights per status key, and returns one normalized score as a percentage between 0 and 100.
+
+Single database deployments with pluginDivisionMode:: 
+This update introduces schema-based plugin isolation configuration. Each plugin uses its own PostgreSQL schema within a single shared database. This is useful for database users without CREATEDB privileges who can use the schema for single database deployments.
+
+[IMPORTANT]
+----
+By default, when pluginDivisionMode is set to schema, RHDH automatically creates the required schemas because the ensureExists configuration defaults to true. The database user must have CREATE SCHEMA privileges on the target database.
+----
+
+Alpha Backstage frontend system available in RHDH builds:: 
+This update includes an alpha Backstage frontend system (app-next) as an alternative to the existing frontend. You can enable this frontend system by using the following environment variables in Helm chart or Operator configuration:
+* APP_CONFIG_app_packageName=app-next
+* ENABLE_STANDARD_MODULE_FEDERATION=true
+The new frontend system supports loading dynamic plugins that are compatible with it, and provides a path for migrating to the upstream Backstage frontend architecture.
+
+New Frontend System available:: 
+This release adds New Frontend System (NFS) support to Red Hat-owned and GA frontend plugins, including Adoption Insights, Bulk Import, Extensions, Scorecard, RBAC, Orchestrator, Global Header, and others. Each plugin has been updated to work with NFS while maintaining backward compatibility with the legacy frontend system.
+The plugins are available when running RHDH with NFS enabled. To enable NFS, use the following two variables:
+* Set APP_CONFIG_app_packageName to app-next.
+* Set ENABLE_STANDARD_MODULE_FEDERATION to true.
+
+[NOTE]
+----
+Plugins that have not yet been migrated will not be displayed in the NFS application. No additional user-facing configuration changes are required.
+----
+
+Node.js 24 update:: 
+With this release, RHDH is updated to Node.js 24, including Node 24-based images for core and plugin build paths.
+
+Core RHDH UI features migrated to New Frontend System (NFS):: 
+With this update, the core RHDH user interface features are migrated to New Frontend System (NFS).
+Key components such as the Homepage, Analytics Provider, Theme, and Translation plugins load as dynamic plugins. The Global Header and Drawer features have been migrated to Blueprints for compatibility.
+
+Scorecard navigation and data freshness for aggregated KPIs:: 
+With this update, aggregated Scorecard KPI cards on the RHDH homepage show when their data was last updated and let you navigate into the entities that contribute to each metric.
+Select the entity count on a card to open the Scorecard Entities page, where you can sort and paginate through components (and other catalog kinds) with per-entity values, threshold status, owners, and sync timestamps.
+
+Flavor-based configuration for the Operator:: 
+This update introduces flavor-based configuration for the Operator by using the v1alpha5 API. You can deploy pre-configured RHDH instances by using the spec.flavours[] array in the Backstage CR to combine or disable specific flavors.
+Additionally, support for defining multiple ConfigMaps in a single YAML file for the default configuration is added. This lets administrators organize related configuration files or environment variables and manage grouped configurations within the same file.
+This update  also introduces the rhdh.redhat.com/sub-path annotation for default configurations. The enhancement provides better control over volume mount behavior: you can configure the mount to behave as a directory, mount all files individually, or mount specific files.
+See  Automating environment provisioning with predefined Operator configurations.
+
+Orchestrator backend module Loki (GA):: 
+With this update, the @red-hat-developer-hub/backstage-plugin-orchestrator-backend-module-loki package is supported as a GA feature. This module provides centralized log aggregation for serverless workflows using Loki.
+
+[NOTE]
+----
+The AUTH_TOKEN configuration parameter is required for authentication.
+----
+
+OpenShift Container Platform support matrix update:: 
+As of this release, OpenShift Container Platform 4.21, and the equivalent version of Kubernetes 1.34, supported. For the most up to date list of supported platforms, see Red Hat Developer Hub life cycle page.
+
+Retry configuration for Orchestrator widgets:: 
+With this update, you can configure Orchestrator widgets to retry failed HTTP fetches when a backend is briefly unavailable. Authors can turn this on per widget with optional settings:
+* number of attempted retries
+* initial delay
+* backoff multiplier (exponential backoff by default)
+* which HTTP status codes should trigger a retry.
+
+[IMPORTANT]
+----
+If retry is not configured, behavior is unchanged (a single fetch attempt).
+----
+
+Custom review page for Orchestrator:: 
+With this update, Orchestrator supports an optional custom review page for workflow runs. You can implement getReviewComponent() on OrchestratorFormApi to replace the default review step with your own React component while other users keep the built-in review page.
+The API exposes ReviewComponentProps and shared helpers in orchestrator-form-react for consistent handling of review data, hidden fields, and navigation.
+
+[NOTE]
+----
+No change is required for users using the default components.
+----
+
+# Technology Preview features
+
+This section lists Technology Preview features in Red Hat Developer Hub 1.10.
+
+
+[IMPORTANT]
+----
+Technology Preview features provide early access to upcoming product innovations, enabling you to test functionality and provide feedback during the development process.
+However, these features are not fully supported under Red Hat Subscription Level Agreements, may not be functionally complete, and are not intended for production use.
+As Red Hat considers making future iterations of Technology Preview features generally available, we will attempt to resolve any issues that customers experience when using these features.
+See: Technology Preview support scope.
+----
+
+Enhanced security compliance with Dependabot and OpenSSF integrations for Scorecard plugin (Technology Preview):: 
+This update introduces enhanced security compliance and reporting for enterprise customers, integrating with Dependabot and OpenSSF for the Scorecard plugin. It simplifies complex security checks into a high-level, visual summary for easy repository health assessment.
+
+RHDH must-gather (Technology Preview):: 
+After incorporating valuable user feedback from the Developer Preview phase, the RHDH must-gather image has been promoted to Technology Preview in this release.
+The must-gather tool streamlines the collection of diagnostic data from RHDH deployments, making it easier to gather the information needed for support case troubleshooting.
+See Collect diagnostic data to streamline support resolution.
+
+# Developer Preview features
+
+This section lists Developer Preview features in Red Hat Developer Hub 1.10.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+Personal AI Notebooks available (Developer Preview):: 
+This update introduces Personal AI Notebooks as a Developer Preview feature within Developer Lightspeed for RHDH. This feature lets you create isolated workspaces where you can upload project-specific documentation, such as PDFs, Markdown files, and .docx files for focused, RAG-based (Retrieval Augmented Generation) chat interactions.
+Additionally, the Developer Lightspeed for RHDH Chat fullscreen mode has been updated with a refreshed interface:
+* Header: Replaced hamburger menu with Developer Lightspeed for RHDH logo; added horizontal tab bar.
+* History Panel: Collapsible/expandable and resizable; includes a quick "new chat" icon in collapsed state.
+* Message Bar: Model selector moved inside the bar for all display mode.
+
+[IMPORTANT]
+----
+Following known issues have been identified:
+* Some large PDF files upload extremely slowly and uploading multiple large files may cause the server to overload.
+* When user attempts to upload a duplicate document when a document is processing, there can be duplicate document entries.
+* Not all uploaded documents might be searched through and referenced in chat interactions.
+----
+
+Backstage MCP tools available (Developer Preview):: 
+This update introduces support for Backstage MCP tools in Red Hat Developer Hub. The tools are available by default and include Red Hat-specific rhdh-mcp-<domain>-extras overlay plugins with features such as advanced Software Catalog filters or Scaffolder actions.
+
+Customizable Scorecard severity levels, colors, and icons (Developer Preview):: 
+With this update, RHDH supports custom severity thresholds, color mappings, and icon assignments for individual Scorecard metrics.
+Platform engineers can define custom severity states beyond the standard success, warning, and error keys. By adding rules under the scorecard.plugins configuration block, you can map metric evaluations to tailored UI icons and flexible color values, including hex codes, theme variables (such as success.main), and RGB strings.
+
+[NOTE]
+----
+This enhancement maintains full backward compatibility with existing thresholds. Invalid style formatting are handled so that interface rendering is protected.
+----
+
+Developer Lightspeed for RHDH evaluation framework and data (Developer Preview):: 
+With this update, the RHDH official documentation provides access to the Developer Lightspeed for RHDHevaluation framework, including AI-generated Question and Answer datasets and evaluation result reports.
+This feature is provided to help inform model selection for Developer Lightspeed for RHDH. You can download the Question and Answer datasets, run evaluations against your own model of choice, and review per-release evaluation results.
+
+# Deprecated features
+
+This section lists deprecated functionalities in Red Hat Developer Hub 1.10.
+
+Global Floating Action Button disabled:: 
+With this release, Global Floating Action Button is disabled by default. The Global Header provides equivalent and improved navigation capabilities, and customers are encouraged to use the Global Header instead.
+
+[IMPORTANT]
+----
+Existing deployments that explicitly enable the Global Floating Action Button are not affected by this change.
+----
+
+Deprecating community-supported authentication providers:: 
+Red Hat Developer Hub (RHDH) is changing the support level for selected authentication modules. To optimize performance and customization, RHDH will transition these statically included modules into dynamic plugins in a future release.
+In an upcoming release, the community-supported authentication providers listed below will no longer be included in the default configuration.
+If you use any of these providers, you will need to take manual intervention to maintain authentication functionality. In a future release, these static modules will be removed, and you will be required to add the corresponding dynamic plugin module to your dynamic plugin configuration.
+Affected authentication providers:
+* Atlassian
+* Auth0
+* Azure-easyauth
+* Bitbucket
+* Bitbucket Server
+* Cloudflare Access Provider
+* Google
+* Google IAP
+* OAuth 2 Custom Proxy
+* OneLogin
+* Okta
+
+Change of support level for selected plugins:: 
+With this release, the following plugin has moved from Technology Preview to Community support:
+* backstage-community-plugin-acr
+You can continue to use this plugin as a legacy embedded wrapper until you migrate to the oci:// reference in your configuration. For example, oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-acr:<tag>.
+For more information, see Determining tag values.
+
+# Removed features
+
+This section lists breaking changes in Red Hat Developer Hub 1.10.
+
+Operator no longer deletes user-created resources if features are disabled in CR:: 
+Starting  with this release, Operator doesn't automatically delete user-created resources when features such as Route, localDB or Monitoring are disabled in the CR. Instead, you must delete such resources manually.
+
+OCM plugin removed:: 
+As of this release, the OCM plugin and wrapper have been removed.
+
+Change of support level for selected Technology Preview plugins:: 
+With this release, the following plugin has moved from Technology Preview to Community support.
+* roadie-backstage-plugins/plugins/scaffolder-actions/scaffolder-backend-argocd
+
+[NOTE]
+----
+The plugin has been removed as an embedded wrapper. To continue using roadie-backstage-plugins/plugins/scaffolder-actions/scaffolder-backend-argocd, you must use an oci:// path reference instead.
+----
+For more information, see Red Hat community supported plugins.
+
+Change of support level for selected GA plugins:: 
+The following plugins have been downgraded from GA to Community support, and have been removed as embedded wrappers.
+* backstage-community-plugin-quay
+* backstage-community-plugin-scaffolder-backend-module-quay-dynamic
+* backstage-community-plugin-tekton
+* roadiehq-scaffolder-backend-argocd-dynamic
+
+[NOTE]
+----
+To continue using the plugins, you must use an oci:// path reference instead.
+----
+For more information, see Red Hat community supported plugins.
+
+# Known issues
+
+This section lists known issues in Red Hat Developer Hub 1.10.
+
+Orchestrator in-place upgrade fails on the immutable database-creation Job:: 
+This issue only occurs when performing an in-place helm upgrade of an existing Orchestrator-enabled release.
+This issue does not affect fresh installations. A fresh install of Red Hat Developer Hub with the Orchestrator enabled works correctly.
+When the Orchestrator is enabled (orchestrator.enabled=true), an in-place helm upgrade of an existing release fails with an error similar to:
+Error: UPGRADE FAILED: Job.batch "<release>-create-sonataflow-database" is invalid:
+spec.template: Invalid value: ...: field is immutable
+This happens because the one-time database-creation Job keeps a fixed name across chart versions, so Helm attempts to patch the Job's immutable spec.template instead of recreating it.
+Workaround:
+1. Delete the completed Job in the namespace where Red Hat Developer Hub is installed.
+
+```terminal
+$ oc delete job <release>-create-sonataflow-database -n <namespace>
+```
+
+2. Re-run the upgrade. This is safe because the SonataFlow database already exists.
+
+```terminal
+helm upgrade <release> oci://quay.io/rhdh/chart --version <version> -n <namespace> -f <values> --timeout=20m
+```
+
+RHDHBUGS-3325
+
+OCI images from registry.access.redhat.com fail to auto-detect plugin paths:: 
+There is a known issue where installing plugins from registry.access.redhat.com without an explicit !path suffix fails silently. The script can't find the io.backstage.dynamic-packages annotation and returns no plugin paths.
+Images on registry.access.redhat.com are published as multi-arch OCI image indexes. When the script calls skopeo inspect --raw to read the manifest annotations, it gets the image index back — not the platform-specific manifest that carries the io.backstage.dynamic-packages annotation. This is the cause of the issue.
+There are two workarounds available:
+* Configuration without a tag: Use the oci artifact reference with a digest, which points to the image inside its index (and therefore includes the correct metadata needed to discover the plugin path).
+* Configuration with a tag: Append the !<plugin-path> suffix as well so that the auto-detection is skipped.
+RHDHBUGS-3307
+
+Custom threshold configuration unavailable for specific Scorecard modules:: 
+Users are unable to configure custom thresholds for the Filecheck, Openssf and Dependabot Scorecard modules due to reliance on modules for threshold handling. As a consequence, users are unable to customize severity thresholds for specified modules. To work around this problem, disable custom threshold configuration for affected modules.
+RHDHBUGS-3203
+
+Consistent label casing prevents search mismatch.:: 
+Catalog-search mismatch occurs due to non-uniform label casing in conditional HAS_LABEL policies. This issue results in end users not finding entities in search that were visible in the catalog due to case mismatch in label names. To work around this problem, standardize the spelling and capitalization of labels and annotations in both the policy and the entity files. An example of this mitigation is shown below:
+
+```yaml
+conditions:
+  anyOf:
+    - rule: HAS_LABEL
+      resourceType: catalog-entity
+      params:
+        label: isPublic
+        value: 'true'
+    - rule: HAS_LABEL
+      resourceType: catalog-entity
+      params:
+        label: ispublic
+        value: 'true'
+```
+
+As a result, using consistent label casing in policies and entity files avoids search mismatch.
+RHDHBUGS-3011
+
+Bulk Import marks repositories as 'already imported' with open PRs:: 
+Bulk Import incorrectly marks repositories with open Pull Requests as already imported., causing repositories to disappear from the importable list. There is no workaround. The repository is correctly ingested into Catalog once the import pull request is merged.
+RHDHBUGS-3001
+
+# Fixed issues
+
+This section lists issues fixed in Red Hat Developer Hub 1.10.
+
+For fixed issues in Red Hat Developer Hub 1.10.0, see Red Hat Bug Advisory RHBA-2026:25065.
+
+For fixed issues in Red Hat Developer Hub 1.10.1, see Red Hat Bug Advisory RHBA-2026:25382.
+
+## Fixed issues in 1.10.1
+
+Outdated RAG content image causes installation failure:: 
+Before this update, the Operator referenced an outdated retrieval-augmented generation (RAG) content image with incorrect labels. This caused a manifest unknown error and led to installation failures.
+With this update, the Operator references the corrected RAG content image, which resolves the error and ensures a successful installation.
+RHDHBUGS-3344
+
+## Fixed issues in 1.10.0
+
+Grid layout no longer broken:: 
+Before this update, grid layout was broken when the quick-access panel was shown.
+This release introduced container-query-based responsiveness and added scroll support to prevent content overflow in homepage sections.
+RHDHBUGS-1940
+
+Keycloak nested subgroups appear in the catalog on Keycloak 26.4.0 and later:: 
+Before this update, organizations using Keycloak 26.4.0 or later could see only the top-level groups in the Software Catalog. Nested subgroups were missing after catalog refresh.
+With this update, the full group hierarchy including nested subgroups is imported as expected.
+RHDHBUGS-2309
+
+Topology toolbar buttons no longer missing translations:: 
+Before this update, the zoom and view control buttons in the Topology toolbar were displaying hardcoded English text instead of localized strings across all supported languages.
+With this release, these labels, originating from PatternFly, are properly translated.
+RHDHBUGS-2405
+
+Deprecated 'janus-idp' templates replaced with 'rhdh':: 
+Before this update, user-provided values referenced deprecated 'janus-idp' templates, causing a conflict with renamed 'rhdh' templates in Helm Chart.
+With this release, deprecated 'janus-idp' Helm template references have been replaced with 'rhdh' template references.
+RHDHBUGS-2557
+
+Notifications page title and sidebar menu item not translated when using non-English locales:: 
+Previously, when you switched RHDH to a non-English language such as French, Italian or Japanese, the Notifications page title and left-side navigation menu item would remain in English.
+With this update, the page title and navigation menu appear in the selected language.
+RHDHBUGS-2585
+
+Disabling default-config/dynamic-plugins.yaml includes:: 
+Before this update, it wasn't possible to configure dynamic-plugins.yaml to ignore includes defined in default-config/dynamic-plugins.yaml.
+With this release, default dynamic plugins can be excluded by sending empty "includes" filed to dynamic-plugins ConfigMap:
+
+```yaml
+dynamic-plugins.yaml: |
+    includes: []
+```
+
+RHDHBUGS-2603
+
+Documentation for external PostgreSQL connection with RHDH:: 
+This update provides documentation for connecting RHDH to external PostgreSQL databases managed outside the Operator.
+For more information, see Configure Orchestrator to connect to existing PostgreSQL infrastructure.
+RHDHBUGS-2625
+
+Transparent mirroring of catalog index and plugins supported with custom registries.conf file:: 
+When mirroring plugins for RHDH, the mirror-plugins.sh script no longer needs to rebuild the plugin catalog index image after adjusting image references.
+Instead, you should mount a custom registries.conf file into the RHDH init container to transparently mirror the catalog index image and plugins. This approach simplifies the mirroring workflow, and lets you customize the registries.conf for your target mirror registry as needed.
+RHDHBUGS-2649
+
+Deprecated backend.auth.keys removed:: 
+Before this update, rgdg-local would use deprecated backend.auth.keys.
+With this release, the deprecated keys were removed and replaced by a static token.
+RHDHBUGS-2686
+
+Developer Lightspeed for RHDH chatbot overlay opens underneath the Quick Start panel:: 
+When the Quick Start panel is open, the Developer Lightspeed for RHDH chatbot opens underneath the drawer panel in the overlay display mode. As a consequence, the chatbot interface is obscured.
+No known workaround exists.
+RHDHBUGS-2701
+
+Documentation for defaultEnvironment parameters and secrets usage available:: 
+With this update, documentation for defaultEnvironment parameters and secrets usage is available in RHDH.
+For more information, see Default environment parameters and secrets.
+RHDHBUGS-2702
+
+Fixed Developer Lightspeed for RHDH overlay layout issues:: 
+Before this update, the chat content in Developer Lightspeed for RHDH overlay mode was not scrollable when it exceeded the container height. Additionally, fixed width caused an unnecessary horizontal scrollbar.
+With this release, the overlay mode is responsive to browser window size and vertically scrollable from the beginning of the conversation.
+RHDHBUGS-2703
+
+Indentation of additionalImages no longer incorrect in ImageSetConfiguration file generated by the prepare-restricted-environment.sh:: 
+Before this update, incorrect indentation of the additionalImages field in the ImageSetConfiguration manifest generated by the prepare-restricted-environment.sh script caused a conversion error when trying to mirror images using oc-mirror.
+With this release, the indentation of additionalImages in the ImageSetConfiguration object has been fixed and calls to oc-mirror work correctly.
+RHDHBUGS-2752
+
+Event timestamps no longer stored in non-UTC format:: 
+Before this update, event created_at values were sometimes stored in the database in non-UTC formats and the frontend could not parse API date strings that used a short timezone offset. This led to inconsistent data and broken date handling in the UI.
+With this update, event timestamps are stored in UTC format and frontend date parsing errors in Adoption Insights were fixed.
+RHDHBUGS-2826
+
+Fields marked with ui:hidden no longer leave empty vertical space in the form:: 
+Previously, the field content of fields marked with ui:hidden was hidden but the surrounding layout (grid spacing and margins) could still show. As a result, the form seemed to have extra space.
+With this update, the visual issue is corrected.
+RHDHBUGS-2830
+
+Validation limited to active workflow form step:: 
+With this update, multi-step workflow forms only validate fields on the active step, reducing unnecessary validation calls for hidden steps.
+RHDHBUGS-2832
+
+Lightspeed plugin displays Tool Call and Thinking sections correctly:: 
+Before this update, the Lightspeed plugin did not display the Tool Call and Thinking sections when used with newer Llama Stack versions, even though the MCP tool responses remained accurate. With this update, the Lightspeed plugin displays the Tool Call and Thinking information correctly.
+RHDHBUGS-2855
+
+Backstage CR Deployed status condition no longer reports the incorrect value:: 
+Before this update, the Deployed status condition on the Backstage CR always reported status: "False", even when the deployment was healthy and the reason was Deployed.
+As a consequence, users monitoring the CR status received incorrect information about the deployment state. With this update, the Operator sets the Deployed condition to status: "True" when the Backstage deployment is running successfully. As a result, the CR status conditions accurately reflect the actual deployment state.
+RHDHBUGS-2867
+
+Heap dump collection no longer stuck when running the RHDH must-gather tool:: 
+Before this update, taking heap dumps with the RHDH must-gather tool (Developer Preview) could be stuck and ultimately time out. The root cause of this issue was that during heap dump collection, the pod could automatically be restarted due to probe failures. This is because the Node.js event loop was paused and for large heaps (1GB+), this could take several seconds, during which the application wouldn't respond to requests and would end up failing its livenessProbe and therefore automatically restarted by the cluster.
+
+[NOTE]
+----
+The recommended solution is to temporarily increase the failureThreshold of the liveness probe in the RHDH Deployment if you are planning to take heap dumps using the must-gather tool, to make sure the pods are not restarted when the heap dump collection is triggered.
+----
+With this release, a different method was implemented for collecting heap dumps and showing regular progress information while the operation is ongoing.
+RHDHBUGS-2869
+
+Initial form state no longer ignores JSON Schema defaults:: 
+Before this update, workflow form fields with JSON Schema default values were not applied to the form's initial state. As a consequence, early validation or API calls could fail.
+With this update, the initial form state includes JSON Schema default values, preventing early validation and API call failures.
+RHDHBUGS-2887
+
+Operator supports controlling ordering in spec.deployment.patch:: 
+Previously, when using the spec.deployment.patch field in the Backstage CR to inject custom init containers, new items were always appended after the existing default ones. This meant the built-in install-dynamic-plugins init container always ran first, preventing use cases such as running authentication or bootstrap steps before plugin installation.
+With this update, you can control the ordering of list items (such as init containers) by setting the rhdh.redhat.com/deployment-patch-list-merge-mode annotation on the Backstage CR to prepend. In prepend mode, you can specify the exact ordering by listing all items (including existing ones) in the desired order in the patch.
+For example, to run a custom init container before install-dynamic-plugins and another one after it:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh
+  annotations:
+    rhdh.redhat.com/deployment-patch-list-merge-mode: prepend
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            initContainers:
+              - name: pre-init
+                 image: busybox
+                 command: ["sh", "-c", "echo pre-init"]
+              - name: install-dynamic-plugins
+              - name: post-init
+                 image: busybox
+                 command: ["sh", "-c", "echo post-init"]
+```
+
+The resulting init container order is: pre-init, install-dynamic-plugins then post-init.
+RHDHBUGS-2900
+
+Orchestrator multi-step workflow forms validate only the active step:: 
+Before this update, when a workflow form was split across multiple steps, the Orchestrator UI triggered validation calls for all fields across all steps simultaneously. As a consequence, each field change caused unnecessary validation requests for fields on steps that were not visible to the user. With this release, validation calls are limited to the fields on the active step. As a result, multi-step workflow forms no longer trigger excessive validation requests for hidden steps.
+RHDHBUGS-2913
+
+SchemaUpdater targets triggering object correctly:: 
+Before this update, the SchemaUpdater applied updates to the root instead of the triggering section. This caused user's schema updates to incorrectly affect previous sections in the Orchestrator plugin, leading to inconsistencies.
+With this release, the SchemaUpdater has been updated to improve handling for nested paths and array-based schemas. Schema updates are applied correctly to the triggering object.
+RHDHBUGS-2920
+
+Improved OpenTelemetry and logs documentation:: 
+In this release, OpenTelemetry and process instance logs features have been integrated into the Orchestrator documentation.
+For more information, see Diagnose workflow failures by using centralized logging.
+RHDHBUGS-2921
+
+My Groups submenu no longer hidden:: 
+Before this update, the My Groups sidebar submenu was hidden behind the global header, which led to layout and visibility issues.
+With this update, the position of the MyGroupSidebarItem has been adjusted to respect the header height. As a result, the vertical layout issue was fixed and My Groups sidebar submenu is visible.
+RHDHBUGS-2935
+
+Sidebar color customization no longer impacts plugin UI backgrounds:: 
+Before this update, sidebar color customization incorrectly affected plugin UI backgrounds due to component targeting issues. As a consequence, sidebar color customization caused plugin UI backgrounds to match, affecting usability.
+With this update, the sidebar background color no longer affects custom plugin UI backgrounds.
+RHDHBUGS-2981
+
+Developer Lightspeed for RHDH input message no longer breaks into two when using numbered pointers:: 
+Before this update, Developer Lightspeed for RHDH input messages containing numbered lists, bullet points, or leading spaces were incorrectly split into two separate messages.
+With this release, messages with these formatting elements are sent as a single, continuous message.
+RHDHBUGS-2988
+
+Duplicate workflows no longer caused by shared IDs:: 
+Before this update, workflow duplication occurred due to shared IDs in multiple versions. This resulted in duplicate UI entries, causing user confusion and potential data loss.
+With this release, unique workflow IDs are enforced across RHDH and OSL versions.
+RHDHBUGS-3014
+
+Operator reconciliation loop no longer causes unnecessary pod restarts:: 
+Before this update, the RHDH Operator used Go map key iteration (without a guaranteed order) when building pod specs for app-config ConfigMaps. This produced non-deterministic ordering of --config arguments and volume mounts, causing the controller to detect a spec change on every reconciliation and restart pods in a loop, particularly visible with StatefulSet workloads.
+With this update, map keys are sorted alphabetically so that pod spec are stable across reconciliations.
+
+[NOTE]
+----
+When defining several app-config files inside one ConfigMap, keys are now sorted alphabetically instead of randomly, which may not match the intended merge order.
+Since Backstage merges app-config files from first to last and order matters, it is recommended to use separate single-entry ConfigMaps instead and reference them in the Backstage CR (spec.application.appConfig.configMaps field) in the intended order.
+----
+RHDHBUGS-3084
+
+ENABLE_CACHE_LABEL_FILTER environment variable:: 
+This update adds support for the ENABLE_CACHE_LABEL_FILTER environment variable to the existing cache label filter feature.
+Previously, enabling the filter required modifying args, which was difficult to configure through an Operator Lifecycle Manager (OLM) subscription. With this update, you can enable the cache label filter by setting the environment variable in the config.env field of an OLM subscription.
+RHDHBUGS-3089
+
+ActiveMultiSelect no longer joins old values with new ones:: 
+Before this update, when fetch:clearOnRetrigger: true was set on an ActiveMultiSelect widget and the retrigger dependency changed, the widget joined the old values with the new server-returned values instead of replacing them. This made it impossible to have a multi-select field whose contents change based on another field.
+With this release, ActiveMultiSelect replaces old values as expected.
+RHDHBUGS-3106
+
+Template expressions not supported for some fields:: 
+With this update, placeholder templates ($${{…}}) in the following fields are expanded using the same rules as other fetch fields before JSONata runs against the HTTP response:
+* fetch:response:value
+* fetch:response:autocomplete
+* fetch:response:label
+* fetch:response:value (dropdown)
+As a result, paths such as current.* and backend.baseUrl work consistently.
+RHDHBUGS-3109
+
+Documentation links in Developer Lightspeed for RHDH responses no longer missing:: 
+Before this update, links to documentation were missing from Developer Lightspeed for RHDH responses.
+With this update, Developer Lightspeed for RHDH displays the RAG Sources section at the end of a response. The Developer Lightspeed for RHDH tool generates an answer based on Red Hat Developer Hub documentation, and links to the specific source materials when necessary.
+RHDHBUGS-3218
+
+Improved third-party plugin installation examples:: 
+This update provides clearer instructions for private repository authentication and correct Helm secret name format in third-party plugin installation examples.
+The changes include steps for logging in to image registries and clarifying secret names for Helm-based deployments.
+RHDHBUGS-474
+
+Missing prerequisite added to Support button procedure:: 
+Before this update, 'app.support.items' was missing from the list of prerequisites for the Support button to appear in the global header.
+With this release, the prerequisites include 'app.support.items' in addition to 'app.support.url`. With this, the Support button appears correctly.
+RHDHBUGS-686
+
+Improved documentation for air-gapped plugin installation with Operator:: 
+Before this update, using Operator for air-gapped plugin installation was unsuccessful due to an omission in the installation procedure.
+With this release, the installation instructions for air-gapped plugins have been updated to include steps for Operator.
+* Installing and viewing plugins in an air-gapped environment by using the Operator
+RHDHBUGS-758
+
+Quick Access card customization documentation available:: 
+With this update, Quick Access card reference has been added to the documentation.
+* Define the layout of the Red Hat Developer Hub Home page
+RHDHBUGS-829
+
+# Fixed security issues
+
+You can view the security issues fixed in Red Hat Developer Hub 1.10 at Red Hat Security Updates.
+
+* For 1.10.0, see Red Hat Security Advisory RHSA-2026:24841.

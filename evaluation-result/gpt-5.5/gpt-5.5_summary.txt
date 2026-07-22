@@ -1,0 +1,2620 @@
+LSC Evaluation Framework - Summary Report
+==================================================
+
+Generated: 2026-07-17 15:54:09 UTC
+Total Evaluations: 2495
+
+Overall Statistics:
+--------------------
+Pass: 2371 (95.0%)
+Fail: 124 (5.0%)
+Error: 0 (0.0%)
+Skipped: 0 (0.0%)
+
+Token Usage (Judge LLM):
+--------------------
+Input Tokens: 34,164,527
+Output Tokens: 7,423,121
+Total Tokens: 41,587,648
+
+Token Usage (Embeddings):
+--------------------
+Input Tokens: 0
+
+Token Usage (API Calls):
+--------------------
+Input Tokens: 0
+Output Tokens: 0
+Total Tokens: 0
+
+By Metric:
+---------
+custom:answer_correctness:
+  Pass: 486 (97.4%)
+  Fail: 13 (2.6%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.983
+    Median: 1.000
+    Min: 0.200, Max: 1.000
+    Std Dev: 0.084
+
+ragas:context_precision_without_reference:
+  Pass: 496 (99.4%)
+  Fail: 3 (0.6%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.968
+    Median: 1.000
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.099
+
+ragas:context_recall:
+  Pass: 499 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 1.000
+    Median: 1.000
+    Min: 1.000, Max: 1.000
+    Std Dev: 0.000
+
+ragas:context_relevance:
+  Pass: 497 (99.6%)
+  Fail: 2 (0.4%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.997
+    Median: 1.000
+    Min: 0.500, Max: 1.000
+    Std Dev: 0.035
+
+ragas:faithfulness:
+  Pass: 393 (78.8%)
+  Fail: 106 (21.2%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.959
+    Median: 1.000
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.119
+
+By Conversation:
+---------------
+authentication-105:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-109:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-152:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-156:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-157:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-158:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-160:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-161:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-302:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-303:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-304:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-310:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-312:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-314:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-315:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-316:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-317:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-318:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-320:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-321:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+authentication-441:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+authentication-479:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-114:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-115:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-12:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-132:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-140:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-142:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-146:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-147:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-15:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-166:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-174:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-175:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-176:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-177:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-190:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-191:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-192:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-196:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-197:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-200:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-313:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-319:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-33:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-36:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-37:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-38:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-39:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-443:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-444:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-445:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+catalog-47:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-480:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-486:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-489:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-490:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-491:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-62:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+catalog-98:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-168:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-184:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-2:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-254:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-260:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+ci_cd-332:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-359:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-372:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-376:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-378:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+ci_cd-379:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-107:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-112:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-113:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-118:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-119:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-121:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-122:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-123:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-130:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-131:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-14:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-143:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-144:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-145:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-149:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-154:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-155:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-169:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-187:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-188:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-193:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-198:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-199:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-202:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-207:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-212:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-213:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-218:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-219:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-222:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-223:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-228:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-229:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-230:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-231:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-234:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-235:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-250:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-252:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-256:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-257:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-259:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-263:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-294:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-307:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-32:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-322:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-334:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-337:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-34:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-340:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-342:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-343:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-344:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-345:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-35:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-351:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+configuration-355:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-361:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-370:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-371:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-397:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-40:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-405:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-418:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-43:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-431:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-432:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-439:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-44:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-440:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-442:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-447:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-45:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-458:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-459:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-471:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-473:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-474:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-475:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-477:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-48:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-483:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-49:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-51:
+  Pass: 2 (40.0%)
+  Fail: 3 (60.0%)
+  Error: 0 (0.0%)
+
+configuration-52:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-56:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-57:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-58:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-59:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-61:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-63:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-64:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+configuration-66:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-68:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-69:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-71:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-78:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+configuration-97:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-133:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-148:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-150:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-151:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-153:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-163:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-171:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-178:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-179:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-180:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-181:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-182:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-183:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-185:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-20:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-204:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-205:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-206:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-21:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-210:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-211:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-22:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-221:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-224:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-23:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-24:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-240:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-244:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-246:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-247:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-248:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-249:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-25:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-251:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-253:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-26:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-27:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-28:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-288:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-289:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-29:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-290:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-291:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-295:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-296:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-297:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-298:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-299:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-300:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-301:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-31:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-325:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-326:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-327:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-335:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-338:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-339:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-348:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-349:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-350:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-352:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-358:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-362:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-365:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-366:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-367:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-368:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-369:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-377:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-392:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-393:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-394:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-396:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-398:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-399:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-400:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-402:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-406:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-409:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-410:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-411:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-413:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-414:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-416:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-417:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-425:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-426:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-429:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-455:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-456:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-485:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-492:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-493:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-494:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+installation-67:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+installation-80:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-104:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-106:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-120:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-124:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-125:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-126:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-127:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-162:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-208:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-209:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-241:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-243:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-245:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-292:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-293:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-30:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-308:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-341:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-346:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-347:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-353:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-380:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-403:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-404:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-407:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-408:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-415:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-419:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-420:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-421:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-422:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-423:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-428:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-430:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+kubernetes-433:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-434:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+kubernetes-460:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+kubernetes-487:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-0:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-1:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-10:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-100:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-101:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-102:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-103:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-108:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-110:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-111:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-116:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-117:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-128:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-13:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-134:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-135:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-138:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-139:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-141:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-159:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-16:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-167:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-17:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-170:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-172:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-173:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-18:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-189:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-19:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-194:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-195:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-201:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-203:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-214:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-215:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-216:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-217:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-220:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-225:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-232:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-233:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-236:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-237:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-238:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-239:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-242:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-255:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-258:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-261:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-262:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-264:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-265:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-3:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-305:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-306:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-309:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-311:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-328:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-329:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-330:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-331:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-333:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-354:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-356:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-357:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-360:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-364:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-373:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-374:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-375:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-381:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-383:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-384:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-385:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-386:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-387:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-388:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-389:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-390:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-391:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-395:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-4:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-41:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-412:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-42:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-424:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-435:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-436:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-437:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-438:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-446:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-448:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-449:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-450:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-451:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-452:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-453:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-454:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-457:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-46:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-461:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-462:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-463:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-464:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-465:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-466:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-467:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-468:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-469:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-470:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-472:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-476:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-478:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-481:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-482:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-484:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-488:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-495:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-496:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-497:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-5:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-53:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-54:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-55:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-6:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-60:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-65:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-7:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-70:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-72:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-73:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-74:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-75:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-76:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-77:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-79:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-8:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-81:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-82:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-83:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-84:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+plugins-85:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-86:
+  Pass: 3 (60.0%)
+  Fail: 2 (40.0%)
+  Error: 0 (0.0%)
+
+plugins-87:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-88:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-89:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-9:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-90:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-91:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-92:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-93:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-95:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-96:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+plugins-99:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-11:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-129:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-136:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-137:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-164:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-165:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-186:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-226:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-227:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-266:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-267:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-268:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-269:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-270:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-271:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-272:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-273:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-274:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-275:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-276:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-277:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-278:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-279:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-280:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-281:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-282:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-283:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-284:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-285:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-286:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-287:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-323:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-324:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-336:
+  Pass: 4 (80.0%)
+  Fail: 1 (20.0%)
+  Error: 0 (0.0%)
+
+rbac-363:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-382:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-401:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-427:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-498:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-50:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+rbac-94:
+  Pass: 5 (100.0%)
+  Fail: 0 (0.0%)
+  Error: 0 (0.0%)
+
+By Tag:
+------
+eval:
+  Pass: 2371 (95.0%)
+  Fail: 124 (5.0%)
+  Error: 0 (0.0%)
+  Score Statistics:
+    Mean: 0.981
+    Median: 1.000
+    Min: 0.000, Max: 1.000
+    Std Dev: 0.082
+
+Configuration Parameters:
+-------------------------
+
+Core:
+  Max Threads: 50
+  Fail On Invalid Data: True
+  Skip On Failure: False
+  Cache Enabled: True
+  Cache Base Dir: .caches
+
+Llm Pool:
+  Defaults: {'cache_enabled': True, 'cache_dir': '.caches/llm_cache', 'timeout': 300, 'num_retries': 3, 'parameters': {'temperature': 0.0, 'max_completion_tokens': 16384}}
+  Models: {'judge_gemini_2_5_pro': {'provider': 'gemini', 'model': 'gemini-2.5-pro', 'ssl_verify': None, 'ssl_cert_file': None, 'api_base': None, 'api_key_path': None, 'parameters': {'temperature': None, 'max_completion_tokens': 65536}, 'timeout': None}, 'judge_gpt_4o_mini': {'provider': 'openai', 'model': 'gpt-4o-mini', 'ssl_verify': None, 'ssl_cert_file': None, 'api_base': None, 'api_key_path': None, 'parameters': {'temperature': None, 'max_completion_tokens': None}, 'timeout': None}}
+
+Judge Panel:
+  Judges: judge_gemini_2_5_pro, judge_gpt_4o_mini
+  Enabled Metrics: None
+  Aggregation Strategy: max
+
+Embedding:
+  Provider: huggingface
+  Model: sentence-transformers/all-mpnet-base-v2
+  Provider Kwargs: {'model_kwargs': {'device': 'cpu'}}
+  Cache Enabled: True
+
+Agents:
+  Enabled: False
+  Default: {'agent': None, 'agent_config': None, 'repeat': 1, 'parallel': False}
+  Agents: {}
+

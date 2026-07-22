@@ -1,0 +1,3288 @@
+# Configuring Red Hat Developer Hub
+
+Configure Red Hat Developer Hub for production by adding custom config maps and secrets to work in your IT ecosystem.
+
+# Understanding Red Hat Developer Hub configuration files
+
+Red Hat Developer Hub uses several configuration files and Kubernetes resources that control application behavior, plugin configuration, access policies, and deployment settings. Understanding these files helps you determine where to configure each aspect of your RHDH instance.
+
+## Red Hat Developer Hub configuration files overview
+
+Overview of the configuration files and Kubernetes resources used to manage Red Hat Developer Hub instances across different deployment methods.
+
+Developer Hub configuration files fall into two categories based on how they are consumed:
+
+Cluster-provisioned files:: Provisioned as Kubernetes resources, such as config maps or secrets, on the target cluster, typically by platform engineers. These files control the runtime behavior and deployment of your RHDH instance. While the source files can be stored in a Git repository, they must be applied to the cluster to take effect.
+Application-consumed files:: Authored by developers and committed to source repositories. RHDH reads these files directly from Git at runtime to populate the software catalog, execute templates, and build documentation.
+
+### Cluster-provisioned files
+
+The following table lists configuration files that platform engineers create and provision as Kubernetes resources on the target cluster.
+
+
+
+### Application-consumed files
+
+The following table lists configuration files that developers author and store in Git repositories. RHDH reads these files directly from Git at runtime.
+
+
+
+## Application configuration file
+
+The app-config.yaml file is the main Developer Hub configuration file. It controls application behavior including URLs, authentication, catalog sources, database connections, and plugin settings.
+
+The following are key sections in app-config.yaml:
+
+app:: Frontend settings such as the application title and base URL.
+backend:: Backend settings including the base URL, CORS origin, database connection, authentication, and cache.
+auth:: Authentication provider configuration.
+catalog:: Software Catalog locations and entity providers.
+techdocs:: TechDocs builder and storage configuration.
+proxy:: Proxy endpoints for external services.
+permission:: RBAC permission framework configuration.
+
+The app-config.yaml file supports ${VAR_NAME} syntax that resolves at runtime from environment variables. You can inject environment variables through Kubernetes secrets or config maps, which allows you to keep sensitive values such as credentials and tokens out of your configuration files.
+
+You can provision the app-config.yaml file by using either the Operator or the Helm chart:
+
+* With the Operator: on OpenShift Container Platform, the Operator might automatically set app.baseUrl, backend.baseUrl, and backend.cors.origin from the route in the default application configuration. Create a config map containing your app-config.yaml and reference it in the Backstage custom resource.
+* With the Helm chart: set the base URL fields manually. You can inline your configuration in the Helm chart values at upstream.backstage.appConfig, or reference external config maps through upstream.backstage.extraAppConfig.
+
+* Provisioning your custom Red Hat Developer Hub configuration
+* Helm Chart configuration reference
+
+## Red Hat Developer Hub secrets
+
+Developer Hub uses Kubernetes secrets to store sensitive values such as authentication credentials, backend secrets, and database passwords. The app-config.yaml file references these values through ${VAR_NAME} environment variable substitution.
+
+The following are common secrets used by Developer Hub:
+
+my-rhdh-secrets:: The main Developer Hub secrets containing authentication provider client IDs and secrets, the BACKEND_SECRET, and other sensitive credentials.
+my-rhdh-database-certificates-secrets:: Optional. Contains external PostgreSQL TLS certificates such as postgres-crt.pem, postgres-ca.pem, and postgres-key.key.
+
+To create secrets, author the secret values in a local file (for example, my-rhdh-secrets.txt), then create a Kubernetes secret by running oc create secret generic.
+
+You can provision secrets using either of the following methods:
+
+* With the Operator: Reference secrets in the Backstage custom resource by using the spec.application.extraEnvs.secrets field to inject secrets as environment variables, or the spec.application.extraFiles.secrets field to mount secrets as files, such as, TLS certificates.
+* With the Helm chart: Reference secrets by using the upstream.backstage.extraEnvVarsSecrets or upstream.backstage.extraEnvVars field with a [secretKeyRef](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables)). You can also mount secrets as files by using both the upstream.backstage.extraVolumes and upstream.backstage.extraVolumeMounts values.
+
+* Provisioning your custom Red Hat Developer Hub configuration
+* Authentication in Red Hat Developer Hub
+
+## Dynamic plugins configuration file
+
+The dynamic-plugins.yaml file controls which dynamic plugins are enabled in your Developer Hub instance. It defines a list of plugins to install, disable, or configure.
+
+The file contains the following two main sections:
+
+includes:: References a base configuration file (dynamic-plugins.default.yaml) that is included with Developer Hub. This file contains the default plugin configuration.
+plugins:: A list of plugin entries that override or extend the base configuration. Each entry specifies a package (the plugin path), a disabled field (boolean), and an optional pluginConfig section with plugin-specific YAML that is merged into the application configuration.
+
+You can provision the dynamic-plugins.yaml file in different ways depending on your deployment method:
+
+With the Operator:: Create a config map containing the dynamic-plugins.yaml data and reference it in the Backstage custom resource by using spec.application.dynamicPluginsConfigMapName.
+With the Helm chart:: Configure plugins inline by using the global.dynamic.plugins Helm values.
+
+* Installing and viewing plugins in Red Hat Developer Hub
+
+## RBAC policy files
+
+Developer Hub uses external policy files to define role-based access control (RBAC) rules. Two files work together to control permissions: a CSV file for standard policies and a YAML file for conditional policies.
+
+rbac-policy.csv:: Uses Casbin syntax with two entry types:
+* p entries define policy rules (p, role, resource, action, effect).
+* g entries define role assignments (g, user, role).
+rbac-conditional-policies.yaml:: Defines conditional policies with criteria-based filtering for fine-grained access control.
+
+Provisioning
+
+Both files are provisioned together in a single config map, such as, rbac-policies. Reference the files from app-config.yaml by using the following fields:
+
+* permission.rbac.policies-csv-file for the CSV path.
+* permission.rbac.conditionalPoliciesFile for the conditional policies YAML path.
+
+* Authorization in Red Hat Developer Hub
+
+## Backstage custom resource
+
+When you use the Red Hat Developer Hub Operator, the Backstage custom resource is the central deployment configuration. It defines how the Operator creates and manages the Developer Hub instance, and references the config maps and secrets that contain your configuration files.
+
+The following fields control key aspects of the deployment:
+
+spec.application.appConfig.configMaps:: References config maps containing your app-config.yaml files.
+spec.application.dynamicPluginsConfigMapName:: References the config map containing the dynamic-plugins.yaml file.
+spec.application.extraFiles:: Mounts additional config maps, secrets, or PVCs as files in the Developer Hub container.
+spec.application.extraEnvs:: Injects environment variables from config maps, secrets, or inline values.
+spec.application.route:: Controls route or ingress configuration.
+spec.database:: Controls whether the built-in PostgreSQL database is enabled or disabled.
+spec.deployment.patch:: Applies a strategic merge patch to the Deployment resource for advanced customization.
+
+* Configure Red Hat Developer Hub deployment when using the Operator
+* Use the Red Hat Developer Hub Operator to run Developer Hub with your custom configuration
+
+## Helm chart values file
+
+When you deploy Developer Hub by using the Helm chart, the values.yaml file is the central deployment configuration. It controls how the Helm chart creates Kubernetes resources and can embed application configuration inline.
+
+The following value paths control key aspects of the deployment:
+
+upstream.backstage.appConfig:: Generates a config map with your application configuration. The Helm chart renders these values into an app-config.yaml config map automatically.
+upstream.backstage.extraAppConfig:: References external config maps containing additional app-config.yaml files.
+global.dynamic.plugins:: Configures the dynamic plugins to enable, disable, or customize.
+
+
+[NOTE]
+----
+Use Helm values for deployment-level concerns, such as images, replicas, resources, and routes. Use app-config.yaml for application behavior, such as authentication, catalogs, and plugins.
+----
+
+* Helm Chart configuration reference
+
+## Catalog entity descriptor file
+
+The catalog-info.yaml file is a YAML descriptor that defines catalog entities such as components, APIs, systems, and resources. Developers author this file and commit it to their source repository.
+
+The Software Catalog consumes catalog-info.yaml files through catalog.locations entries in app-config.yaml or through discovery providers (for example, GitHub or GitLab discovery).
+
+Key annotations in catalog-info.yaml control how plugins interact with the entity (for example, backstage.io/techdocs-ref for TechDocs, argocd/app-name for Argo CD).
+
+* Streamline software development and management in Red Hat Developer Hub
+
+## Software template definition file
+
+The template.yaml file defines a software template that scaffolds new components, repositories, or infrastructure. Developers author this file and store it in a template repository.
+
+Software templates are registered in Developer Hub by adding the template.yaml URL to the catalog.locations section of app-config.yaml.
+
+A template defines input parameters, scaffolding steps, and output actions such as creating a repository or registering a catalog entity.
+
+* Customizing Red Hat Developer Hub
+
+## TechDocs configuration file
+
+The mkdocs.yml file configures how TechDocs builds documentation from Markdown source files. Developers store this file alongside the docs/ directory in their component repository.
+
+The mkdocs.yml file controls the documentation site structure, navigation, theme, and MkDocs plugins.
+
+The TechDocs plugin in Developer Hub reads this file when building or serving documentation for a catalog entity.
+
+* Manage and consume technical documentation within Red Hat Developer Hub
+
+## Configuration precedence
+
+When multiple configuration sources are available, Developer Hub merges them following specific precedence rules. Understanding these rules helps you predict how your configuration files interact.
+
+Review these configuration precedence behaviors:
+
+Application configuration layering:: When you provide multiple app-config.yaml files (for example, through multiple config maps), Developer Hub deep-merges them. Later files override earlier files for the same keys. For object values, the merge is recursive. For array values, the later array replaces the earlier array entirely.
+Dynamic plugins merge behavior:: The plugins list from your configuration merges with the plugins list from the includes file. If both lists contain an entry for the same plugin package, the fields in your configuration override the fields in the includes file.
+Environment variable resolution:: References using the ${VAR_NAME} syntax in any YAML configuration file resolve at runtime from environment variables. If a referenced environment variable is not set, Developer Hub fails to start.
+Operator flavor merging:: When you enable multiple pre-configured settings (for example, Orchestrator and Lightspeed), the Operator merges their configurations automatically. Settings from both configurations merge without manual intervention.
+
+# Provision and use your custom Red Hat Developer Hub configuration
+
+Configure Red Hat Developer Hub by using config maps to mount files and directories and secrets to inject environment variables into your Red Hat OpenShift Container Platform application.
+
+## Provision your custom Red Hat Developer Hub configuration
+
+Provision custom config maps and secrets on Red Hat OpenShift Container Platform (RHOCP) to configure Red Hat Developer Hub before running the application.
+
+
+[TIP]
+----
+On Red Hat OpenShift Container Platform, you can skip this step to run Developer Hub with the default config map and secret.
+Your changes on this configuration might get reverted on Developer Hub restart.
+----
+
+* By using the OpenShift CLI (oc), you have access, with developer permissions, to the OpenShift cluster aimed at containing your Developer Hub instance.
+
+1. For security, store your secrets as environment variables values in an OpenShift Container Platform secret, rather than in plain text in your configuration files.
+Collect all your secrets in the secrets.txt file, with one secret per line in KEY=value form.
+
+Enter your authentication secrets.
+2. Author your custom app-config.yaml file.
+This is the main Developer Hub configuration file.
+You need a custom app-config.yaml file to avoid the Developer Hub installer to revert user edits during upgrades.
+When your custom app-config.yaml file is empty, Developer Hub is using default values.
+* To prepare a deployment with the Red Hat Developer Hub Operator on OpenShift Container Platform, you can start with an empty file.
+* To prepare a deployment with the Red Hat Developer Hub Helm chart, or on Kubernetes, enter the Developer Hub base URL in the relevant fields in your app-config.yaml file to ensure proper functionality of Developer Hub.
+The base URL is what a Developer Hub user sees in their browser when accessing Developer Hub.
+The relevant fields are baseUrl in the app and backend sections, and origin in the backend.cors subsection:
+
+Configuring the baseUrl in app-config.yaml:
+
+```yaml
+app:
+  title: Red Hat Developer Hub
+  baseUrl: https://<my_developer_hub_domain>
+
+backend:
+  auth:
+    externalAccess:
+      - type: legacy
+        options:
+          subject: legacy-default-config
+          secret: "${BACKEND_SECRET}"
+  baseUrl: https://<my_developer_hub_domain>
+  cors:
+    origin: https://<my_developer_hub_domain>
+```
+
+* Optionally, enter your configuration such as:
+* Authentication in Red Hat Developer Hub.
+* Authorization in Red Hat Developer Hub.
+* Customization.
+* Configure your OpenShift Container Platform integration.
+3. Author your custom dynamic-plugins.yaml file to enable plugins.
+By default, Developer Hub enables a minimal plugin set, and disables plugins that require configuration or secrets, such as the GitHub repository discovery plugin and the Role-based access control (RBAC) plugin.
+
+Enable the GitHub repository discovery and the RBAC features:
+dynamic.plugins.yaml
+
+```yaml
+includes:
+  - dynamic-plugins.default.yaml
+plugins:
+  - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github
+    disabled: false
+  - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
+    disabled: false
+```
+
+4. Provision your custom configuration files to your OpenShift Container Platform cluster.
+1. Create the <my-rhdh-project> project aimed at containing your Developer Hub instance.
+
+```terminal
+$ oc create namespace my-rhdh-project
+```
+
+2. Create config maps for your app-config.yaml and dynamic-plugins.yaml files in the <my-rhdh-project> project.
+
+```terminal
+$ oc create configmap my-rhdh-app-config --from-file=app-config.yaml --namespace=my-rhdh-project
+$ oc create configmap dynamic-plugins-rhdh --from-file=dynamic-plugins.yaml --namespace=my-rhdh-project
+```
+
+
+You can also create the config maps by using the web console.
+3. Provision your secrets.txt file to the my-rhdh-secrets secret in the <my-rhdh-project> project.
+
+```terminal
+$ oc create secret generic my-rhdh-secrets --from-file=secrets.txt --namespace=my-rhdh-project
+```
+
+
+You can also create the secret by using the web console.
+
+* Provision your PostgreSQL database secrets
+* Provision your dynamic plugins config map
+* Provision your RBAC policies config map
+
+## Use the Red Hat Developer Hub Operator to run Developer Hub with your custom configuration
+
+Use the Red Hat Developer Hub Operator to deploy Developer Hub with custom configuration by creating a custom resource that mounts config maps and injects secrets.
+
+* By using the OpenShift CLI (oc), you have access, with developer permissions, to the OpenShift Container Platform cluster aimed at containing your Developer Hub instance.
+* Your administrator has installed the Red Hat Developer Hub Operator in the cluster.
+* You have provisioned your custom config maps and secrets in your <my-rhdh-project> project.
+* You have a working default storage class, such as the Elastic Block Store (EBS) storage add-on, configured in your EKS cluster.
+
+1. Author your Backstage CR in a my-rhdh-custom-resource.yaml file to use your custom config maps and secrets.
+
+Minimal my-rhdh-custom-resource.yaml custom resource example:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh-custom-resource
+spec:
+  application:
+    appConfig:
+      mountPath: /opt/app-root/src
+      configMaps:
+         - name: my-rhdh-app-config
+    extraEnvs:
+      secrets:
+         - name: <my_product_secrets>
+    extraFiles:
+      mountPath: /opt/app-root/src
+    route:
+      enabled: true
+  database:
+    enableLocalDb: true
+```
+
+
+my-rhdh-custom-resource.yaml custom resource example with dynamic plugins and RBAC policies config maps, and external PostgreSQL database secrets:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: <my-rhdh-custom-resource>
+spec:
+  application:
+    appConfig:
+      mountPath: /opt/app-root/src
+      configMaps:
+         - name: my-rhdh-app-config
+         - name: rbac-policies
+    dynamicPluginsConfigMapName: dynamic-plugins-rhdh
+    extraEnvs:
+      secrets:
+         - name: <my_product_secrets>
+         - name: my-rhdh-database-secrets
+    extraFiles:
+      mountPath: /opt/app-root/src
+      secrets:
+        - name: my-rhdh-database-certificates-secrets
+          key: postgres-crt.pem, postgres-ca.pem, postgres-key.key
+    route:
+      enabled: true
+  database:
+    enableLocalDb: false
+```
+
+Mandatory fields:: No fields are mandatory.
+You can create an empty Backstage CR and run Developer Hub with the default configuration.
+Optional fields:: 
+spec.application.appConfig.configMaps:: Enter your config map name list.
+
+Mount files in the my-rhdh-app-config config map:
+
+```yaml
+spec:
+  application:
+    appConfig:
+      mountPath: /opt/app-root/src
+      configMaps:
+         - name: my-rhdh-app-config
+```
+
+
+Mount files in the my-rhdh-app-config and rbac-policies config maps:
+
+```yaml
+spec:
+  application:
+    appConfig:
+      mountPath: /opt/app-root/src
+      configMaps:
+         - name: my-rhdh-app-config
+         - name: rbac-policies
+```
+
+spec.application.extraEnvs.envs:: Optionally, enter your additional environment variables that are not secrets, such as your proxy environment variables.
+
+Inject your HTTP_PROXY, HTTPS_PROXY and NO_PROXY environment variables:
+
+```yaml
+spec:
+  application:
+    extraEnvs:
+      envs:
+        - name: HTTP_PROXY
+          value: 'http://10.10.10.105:3128'
+        - name: HTTPS_PROXY
+          value: 'http://10.10.10.106:3128'
+        - name: NO_PROXY
+          value: 'localhost,example.org'
+```
+
+spec.application.extraEnvs.secrets:: Enter your environment variables secret name list.
+
+Inject the environment variables in your Red Hat Developer Hub secret:
+
+```yaml
+spec:
+  application:
+    extraEnvs:
+      secrets:
+         - name: <my_product_secrets>
+```
+
+
+Inject the environment variables in the Red Hat Developer Hub and my-rhdh-database-secrets secrets:
+
+```yaml
+spec:
+  application:
+    extraEnvs:
+      secrets:
+         - name: <my_product_secrets>
+         - name: my-rhdh-database-secrets
+```
+
+
+[NOTE]
+----
+<my_product_secrets> is your preferred Developer Hub secret name, specifying the identifier for your secret configuration within Developer Hub.
+----
+spec.application.extraFiles.secrets:: Enter your certificates files secret name and files list.
+
+Mount the postgres-crt.pem, postgres-ca.pem, and postgres-key.key files contained in the my-rhdh-database-certificates-secrets secret:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      mountPath: /opt/app-root/src
+      secrets:
+        - name: my-rhdh-database-certificates-secrets
+          key: postgres-crt.pem, postgres-ca.pem, postgres-key.key
+```
+
+spec.database.enableLocalDb:: Enable or disable the local PostgreSQL database.
+
+Disable the local PostgreSQL database generation to use an external postgreSQL database:
+
+```yaml
+spec:
+  database:
+    enableLocalDb: false
+```
+
+
+On a development environment, use the local PostgreSQL database:
+
+```yaml
+spec:
+  database:
+    enableLocalDb: true
+```
+
+spec.deployment:: Optionally, enter your deployment configuration.
+2. Apply your Backstage CR to start or update your Developer Hub instance:
+
+```terminal
+$ oc apply --filename=my-rhdh-custom-resource.yaml --namespace=my-rhdh-project
+```
+
+
+## Use the Red Hat Developer Hub Helm chart to run Developer Hub with your custom configuration
+
+Use the Red Hat Developer Hub Helm chart to deploy Developer Hub with a custom application configuration file on OpenShift Container Platform.
+
+* By using the OpenShift Container Platform web console, you have access with developer permissions, to an OpenShift Container Platform project named <my-rhdh-project>, aimed at containing your Developer Hub instance.
+* You have uploaded your custom configuration files and secrets in your <my-rhdh-project> project.
+
+1. Configure Helm to use your custom configuration files in Developer Hub.
+1. Go to the Helm tab to see the list of Helm releases.
+2. Click the overflow menu on the Helm release that you want to use and select Upgrade.
+3. Use the YAML view to edit the Helm configuration.
+4. Set the value of the upstream.backstage.extraAppConfig.configMapRef and upstream.backstage.extraAppConfig.filename parameters as follows:
+
+```yaml
+upstream:
+  backstage:
+    extraAppConfig:
+      - configMapRef: my-rhdh-app-config
+        filename: app-config.yaml
+```
+
+5. Click Upgrade.
+
+* Install Developer Hub by using Helm.
+
+# Red Hat Developer Hub default configuration
+
+Deploy a standard Red Hat Developer Hub instance, understand its structure, and tailor the instance to meet your needs.
+
+## Red Hat Developer Hub default configuration guide
+
+The Operator creates Kubernetes resources with default configuration that you can customize using the Backstage Custom Resource.
+
+The Operator stores the default configuration in a ConfigMap named rhdh-default-config in the rhdh-operator namespace on OpenShift. This ConfigMap has the YAML manifests that define the foundational structure of the RHDH instance.
+
+You can create a basic RHDH instance by applying an empty Backstage Custom Resource as follows:
+
+
+```yaml
+apiVersion: backstage.redhat.com/v1alpha4
+kind: Backstage
+metadata:
+name: my-rhdh-instance
+namespace: rhdh
+```
+
+
+The Operator automatically creates the following resources in the specified RHDH namespace by default based on the default configuration:
+
+
+
+
+[NOTE]
+----
+{cr-name} is the name of the Backstage Custom Resource, for example 'my-rhdh-instance' in the above example.
+----
+
+## Automated Operator features
+
+Use the Operator to automate key configuration processes for your Backstage application.
+
+### Metadata generation
+
+The Operator automatically generates metadata values for default resources at runtime to ensure proper application function.
+
+For all the default resources, the Operator generates metadata.name according to the rules defined in the Default Configuration files, particularly the Resource name column. For example, a Backstage Custom Resource (CR) named mybackstage creates a Kubernetes Deployment resource called backstage-mybackstage.
+
+The Operator generates the following metadata for each resource:
+
+* deployment.yaml
+* spec.selector.matchLabels[rhdh.redhat.com/app] = backstage-{cr-name}
+* spec.template.metadata.labels[rhdh.redhat.com/app] = backstage-{cr-name}
+* service.yaml
+* spec.selector[rhdh.redhat.com/app] = backstage-{cr-name}
+* db-statefulset.yaml
+* spec.selector.matchLabels[rhdh.redhat.com/app] = backstage-psql-{cr-name}
+* spec.template.metadata.labels[rhdh.redhat.com/app] = backstage-psql-{cr-name}
+* db-service.yaml
+* spec.selector[rhdh.redhat.com/app] = backstage-psql-{cr-name}
+
+### Many resources
+
+Define and create many resources of the same type in a single YAML file by using the --- delimiter to separate resource definitions.
+
+For example, adding the following code snip to pvcs.yaml creates two PersistentVolumeClaims (PVCs) called backstage-{cr-name}-myclaim1 and backstage-{cr-name}-myclaim2 and mounts them to the Backstage container.
+
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim1
+...
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim2
+...
+```
+
+
+### Default base URLs
+
+The Operator automatically sets base URLs for your application based on route parameters and OpenShift cluster ingress domain.
+
+The Operator follows these rules to set the base URLs for your application:
+
+* If the cluster is not OpenShift, the Operator makes no changes.
+* If you explicitly set the spec.application.route.enabled field in your Custom Resource (CR) to false, the Operator makes no changes.
+* If you define spec.application.route.host in the Backstage CR, the Operator sets the base URLs to https&#58;//<spec.application.route.host>.
+* If you specify the spec.application.route.subdomain in the Backstage CR, the Operator sets the base URLs to https&#58;//<spec.application.route.subdomain>.<cluster_ingress_domain>.
+* If you do not set a custom host or subdomain, the Operator sets the base URLs to https&#58;//backstage-<cr_name>-<namespace>.<cluster_ingress_domain>, which is the default domain for the created Route resource.
+
+The Operator updates the following base URLs in the default app-config config map:
+
+* app.baseUrl
+* backend.baseUrl
+* backend.cors.origin
+
+
+[NOTE]
+----
+You can perform these actions on a best-effort basis and only on OpenShift. During an error or on non-OpenShift clusters, you can still override these defaults by providing a custom app-config config map.
+----
+
+## Time syntax in Red Hat Developer Hub
+
+Use supported time duration formats in Red Hat Developer Hub, including human-readable strings, duration objects, ISO 8601 strings, and cron expressions.
+
+
+
+
+
+
+[WARNING]
+----
+RHDH configuration reader readDurationFromConfig explicitly disallows plain numbers to prevent ambiguity.
+However, specific raw configuration fields, such as direct Node.js HTTP server settings, might strictly require numbers. Always check the specific documentation for the field you are configuring.
+----
+
+## Catalog entity descriptor reference
+
+Use these reference tables to identify required YAML attributes and mandatory fields for registering components in the Red Hat Developer Hub catalog.
+
+### Mandatory fields for catalog entities
+
+The following table lists the fields required for each entity kind supported by {product-title}. If you do not provide a mandatory field, the catalog processor fails to validate the entity and throws a TypeError.
+
+### Mandatory fields by entity kind
+
+
+
+### Conditional UI behavior for component entities
+
+The visibility of navigation tabs in the {product-title} interface is determined by the spec.type attribute or specific metadata annotations within the component descriptor.
+
+### Component UI behavior mapping
+
+
+
+
+[NOTE]
+----
+For the Docs tab to successfully render technical documentation, the TechDocs plugin must be configured correctly in your instance.
+----
+
+## Define software components in the catalog
+
+Populate your software catalog by creating and configuring a YAML descriptor file that defines your application or service.
+
+* You have access to a Git repository to host your catalog files.
+
+1. Create a YAML file named catalog-info.yaml in the root directory of your repository.
+2. Add the following component configuration to the file:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: example-service
+spec:
+  type: service
+  lifecycle: production
+  owner: group:example-team
+```
+
+3. Save and commit the file to your Git repository.
+
+* Navigate to the Catalog page in the UI, filter by Component, and verify your service is visible.
+
+## Define APIs in the catalog
+
+Expose your interfaces for consumption within the hub by registering an API entity.
+
+1. Create a YAML file named catalog-info.yaml in your repository.
+2. Add the following API schema configuration to the file:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: example-api
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:example-team
+  definition: |
+    openapi: "3.0.0"
+    info:
+      title: Example API
+      version: "1.0.0"
+    paths: {}
+```
+
+3. Save and commit the file to your Git repository.
+
+* Navigate to the Catalog page in the UI, filter by API, and verify your endpoint definition is visible.
+
+## Define resources in the catalog
+
+Track infrastructure dependencies by creating a YAML descriptor file to register a resource entity in the software catalog.
+
+* You have an active {product-title} instance.
+* You have access to a Git repository to host your catalog descriptor files.
+
+1. Create a YAML file named catalog-info.yaml in your project or infrastructure repository directory.
+2. Add the following resource configuration to the file:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: example-database
+spec:
+  type: database
+  owner: group:example-team
+```
+
+3. Save the file and commit it to your Git repository.
+
+1. Log in to your {product-title} instance web console.
+2. Navigate to the Catalog page using the left sidebar menu.
+3. Locate the Filters panel on the left side of the catalog view and click Resource.
+4. Confirm that your newly defined resource appears in the filtered list.
+
+## Define locations in the catalog
+
+Import multiple entity descriptors into the software catalog by creating a YAML descriptor file that defines a location entity.
+
+* You have an active {product-title} instance.
+* You have access to a Git repository to host your catalog descriptor files.
+
+1. Create a YAML file named catalog-info.yaml in your centralized repository folder.
+2. Add the location configuration to the file, using the spec.targets array to point to your individual target configurations:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: example-location
+spec:
+  type: url
+  targets:
+    - https://github.com/example-org/example-repo/blob/main/catalog-info.yaml
+```
+
+3. Save the file and commit it to your Git repository.
+
+1. Log in to your {product-title} instance web console.
+2. Navigate to the Catalog page using the left sidebar menu.
+3. Locate the Filters panel on the left side of the catalog view and click Location.
+4. Confirm that your newly defined location entity appears in the list and that the target data components are successfully discovered without validation errors.
+
+# Migrate to the front-end system to use blueprint-based dynamic routing
+
+Migrate your Red Hat Developer Hub environment to the extension-based front-end system to use blueprint-based dynamic routing for improved extensibility and performance.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+## Customize platform appearance to reflect your brand identity
+
+Apply custom color schemes, logos, and visual elements to the Red Hat Developer Hub interface so the platform reflects your organization&#8217;s brand identity.
+
+* You have installed the @backstage/frontend-defaults package.
+* You have access to the packages/app/src/App.tsx file.
+* You have access to the app-config.yaml file.
+
+1. To enable the custom theme, import the rhdhThemeModule from the theme plugin alpha module in your packages/app/src/App.tsx file:
+
+```typescript
+import { createApp } from '@backstage/frontend-defaults';
+import { rhdhThemeModule } from '@red-hat-developer-hub/backstage-plugin-theme/alpha';
+
+export default createApp({
+  features: [
+    rhdhThemeModule,
+    // Additional features
+  ],
+});
+```
+
+
+[NOTE]
+----
+For advanced customization beyond color schemes and branding, you can create a custom theme module that extends the base theme configuration. For a complete example of creating a custom theme module by overriding theme plugin extensions, see the theme plugin example in the rhdh-plugins repository.
+----
+2. To set the application title and branding, configure extension settings in your app-config.yaml file:
+
+```yaml
+app:
+  title: My Company Catalog
+  baseUrl: http://localhost:3000
+
+organization:
+  name: My Company
+```
+
+3. Save the configuration file and restart your Red Hat Developer Hub instance to apply the theme changes.
+
+1. Open your Red Hat Developer Hub instance in a web browser.
+2. Verify that the interface displays your custom theme.
+3. Check that theme colors match your brand identity specifications.
+
+## Update Global Header mount points to integrate securely with the new Blueprint architecture
+
+Update Global Header mount points to integrate securely with the new Blueprint architecture by installing and integrating the global header plugin into your Red Hat Developer Hub application as a prerequisite for adding custom buttons, menus, and navigation shortcuts to the header.
+
+1. To enable custom navigation, install the global header plugin package.
+
+```bash
+yarn --cwd packages/app add @red-hat-developer-hub/backstage-plugin-global-header
+```
+
+2. To register the global header, import the plugin and modules in your packages/app/src/App.tsx file.
+
+```typescript
+import { createApp } from '@backstage/frontend-defaults';
+import globalHeaderPlugin, {
+  globalHeaderModule,
+  globalHeaderTranslationsModule,
+} from '@red-hat-developer-hub/backstage-plugin-global-header/alpha';
+
+export default createApp({
+  features: [
+    globalHeaderModule,
+    globalHeaderTranslationsModule,  // Enables translation support
+    globalHeaderPlugin,
+  ],
+});
+```
+
+
+[NOTE]
+----
+You can omit the globalHeaderPlugin if your app-config.yaml file includes the following configuration:
+
+```yaml
+app:
+  packages: all
+```
+
+----
+3. Restart your development server to load the plugin.
+
+## Add navigation shortcuts to reduce clicks to frequently used resources
+
+Add custom toolbar buttons and drop-down menu items to the Red Hat Developer Hub global header to give you quick access to frequently used tools, documentation, and support resources.
+
+You can add navigation shortcuts by using any of the following approaches:
+
+* Configuration-driven items through app-config.yaml without code
+* Extension blueprints for plugin contributions (GlobalHeaderComponentBlueprint for toolbar items, GlobalHeaderMenuItemBlueprint for drop-down menu entries)
+* Fully custom React components
+
+* You have installed the @red-hat-developer-hub/backstage-plugin-global-header package.
+* You have access to the app-config.yaml file.
+* You have integrated the global header plugin into your application features.
+
+1. To add navigation shortcuts, configure the globalHeader block in your app-config.yaml file with components for toolbar buttons and menuItems for dropdown entries:
+
+```yaml
+globalHeader:
+  components:
+    - title: Visualizer Dashboard
+      titleKey: visualizer.dashboard.title  # Optional localization key for the title.
+      icon: dashboard
+      link: /visualizer/tree
+      priority: 75  # Priority determines display order. Higher values appear first.
+  menuItems:
+    - target: help  # Target specifies which drop-down menu (`help`, `profile`, or `app-launcher`) receives this item.
+      title: Internal Wiki
+      titleKey: wiki.internal.title
+      icon: article
+      link: https://wiki.internal.example.com
+      sectionLabel: resources  # Section groups related menu items together.
+      priority: 80
+```
+
+2. Save the configuration file.
+3. Restart your Red Hat Developer Hub instance to apply the changes.
+
+1. Open your Red Hat Developer Hub instance in a web browser.
+2. Verify that your custom toolbar button is displayed in the global header.
+3. Click the target drop-down menu to confirm your menu item is displayed in the correct section.
+
+## Add plugin-specific buttons to the toolbar for quick actions
+
+Add custom buttons or interactive widgets to the global header toolbar that trigger your plugin&#8217;s functionality directly. Use GlobalHeaderComponentBlueprint to create these toolbar components programmatically.
+
+* You have set up the global header plugin in your application.
+* You have access to your plugin source code.
+
+1. To add a plugin button to the toolbar, create a custom toolbar component extension in your plugin code:
+
+```typescript
+import { GlobalHeaderComponentBlueprint } from '@red-hat-developer-hub/backstage-plugin-global-header/alpha';
+
+const myToolbarButton = GlobalHeaderComponentBlueprint.make({
+  name: 'my-toolbar-item',
+  params: {
+    component: MyCustomComponent,  // React component to render in the toolbar.
+    priority: 100,  // Higher priority values display first in the toolbar.
+  },
+});
+```
+
+2. To create icon buttons without custom components, you can provide data-driven configuration instead of a component:
+
+```typescript
+const dashboardButton = GlobalHeaderComponentBlueprint.make({
+  name: 'dashboard-button',
+  params: {
+    icon: 'dashboard',
+    title: 'Dashboard',
+    link: '/dashboard',
+    priority: 75,  // Higher priority values display first in the toolbar.
+  },
+});
+```
+
+3. To activate the toolbar button, register the extension in your plugin's alpha exports:
+
+```typescript
+export default createPlugin({
+  id: 'my-plugin',
+  extensions: [myToolbarButton],
+});
+```
+
+
+## Add plugin links to drop-down menus to organize navigation access
+
+Add plugin links to the Red Hat Developer Hub help, profile, or app launcher drop-down menus to organize navigation access and help users discover features efficiently.
+
+By using GlobalHeaderMenuItemBlueprint, you can create custom menu item entries programmatically.
+
+* You have configured the global header plugin in your application.
+* You have access to your plugin source code.
+
+1. To add a plugin link to a drop-down menu, create a menu item extension specifying the target drop-down menu:
+
+```typescript
+import { GlobalHeaderMenuItemBlueprint } from '@red-hat-developer-hub/backstage-plugin-global-header/alpha';
+
+const myMenuItem = GlobalHeaderMenuItemBlueprint.make({
+  name: 'my-menu-item',
+  params: {
+    target: 'help',  // Target drop-down menu: 'help', 'profile', or 'app-launcher'
+    component: MyMenuItemComponent,
+    priority: 50,
+  },
+});
+```
+
+2. Optional: To add simple links without custom components, you can use data-driven configuration:
+
+```typescript
+const supportLink = GlobalHeaderMenuItemBlueprint.make({
+  name: 'support-link',
+  params: {
+    target: 'help',
+    title: 'Support Portal',
+    icon: 'support',
+    link: 'https://support.example.com',
+    sectionLabel: 'external-resources',  // Section groups related items together within the drop-down menu
+    priority: 60,
+  },
+});
+```
+
+3. To activate the menu item, register the extension in your plugin's alpha exports:
+
+```typescript
+export default createPlugin({
+  id: 'my-plugin',
+  extensions: [myMenuItem, supportLink],
+});
+```
+
+
+## Reorganize or remove header items to align with your team priorities
+
+Adjust the display order of global header components by changing their priority values, replace default implementations with custom versions, or hide items that your team does not use to streamline the interface.
+
+1. To reorder components, assign higher priority values to items that should appear first:
+
+```yaml
+globalHeader:
+  components:
+    - title: Priority Item
+      icon: star
+      link: /important
+      priority: 200  # Higher values render before lower-priority defaults.
+```
+
+2. To override a default component, create an extension with the same name but different configuration:
+
+```typescript
+const customSearch = GlobalHeaderComponentBlueprint.make({
+  name: 'search',  // Matches the default search component to replace it.
+  params: {
+    component: MyCustomSearchComponent,
+    priority: 150,
+  },
+});
+```
+
+3. To disable a default extension, configure it with disabled: true in your extension overrides:
+
+```yaml
+extensions:
+  - global-header-component:search:
+      disabled: true  # Disables the default search component.
+```
+
+
+## Migrate the Homepage to function as a dynamic plugin loaded through blueprints
+
+Migrate the dynamic homepage to function as a plugin loaded through blueprints to choose which templates and widgets appear when you log in. You can use customizable layouts to drag and resize cards, or fixed layouts with predefined positions.
+
+Available widgets include:
+
+* Onboarding sections
+* Entity catalogs
+* Software templates
+* Quick access cards
+* Search bars
+* Recently visited items
+* Top visited resources
+
+* You have installed the @red-hat-developer-hub/backstage-plugin-dynamic-home-page package.
+* You have access to the packages/app/src/App.tsx file.
+* You have access to the app-config.yaml file.
+
+1. To enable the dynamic homepage, import and register the homepage modules in your packages/app/src/App.tsx file:
+
+```typescript
+import { createApp } from '@backstage/frontend-defaults';
+import {
+  homePageDevModule,
+  homepageTranslationsModule,
+} from '@red-hat-developer-hub/backstage-plugin-dynamic-home-page/alpha';
+
+export default createApp({
+  features: [
+    homePageDevModule,  // Enables the dynamic homepage plugin
+    homepageTranslationsModule,  // Adds internationalization support
+    // Additional features
+  ],
+});
+```
+
+2. To set the homepage route and visit tracking, configure them in your app-config.yaml file:
+
+```yaml
+app:
+  extensions:
+    - page:home:
+        config:
+          path: /  # Set to / to make the homepage your landing page
+    - api:home/visits: true  # Enables visit tracking for recently visited and top visited widgets
+    - app-root-element:home/visit-listener: true  # Activates the visit listener to record page visits
+```
+
+3. Choose a layout mode by setting the customizable option. Set to true for a customizable grid where you can drag and resize cards, or set to false for a read-only grid with fixed card positions:
+
+```yaml
+app:
+  extensions:
+    - home-page-layout:home/dynamic-homepage-layout:
+        config:
+          customizable: true  # Set to false to prevent you from moving or resizing cards
+```
+
+4. To control widget display order and sizing, configure widget sections with priority values and responsive breakpoints. Priority values determine display order in read-only layouts, with higher values appearing first.
+
+```yaml
+app:
+  extensions:
+    - home-page-layout:home/dynamic-homepage-layout:
+        config:
+          customizable: false
+          widgetLayout:
+            RhdhTemplateSection:  # Software templates widget section
+              priority: 300  # Priority applies only to read-only layouts. Higher values display first.
+              breakpoints:  # Card dimensions (width w and height h in grid units) across device sizes
+                xl: { w: 12, h: 5 }
+                lg: { w: 12, h: 5 }
+                md: { w: 12, h: 5 }
+                sm: { w: 12, h: 5 }
+                xs: { w: 12, h: 7.5 }
+                xxs: { w: 12, h: 13.5 }
+            RhdhEntitySection:  # Entity catalog widget section showing registered components
+              priority: 200
+              breakpoints:
+                xl: { w: 12, h: 7 }
+                lg: { w: 12, h: 7 }
+                md: { w: 12, h: 7 }
+                sm: { w: 12, h: 7 }
+                xs: { w: 12, h: 9 }
+                xxs: { w: 12, h: 15 }
+            RhdhOnboardingSection:  # Onboarding widget section with getting started guides
+              priority: 100
+              breakpoints:
+                xl: { w: 12, h: 6 }
+                lg: { w: 12, h: 6 }
+                md: { w: 12, h: 6 }
+                sm: { w: 12, h: 6 }
+                xs: { w: 12, h: 8 }
+                xxs: { w: 12, h: 12 }
+```
+
+5. Save the configuration file.
+6. Restart your Red Hat Developer Hub instance to apply the homepage layout changes.
+
+1. Open your Red Hat Developer Hub instance in a web browser.
+2. Verify that the homepage displays at the configured path.
+3. Check that widget cards appear in the expected order and size.
+4. If customizable: true, confirm that you can drag and resize cards.
+5. Verify that visit tracking works by navigating to different pages and checking the recently visited widget.
+
+## Enable guided tutorials to learn platform features
+
+Enable guided tutorials in Red Hat Developer Hub to learn platform features through interactive quick start walkthroughs. Tutorials automatically display on first visit and are accessible from a Quick start button in the global header.
+
+* You have installed the @red-hat-developer-hub/backstage-plugin-quickstart package.
+* You have access to the packages/app/src/App.tsx file.
+
+1. To enable guided tutorials, import the quick start modules in your packages/app/src/App.tsx file:
+
+```typescript
+import { createApp } from '@backstage/frontend-defaults';
+import {
+  quickstartInitModule,
+  quickstartTranslationsModule,
+} from '@red-hat-developer-hub/backstage-plugin-quickstart/alpha';
+
+export default createApp({
+  features: [
+    quickstartInitModule,  // Handles first-visit auto-open and notifications
+    quickstartTranslationsModule,  // Provides internationalization support
+    // Additional features
+  ],
+});
+```
+
+2. To make tutorials accessible, add the Quick start sidebar button to your navigation component:
+
+```typescript
+import { useAppDrawer } from '@backstage/frontend-plugin-api';
+import { WavingHandOutlinedIcon } from '@mui/icons-material';
+import { QUICKSTART_DRAWER_ID } from '@red-hat-developer-hub/backstage-plugin-quickstart';
+
+function QuickstartSidebarItem() {
+  const { toggleDrawer } = useAppDrawer();
+  return (
+    <SidebarItem
+      text="Quick start"
+      icon={WavingHandOutlinedIcon}
+      onClick={() => toggleDrawer(QUICKSTART_DRAWER_ID)}
+    />
+  );
+}
+```
+
+
+[NOTE]
+----
+If you have the global header plugin installed, a default menu item for opening and closing the Quick start drawer automatically appears in the Help menu. The custom sidebar button shown above is only necessary if the global header plugin is not installed.
+----
+
+1. Open your Red Hat Developer Hub instance in a new browser window.
+2. Verify that the Quick start drawer opens automatically on first visit.
+3. Click the Quick start sidebar button to toggle the drawer.
+4. Confirm that tutorials display based on your role.
+
+## Preserve custom integrations when migrating to the front-end system
+
+Migrate your mount points and custom components from the Scalprum-based system to Red Hat Developer Hub extension-based front-end system by converting YAML-based mount points to extension blueprints.
+
+Your existing mount points for entity pages, application headers, search filters, and admin pages map to specific extension attachment points in the front-end system. The extension tree resolves attachments by matching extension outputs to parent inputs. Blueprints provide typed patterns for common extension types including pages, navigation items, and entity content.
+
+Available entity page mount points:
+
+* overview
+* topology
+* issues
+* pull-requests
+* ci
+* cd
+* kubernetes
+* image-registry
+* monitoring
+* api
+* dependencies
+* docs
+* definition
+* diagram
+
+* You have access to the packages/app/src/App.tsx file.
+* You have access to your app-config.yaml file.
+* You understand your current mount point configuration in the dynamicPlugins.frontend section.
+
+1. To begin migration, identify your current mount points in the dynamicPlugins.frontend configuration:
+
+```yaml
+dynamicPlugins:
+  frontend:
+    my-plugin:
+      mountPoints:
+        - mountPoint: entity.page.overview/cards  # Current mount point
+          importName: MyComponent
+          config:
+            if:
+              isKind: component
+            layout:
+              xs: { w: 12, h: 4 }
+```
+
+2. To understand the migration path, map your mount points to front-end system extension points:
+
+3. To migrate your configuration, convert your mount point configuration to extension blueprint code in your plugin's /alpha export file:
+
+```typescript
+// For entity page cards
+import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
+
+const myEntityCard = EntityCardBlueprint.make({
+  name: 'my-component',
+  params: {
+    filter: entity => entity.kind === 'Component',  // Replaces if.isKind condition
+    loader: () => import('./MyComponent').then(m => <m.MyComponent />),
+  },
+});
+
+export default createFrontendPlugin({
+  pluginId: 'my-plugin',
+  extensions: [myEntityCard],
+});
+```
+
+4. To migrate entity tabs, convert entityTabs configuration to EntityContentBlueprint:
+
+```typescript
+// Old configuration
+dynamicPlugins:
+  frontend:
+    my-plugin:
+      entityTabs:
+        - path: /my-tab
+          title: My Tab
+          mountPoint: entity.page.my-tab
+
+// New extension blueprint
+import { EntityContentBlueprint } from '@backstage/plugin-catalog-react/alpha';
+
+const myTab = EntityContentBlueprint.make({
+  name: 'my-tab',
+  params: {
+    defaultPath: '/my-tab',
+    defaultTitle: 'My Tab',
+    loader: () => import('./MyTabContent').then(m => <m.MyTabContent />),
+  },
+});
+```
+
+5. To activate the migrated plugin, update your packages/app/src/App.tsx file to import it:
+
+```typescript
+import { createApp } from '@backstage/frontend-defaults';
+import myPlugin from '@my-org/backstage-plugin-my-plugin/alpha';
+
+export default createApp({
+  features: [
+    myPlugin,
+    // Additional plugins
+  ],
+});
+```
+
+6. To complete the migration, remove the previous mount point configuration from your app-config.yaml file after verifying the migration works.
+
+1. Open your Red Hat Developer Hub instance in a web browser.
+2. Navigate to an entity page where your component should appear.
+3. Verify that your custom component displays in the correct location.
+4. Check that conditional rendering based on entity kind or type works as expected.
+5. Verify that any custom layout configurations apply correctly.
+
+## Additional resources
+
+* Get AI-assisted help for your development tasks
+
+# Automate environment provisioning with predefined Operator configurations
+
+To reduce manual plugin configuration, you can deploy Red Hat Developer Hub with predefined settings for workflow orchestration or AI assistance.
+
+## Pre-configured settings for common use cases
+
+To choose the appropriate configuration for your use case, review the available predefined settings, their infrastructure prerequisites, and minimal Custom Resource examples.
+
+Red Hat Developer Hub Operator 1.10.0 and later includes pre-configured settings for common use cases.
+Each configuration automatically applies required plugins, dependencies, and app-config settings.
+
+
+[IMPORTANT]
+----
+If you reference a custom dynamic-plugins config map using spec.application.dynamicPluginsConfigMapName, custom plugin declarations override matching plugin declarations from spec.flavours based on package name. When you enable a spec.flavours configuration, you can use custom config map entries to customize the plugin settings. When you disable a spec.flavours configuration, the Operator excludes its plugins from the default configuration. Therefore, you must remove or disable those plugins in your custom dynamic-plugins config map, otherwise RHDH still loads them.
+----
+
+
+
+### Orchestrator
+
+Enable workflow automation with automatic plugin configuration.
+
+Automatically configured components:
+
+* Orchestrator front-end plugin (red-hat-developer-hub-backstage-plugin-orchestrator)
+* Orchestrator backend plugin (red-hat-developer-hub-backstage-plugin-orchestrator-backend)
+* Orchestrator backend module for Scaffolder (red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-orchestrator)
+* Orchestrator form widgets plugin (red-hat-developer-hub-backstage-plugin-orchestrator-form-widgets)
+* SonataFlow Operator integration
+* Data Index service
+* Job service
+
+Minimal CR example:
+
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub-orchestrator
+spec:
+  flavours:
+    - name: orchestrator
+      enabled: true
+```
+
+
+
+[NOTE]
+----
+This example uses the default local PostgreSQL database.
+For production deployments, Red Hat recommends using an external PostgreSQL database.
+For configuration details, see Configure external PostgreSQL databases.
+----
+
+Prerequisites:
+
+* OpenShift Serverless Operator, Knative Serving, Knative Eventing, and OpenShift Serverless Logic Operator
+* PostgreSQL database (external database recommended for production)
+* Optional: AMQ Streams (Kafka) for event-driven workflows
+
+For detailed steps, see Deploy Red Hat Developer Hub for workflow automation.
+
+### Developer Lightspeed for RHDH
+
+Developer Lightspeed for RHDH is enabled by default in Red Hat Developer Hub 1.10.0 and later. Connect your LLM provider to use AI chat assistance.
+
+Automatically configured components:
+
+* Developer Lightspeed for RHDH front-end plugin
+* Developer Lightspeed for RHDH backend plugin
+* Lightspeed Core Service sidecar
+
+Minimal CR example:
+
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  application:
+    extraEnvs:
+      secrets:
+        - name: lightspeed-secrets
+          containers:
+            - lightspeed-core
+```
+
+
+
+[NOTE]
+----
+Developer Lightspeed for RHDH is enabled by default.
+You do not need to set spec.flavours to enable AI assistance.
+To disable, set spec.flavours: [{name: lightspeed, enabled: false}].
+----
+
+Prerequisites:
+
+* External LLM provider endpoint (OpenAI, Azure OpenAI, or compatible API)
+* LLM API credentials
+
+For complete configuration details, provider-specific guidance, and troubleshooting, see Install and configure Red Hat Developer Lightspeed for Red Hat Developer Hub.
+
+### Multiple pre-configured settings
+
+Enable both Orchestrator and Developer Lightspeed for RHDH in a single deployment:
+
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub-full
+spec:
+  flavours:
+    - name: orchestrator
+      enabled: true
+  application:
+    extraEnvs:
+      secrets:
+        - name: lightspeed-secrets
+          containers:
+            - lightspeed-core
+```
+
+
+
+[NOTE]
+----
+Developer Lightspeed for RHDH is enabled by default, so you only need to explicitly enable Orchestrator.
+Settings from both configurations merge automatically.
+For production deployments with external PostgreSQL database, add the database configuration as shown in Configure external PostgreSQL databases.
+----
+
+You must meet prerequisites for both: OpenShift Serverless components for Orchestrator and external LLM provider for Developer Lightspeed for RHDH.
+
+## Deploy Red Hat Developer Hub for workflow automation
+
+To automate CI/CD pipeline setup, deploy Red Hat Developer Hub with workflow orchestration by using predefined Operator configurations.
+
+* You have installed the Red Hat Developer Hub Operator in your OpenShift cluster.
+* You have installed the required infrastructure components for Orchestrator.
+* Optional: For production deployments, you have configured an external PostgreSQL database and created a Secret with connection credentials.
+* Optional: You have AMQ Streams (Kafka) installed for event-driven workflow processing.
+
+1. Create a namespace for your Red Hat Developer Hub instance or use an existing namespace:
+
+```terminal
+$ oc new-project my-rhdh-project
+```
+
+2. Create a Backstage CR with the Orchestrator deployment configuration:
+
+```terminal
+$ cat <<EOF | oc -n my-rhdh-project create -f -
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: <backstage_instance_name>
+spec:
+  flavours:
+    - name: orchestrator
+      enabled: true
+EOF
+```
+
+
+Where:
+<backstage_instance_name>:: A name for your Red Hat Developer Hub instance, for example developer-hub-orchestrator.
+spec.flavours:: The pre-configured settings array. Set name: orchestrator with enabled: true to automatically configure workflow orchestration capabilities.
+
+[NOTE]
+----
+This example uses the default local PostgreSQL database.
+For production deployments, Red Hat recommends using an external PostgreSQL database.
+If you configured an external database in the prerequisites, add the database configuration to the CR as shown in Configure external PostgreSQL databases.
+----
+
++
+
+[IMPORTANT]
+----
+If you reference a custom dynamic-plugins config map using spec.application.dynamicPluginsConfigMapName, custom plugin declarations override matching plugin declarations from spec.flavours based on package name. To enable Orchestrator, you must set spec.flavours: [{name: orchestrator, enabled: true}]. You can use custom config map entries to customize the Orchestrator plugin settings. To disable Orchestrator, set spec.flavours: [{name: orchestrator, enabled: false}]. When you disable Orchestrator, the Operator excludes its plugins from the default configuration. Therefore, you must remove or disable those plugins in your custom dynamic-plugins config map, otherwise RHDH still loads them.
+----
+3. Wait for the Operator to reconcile the Backstage CR:
+
+```terminal
+$ oc get backstage <backstage_instance_name> -n my-rhdh-project -w
+```
+
+
+The deployment is ready when the PHASE column shows Deployed.
+
+1. Verify that the Data Index service pod is running:
+
+```terminal
+$ oc get pods -n my-rhdh-project | grep sonataflow
+```
+
+
+You should see the Data Index service pod. The Orchestrator backend plugin runs within the main Red Hat Developer Hub pod.
+2. Access the Red Hat Developer Hub UI:
+
+```terminal
+$ oc get route backstage-<backstage_instance_name> -n my-rhdh-project -o jsonpath='{.spec.host}'
+```
+
+
+Go to the URL in your browser.
+3. Verify the Orchestrator plugin is displayed in the Red Hat Developer Hub navigation menu.
+Look for the Orchestrator option in the left navigation panel.
+4. Optional: Test workflow deployment by creating a sample workflow. For detailed workflow examples, see Orchestrator in Red Hat Developer Hub.
+
+If workflow pods fail to start:: Verify the PostgreSQL connection by checking the Operator logs:
+
+```terminal
+$ oc logs -n openshift-operators deployment/rhdh-operator -c manager
+```
+
+
+Ensure the database credentials in the Secret are correct and the database is accessible from the cluster.
+If the Data Index service fails:: Verify that the PostgreSQL user has permissions to create schemas and tables.
+The Orchestrator deployment configuration automatically initializes required database schemas.
+
+## Configure Developer Lightspeed for RHDH by using the Operator
+
+Configure Developer Lightspeed for RHDH by updating your Backstage custom resource (CR) to map environment variables, manage configurations, and set access rights.
+
+* The RHDH Operator is installed on your cluster.
+* You have cluster administrator privileges.
+
+1. Create an opaque Kubernetes Secret containing your operational credentials and query safety guardrails before applying the Backstage CR. Refer to the following key definitions for required environment variables:
+
+[IMPORTANT]
+----
+To disable an inference provider or configuration feature, you must leave the corresponding ENABLE_* variable completely unset. Setting an ENABLE_* variable to false does not disable the component because the underlying system checks only whether the variable is defined.
+----
+
+
+The following code shows an example configuration Secret for vLLM with validation:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lightspeed-auth-secrets
+type: Opaque
+stringData:
+  ENABLE_VLLM: "true"
+  VLLM_URL: "https://<api_endpoint>/v1"
+  VLLM_API_KEY: "<api_key>"
+  ENABLE_VALIDATION: "true"
+  VALIDATION_PROVIDER: "vllm"
+  VALIDATION_MODEL_NAME: "llama3.1"
+```
+
+2. Map your secret inside the extraEnvs section of the Backstage CR to complete container provisioning:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: lightspeed-rhdh
+spec:
+  application:
+    extraEnvs:
+      secrets:
+        - name: lightspeed-auth-secrets
+          containers:
+            - lightspeed-core
+```
+
+3. Optional: To protect settings such as Model Context Protocol (MCP) server additions from being overwritten during reconciliation loops, define a custom ConfigMap mapping in the extraFiles section of the CR:
+
+```yaml
+    extraFiles:
+      configMaps:
+        - name: "my-custom-config"
+          mountPath: /app-root
+          key: lightspeed-stack.yaml
+          containers:
+            - lightspeed-core
+```
+
+4. Configure access rights by updating the RBAC policy inside your Backstage CR:
+
+To grant non-administrator teams access to the virtual assistant, append permission lines to the rbac-policies.csv section, replacing <team> with your target team name:
+
+```text
+p, role:default/<team>, lightspeed.chat.read, read, allow
+p, role:default/<team>, lightspeed.chat.create, create, allow
+```
+
+5. Apply the updated custom resource manifest to your cluster:
+
+```bash
+$ oc apply -f <backstage_cr_file>.yaml
+```
+
+
+1. Log in to your console instance.
+2. Verify that the Open Lightspeed floating action button (FAB) appears on the home page.
+3. Select the FAB and confirm that the chat window initializes successfully.
+
+# Configure external PostgreSQL databases
+
+Configure an external PostgreSQL database for production environments instead of using the default local database created by the Red Hat Developer Hub Operator or Helm chart.
+
+
+[IMPORTANT]
+----
+Configure your database to use the date format of the International Organization for Standardization (ISO) through the DateStyle setting. Other formats are incompatible with the internal tracking of the software catalog, which causes scheduling tasks to fail and prevents your catalog items from refreshing.
+----
+
+## Configure an external PostgreSQL instance using the Operator
+
+Configure an external PostgreSQL instance by using the Red Hat Developer Hub Operator instead of the default local PostgreSQL instance.
+
+* You meet the Sizing requirements for external PostgreSQL deployments.
+* You are using a supported version of PostgreSQL. For more information, see the Product life cycle page.
+* You have the following details:
+* db_host: Denotes your PostgreSQL instance Domain Name System (DNS) or IP address
+* db_port: Denotes your PostgreSQL instance port number, such as 5432
+* username: Denotes the user name to connect to your PostgreSQL instance
+* password: Denotes the password to connect to your PostgreSQL instance
+* You have installed the Red Hat Developer Hub Operator.
+* Optional: You have a CA certificate, Transport Layer Security (TLS) private key, and TLS certificate so that you can secure your database connection by using the TLS protocol. For more information, refer to your PostgreSQL vendor documentation.
+
+
+[NOTE]
+----
+By default, Developer Hub uses a database for each plugin and automatically creates it if none exists. You might need the Create Database privilege in addition to PostgreSQL Database privileges for configuring an external PostgreSQL instance.
+----
+
+1. Optional: Create a certificate secret to configure your PostgreSQL instance with a TLS connection:
+
+```terminal
+$ cat <<EOF | oc -n my-rhdh-project create -f -
+apiVersion: v1
+kind: Secret
+metadata:
+ name: my-rhdh-database-certificates-secrets
+type: Opaque
+stringData:
+ postgres-ca.pem: |-
+  -----BEGIN CERTIFICATE-----
+  <ca_certificate_key>
+ postgres-key.key: |-
+  -----BEGIN CERTIFICATE-----
+  <tls_private_key>
+ postgres-crt.pem: |-
+  -----BEGIN CERTIFICATE-----
+  <tls_certificate_key>
+  # ...
+EOF
+```
+
+
+Where:
+my-rhdh-database-certificates-secrets:: The certificate secret name.
+<ca_certificate_key>:: The CA certificate key.
+<tls_private_key>:: Optional: The TLS private key.
+<tls_certificate_key>:: Optional: The TLS certificate key.
+2. Create a credential secret to connect to the PostgreSQL instance:
+
+```terminal
+$ cat <<EOF | oc -n my-rhdh-project create -f -
+apiVersion: v1
+kind: Secret
+metadata:
+ name: my-rhdh-database-secrets
+type: Opaque
+stringData:
+ POSTGRES_PASSWORD: <password>
+ POSTGRES_PORT: "<db_port>"
+ POSTGRES_USER: <username>
+ POSTGRES_HOST: <db_host>
+ PGSSLMODE: <ssl_mode>
+ NODE_EXTRA_CA_CERTS: <abs_path_to_pem_file>
+EOF
+```
+
+
+Where:
+my-rhdh-database-secrets:: The credential secret name.
+<password>:: The password to connect to your PostgreSQL instance.
+<db_port>:: Your PostgreSQL instance port number, such as 5432.
+<username>:: The user name to connect to your PostgreSQL instance.
+<db_host>:: Your PostgreSQL instance DNS or IP address.
+<ssl_mode>:: Optional: For TLS connections, the required SSL mode.
+<abs_path_to_pem_file>:: Optional: For TLS connections, the absolute path to the Privacy-Enhanced Mail (PEM) file, for example /opt/app-root/src/postgres-crt.pem.
+3. Create a Kubernetes service that points to your external PostgreSQL database:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-postgresql-service
+spec:
+  type: ExternalName
+  externalName: <your-external-db-host-name>
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+```
+
+
+Where:
+external-postgresql-service:: Name of the service to reference in plugin configurations.
+ExternalName:: Service type that creates a CNAME record to the external database host name.
+<your-external-db-host-name>:: FQDN of your external PostgreSQL server, for example, postgres.example.com.
+
+[NOTE]
+----
+If your external database is outside the cluster or uses an IP address instead of a host name, create a service with endpoints:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-postgresql-service
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: external-postgresql-service
+subsets:
+  - addresses:
+      - ip: <your-external-db-ip>
+    ports:
+      - port: 5432
+        protocol: TCP
+```
+
+Where:
+<your-external-db-ip>:: IP address of your external PostgreSQL server.
+----
+4. Optional: Ensure your external PostgreSQL instance is configured with recommended performance tuning parameters.
+
+Set shared_buffers to approximately 1/4 and effective_cache_size to approximately 1/2 of the allocated database memory.
+For recommended values based on your deployment scale, see Sizing requirements for Red Hat Developer Hub.
+5. Create your Backstage custom resource (CR):
+
+```terminal
+cat <<EOF | oc -n my-rhdh-project create -f -
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: <backstage_instance_name>
+spec:
+  database:
+    enableLocalDb: false
+  application:
+    extraFiles:
+      mountPath: <path>
+      secrets:
+        - name: my-rhdh-database-certificates-secrets
+          key: postgres-crt.pem, postgres-ca.pem, postgres-key.key
+    extraEnvs:
+      secrets:
+        - name: my-rhdh-database-secrets
+        # ...
+```
+
+
+Where:
+spec.database.enableLocalDb:: Set to false to disable creating local PostgreSQL instances.
+<path>:: The mount path for certificate files, for example /opt/app-root/src.
+my-rhdh-database-certificates-secrets:: The certificate secret name, required if you configure a TLS connection.
+key:: The key names as defined in the my-rhdh-database-certificates-secrets Secret.
+my-rhdh-database-secrets:: The credential secret name.
+
+[NOTE]
+----
+The environment variables listed in the Backstage CR work with the Operator default configuration. If you have changed the Operator default configuration, you must reconfigure the Backstage CR accordingly.
+----
+6. Apply the Backstage CR to the namespace where you have deployed the Developer Hub instance.
+
+## Configure an external PostgreSQL instance using the Helm chart
+
+Configure an external PostgreSQL instance by using the Helm chart instead of the default local PostgreSQL instance.
+
+* You meet the Sizing requirements for external PostgreSQL deployments.
+* You are using a supported version of PostgreSQL. For more information, see the Product life cycle page.
+* You have the following details:
+* db_host: Denotes your PostgreSQL instance Domain Name System (DNS) or IP address
+* db_port: Denotes your PostgreSQL instance port number, such as 5432
+* username: Denotes the user name to connect to your PostgreSQL instance
+* password: Denotes the password to connect to your PostgreSQL instance
+* You have installed the RHDH application by using the Helm chart.
+* Optional: You have a CA certificate, Transport Layer Security (TLS) private key, and TLS certificate so that you can secure your database connection by using the TLS protocol. For more information, refer to your PostgreSQL vendor documentation.
+
+
+[NOTE]
+----
+By default, Developer Hub uses a database for each plugin and automatically creates it if none exists. You might need the Create Database privilege in addition to PostgreSQL Database privileges for configuring an external PostgreSQL instance.
+----
+
+1. Optional: Create a certificate secret to configure your PostgreSQL instance with a TLS connection:
+
+```terminal
+$ cat <<EOF | oc -n <your_namespace> create -f -
+apiVersion: v1
+kind: Secret
+metadata:
+ name: my-rhdh-database-certificates-secrets
+type: Opaque
+stringData:
+ postgres-ca.pem: |-
+  -----BEGIN CERTIFICATE-----
+  <ca_certificate_key>
+ postgres-key.key: |-
+  -----BEGIN CERTIFICATE-----
+  <tls_private_key>
+ postgres-crt.pem: |-
+  -----BEGIN CERTIFICATE-----
+  <tls_certificate_key>
+  # ...
+EOF
+```
+
+
+Where:
+my-rhdh-database-certificates-secrets:: The certificate secret name.
+<ca_certificate_key>:: The CA certificate key.
+<tls_private_key>:: Optional: The TLS private key.
+<tls_certificate_key>:: Optional: The TLS certificate key.
+2. Create a credential secret to connect to the PostgreSQL instance:
+
+```terminal
+$ cat <<EOF | oc -n <your_namespace> create -f -
+apiVersion: v1
+kind: Secret
+metadata:
+ name: my-rhdh-database-secrets
+type: Opaque
+stringData:
+ POSTGRES_PASSWORD: <password>
+ POSTGRES_PORT: "<db_port>"
+ POSTGRES_USER: <username>
+ POSTGRES_HOST: <db_host>
+ PGSSLMODE: <ssl_mode>
+ NODE_EXTRA_CA_CERTS: <abs_path_to_pem_file>
+EOF
+```
+
+
+Where:
+my-rhdh-database-secrets:: The credential secret name.
+<password>:: The password to connect to your PostgreSQL instance.
+<db_port>:: Your PostgreSQL instance port number, such as 5432.
+<username>:: The user name to connect to your PostgreSQL instance.
+<db_host>:: Your PostgreSQL instance DNS or IP address.
+<ssl_mode>:: Optional: For TLS connections, the required SSL mode.
+<abs_path_to_pem_file>:: Optional: For TLS connections, the absolute path to the Privacy-Enhanced Mail (PEM) file, for example /opt/app-root/src/postgres-crt.pem.
+3. Create a Kubernetes service that points to your external PostgreSQL database:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-postgresql-service
+spec:
+  type: ExternalName
+  externalName: <your-external-db-host-name>
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+```
+
+
+Where:
+external-postgresql-service:: Name of the service to reference in plugin configurations.
+ExternalName:: Service type that creates a CNAME record to the external database host name.
+<your-external-db-host-name>:: FQDN of your external PostgreSQL server, for example, postgres.example.com.
+
+[NOTE]
+----
+If your external database is outside the cluster or uses an IP address instead of a host name, create a service with endpoints:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-postgresql-service
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: external-postgresql-service
+subsets:
+  - addresses:
+      - ip: <your-external-db-ip>
+    ports:
+      - port: 5432
+        protocol: TCP
+```
+
+Where:
+<your-external-db-ip>:: IP address of your external PostgreSQL server.
+----
+4. Configure your PostgreSQL instance in the Helm configuration file named values.yaml:
+
+```yaml
+# ...
+upstream:
+  postgresql:
+    enabled: false
+    auth:
+      existingSecret: my-rhdh-database-secrets
+  backstage:
+    appConfig:
+      backend:
+        database:
+          connection:
+            host: ${POSTGRES_HOST}
+            port: ${POSTGRES_PORT}
+            user: ${POSTGRES_USER}
+            password: ${POSTGRES_PASSWORD}
+            ssl:
+              rejectUnauthorized: true,
+              ca:
+                $file: /opt/app-root/src/postgres-ca.pem
+              key:
+                $file: /opt/app-root/src/postgres-key.key
+              cert:
+                $file: /opt/app-root/src/postgres-crt.pem
+  extraEnvVarsSecrets:
+    - my-rhdh-database-secrets
+  extraEnvVars:
+    - name: BACKEND_SECRET
+      valueFrom:
+        secretKeyRef:
+          key: backend-secret
+          name: '{{ include "rhdh.backend-secret-name" $ }}'
+  extraVolumeMounts:
+    - mountPath: /opt/app-root/src/dynamic-plugins-root
+      name: dynamic-plugins-root
+    - mountPath: /opt/app-root/src/postgres-crt.pem
+      name: postgres-crt
+      subPath: postgres-crt.pem
+    - mountPath: /opt/app-root/src/postgres-ca.pem
+      name: postgres-ca
+      subPath: postgres-ca.pem
+    - mountPath: /opt/app-root/src/postgres-key.key
+      name: postgres-key
+      subPath: postgres-key.key
+  extraVolumes:
+    - ephemeral:
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+      name: dynamic-plugins-root
+    - configMap:
+        defaultMode: 420
+        name: dynamic-plugins
+        optional: true
+      name: dynamic-plugins
+    - name: dynamic-plugins-npmrc
+      secret:
+        defaultMode: 420
+        optional: true
+        secretName: '{{ printf "%s-dynamic-plugins-npmrc" .Release.Name }}'
+    - name: postgres-crt
+      secret:
+        secretName: my-rhdh-database-certificates-secrets
+        # ...
+```
+
+
+Where:
+upstream.postgresql.enabled:: Set to false to disable the local PostgreSQL instance creation.
+upstream.postgresql.auth.existingSecret:: The credentials secret to inject into Backstage.
+upstream.backstage.appConfig.backend.database.connection:: The Backstage database connection parameters.
+upstream.backstage.extraEnvVarsSecrets:: The credentials secret to inject as environment variables into Backstage.
+extraVolumeMounts (postgres-crt, postgres-ca, postgres-key):: Optional: Inject TLS certificate, CA certificate, and TLS private key into the Backstage container.
+extraVolumes (postgres-crt):: The certificate secret name, required if you configure TLS.
+5. Optional: Ensure your external PostgreSQL instance is configured with recommended performance tuning parameters.
+
+Set shared_buffers to approximately 1/4 and effective_cache_size to approximately 1/2 of the allocated database memory.
+For recommended values based on your deployment scale, see Sizing requirements for Red Hat Developer Hub.
+6. Apply the configuration changes in your Helm configuration file named values.yaml:
+
+```terminal
+$ helm upgrade -n <your_namespace> <your_deploy_name> openshift-helm-charts/redhat-developer-hub -f values.yaml --version 1.10.2
+```
+
+
+## Migrate local databases to an external database server using the Operator
+
+Migrate data from a local PostgreSQL server to an external PostgreSQL service by using PostgreSQL utilities such as pg_dump and psql.
+
+
+[NOTE]
+----
+The following procedure uses a database copy script to do a quick migration.
+----
+
+* You have installed the pg_dump and psql utilities on your local machine.
+* For data export, you have the PostgreSQL user privileges to make a full dump of local databases.
+* For data import, you have the PostgreSQL admin privileges to create an external database and populate it with database dumps.
+
+1. Configure port forwarding for the local PostgreSQL database pod by running the following command on a terminal:
+
+```terminal
+$ oc port-forward -n <your_namespace> <pgsql_pod_name> <forward_to_port>:<forward_from_port>
+```
+
+
+Where:
+2. The <pgsql_pod_name> variable denotes the name of a PostgreSQL pod with the format backstage-psql-<deployment_name>-<_index>.
+3. The <forward_to_port> variable denotes the port of your choice to forward PostgreSQL data to.
+4. The <forward_from_port> variable denotes the local PostgreSQL instance port, such as 5432.
+
+```terminal
+$ oc port-forward -n developer-hub backstage-psql-developer-hub-0 15432:5432
+```
+
+5. Make a copy of the following db_copy.sh script and edit the details based on your configuration:
+
+```terminal
+#!/bin/bash
+
+to_host=<db_service_host>
+to_port=5432
+to_user=postgres
+
+from_host=127.0.0.1
+from_port=15432
+from_user=postgres
+
+allDB=("backstage_plugin_app" "backstage_plugin_auth" "backstage_plugin_catalog" "backstage_plugin_permission" "backstage_plugin_scaffolder" "backstage_plugin_search")
+
+for db in ${!allDB[@]};
+do
+  db=${allDB[$db]}
+  echo Copying database: $db
+  PGPASSWORD=$TO_PSW psql -h $to_host -p $to_port -U $to_user -c "create database $db;"
+  pg_dump -h $from_host -p $from_port -U $from_user -d $db | PGPASSWORD=$TO_PSW psql -h $to_host -p $to_port -U $to_user -d $db
+done
+```
+
+
+Where:
+to_host:: The destination hostname, for example <db_instance_name>.rds.amazonaws.com.
+to_port:: The destination port, such as 5432.
+to_user:: The destination server username, for example postgres.
+from_host:: The source hostname, such as 127.0.0.1.
+from_port:: The source port number, such as the <forward_to_port> variable.
+from_user:: The source server username, for example postgres.
+allDB:: Database names to import, in double quotes separated by spaces.
+6. Create a destination database for copying the data:
+
+```terminal
+/bin/bash TO_PSW=<destination_db_password> /path/to/db_copy.sh
+```
+
+
+Replace <destination_db_password> with the password to connect to the destination database.
+
+[NOTE]
+----
+You can stop port forwarding when the copying of the data is complete. For more information about handling large databases and using the compression tools, see the Handling Large Databases section on the PostgreSQL website.
+----
+7. Reconfigure your Backstage custom resource (CR). For more information, see Configure an external PostgreSQL instance using the Operator.
+8. Check that the following code is present at the end of your Backstage CR after reconfiguration:
+
+```yaml
+# ...
+spec:
+  database:
+    enableLocalDb: false
+  application:
+  # ...
+    extraFiles:
+      secrets:
+        - name: my-rhdh-database-certificates-secrets
+          key: postgres-crt.pem
+    extraEnvs:
+      secrets:
+        - name: my-rhdh-database-secrets
+# ...
+```
+
+
+[NOTE]
+----
+Reconfiguring the Backstage CR deletes the corresponding StatefulSet and Pod objects, but does not delete the PersistenceVolumeClaim object. Use the following command to delete the local PersistenceVolumeClaim object:
+
+```terminal
+oc -n developer-hub delete pvc <local_psql_pvc_name>
+```
+
+where, the <local_psql_pvc_name> variable is in the data-<psql_pod_name> format.
+----
+9. Apply the configuration changes.
+
+1. Verify that your RHDH instance is running with the migrated data and does not contain the local PostgreSQL database by running the following command:
+
+```terminal
+oc get pods -n <your_namespace>
+```
+
+2. Check the output for the following details:
+3. The backstage-developer-hub-xxx pod is in running state.
+4. The backstage-psql-developer-hub-0 pod is not available.
+
+You can also verify these details by using the Topology view in the OpenShift Container Platform web console.
+
+## Configure schema-based plugin isolation to simplify single-database provisioning
+
+Configure schema-based plugin isolation to support database users without CREATEDB privileges or to reduce database provisioning overhead. Each RHDH plugin uses its own PostgreSQL schema within a single shared database.
+
+* An external PostgreSQL instance is configured using the Operator or the Helm chart.
+* Your database user has CREATE SCHEMA privileges on the target database, or your database administrator will create the required schemas.
+
+
+[NOTE]
+----
+By default, when pluginDivisionMode is set to schema, RHDH automatically creates the required schemas because the ensureExists configuration defaults to true. The database user must have CREATE SCHEMA privileges on the target database.
+----
+
+1. Add pluginDivisionMode: schema to the backend.database section of your RHDH configuration in the app-config-rhdh ConfigMap:
+
+```yaml
+backend:
+  database:
+    client: pg
+    pluginDivisionMode: schema
+    connection:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+```
+
+2. Save the configuration changes.
+3. Restart the Red Hat Developer Hub deployment to apply the new configuration.
+
+# Configure high availability in Red Hat Developer Hub
+
+Configure high availability to ensure continuous service accessibility by eliminating single points of failure through redundancy and failover mechanisms.
+
+Red Hat Developer Hub supports HA deployments on the following platforms:
+
+* Red Hat OpenShift Container Platform
+* Azure Kubernetes Service
+* Elastic Kubernetes Service
+* Google Kubernetes Engine
+
+The HA deployments enable more resilient and reliable service availability across supported environments.
+
+In a single instance deployment, a failure makes the entire service unavailable. Software crashes, hardware issues, or other disruptions can interrupt development workflows and access to key resources.
+
+With HA enabled, you can scale the number of backend replicas to introduce redundancy. This setup ensures that if one pod or component fails, others continue to serve requests without disruption. The built-in load balancer manages ingress traffic and distributes the load across the available pods. Meanwhile, the RHDH backend manages concurrent requests and resolves resource-level conflicts effectively.
+
+As an administrator, you can configure high availability by adjusting replica values in your configuration file:
+
+* If you installed using the Operator, configure the replica values in your Backstage custom resource.
+* If you used the Helm chart, set the replica values in the Helm configuration.
+
+## Configure high availability in a Red Hat Developer Hub Operator deployment
+
+Configure high availability for Operator deployments by setting the replicas field to a value greater than 1 in the custom resource.
+
+* In your Backstage custom resource (CR), set replicas to a value greater than 1.
+
+For example, to configure two replicas (one backup instance):
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: <your_yaml_file>
+spec:
+  deployment:
+    patch:
+      spec:
+        replicas: 2
+```
+
+
+## Configure high availability in a Red Hat Developer Hub Helm chart deployment
+
+Configure high availability for Helm deployments by setting the replicas value to greater than 1 in the Helm configuration file.
+
+* In your Helm chart configuration file, set replicas to a value greater than 1.
+
+For example, to configure two replicas (one backup instance):
+
+```yaml
+upstream:
+  backstage:
+    replicas: 2
+```
+
+
+# Optimize Operator memory usage for large clusters
+
+In large clusters, the Red Hat Developer Hub Operator can consume substantial memory because the cache loads metadata for all Secrets and ConfigMaps cluster-wide. You can enable cache-level label filtering to restrict caching to only relevant resources.
+
+
+[IMPORTANT]
+----
+Enabling cache label filtering is a breaking change. After activation, every Secret and ConfigMap that the Operator manages must carry the rhdh.redhat.com/external-config: "true" label. Any existing Developer Hub instances that reference unlabeled resources stop working until you add the required label to those resources.
+----
+
+* An OpenShift Container Platform administrator has installed the Red Hat Developer Hub Operator.
+* You have identified the secrets and config maps that your Developer Hub instances reference.
+
+1. To enable cache-level label filtering, edit the Operator subscription and add the ENABLE_CACHE_LABEL_FILTER environment variable.
+
+```yaml
+spec:
+  config:
+    env:
+      - name: "ENABLE_CACHE_LABEL_FILTER"
+        value: "true"
+```
+
+
+Alternatively, edit the ClusterServiceVersion (CSV) resource to add the --enable-cache-label-filter command-line flag to the manager container:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+      - name: manager
+        args:
+        - --enable-cache-label-filter
+```
+
+2. Label every secret and config map that your Developer Hub instances reference.
+This includes all resources listed in your Backstage custom resource under spec.application.
+
+```terminal
+$ oc label secret <secret_name> rhdh.redhat.com/external-config=true -n <namespace>
+$ oc label configmap <configmap_name> rhdh.redhat.com/external-config=true -n <namespace>
+```
+
+
+Alternatively, add the label directly in the resource YAML:
+
+```yaml
+metadata:
+  name: <resource_name>
+  labels:
+    rhdh.redhat.com/external-config: "true"
+```
+
+
+* Verify that the Operator pod restarts and that your Developer Hub instances are running after enabling cache label filtering:
+
+```terminal
+$ oc get pods -n rhdh-operator
+```
+
+
+# Run Red Hat Developer Hub behind a corporate proxy
+
+In a network restricted environment, configure Red Hat Developer Hub to use your proxy to access remote network resources.
+
+You can run the Developer Hub application behind a corporate proxy by setting any of the following environment variables before starting the application:
+
+HTTP_PROXY:: Denotes the proxy to use for HTTP requests.
+HTTPS_PROXY:: Denotes the proxy to use for HTTPS requests.
+NO_PROXY:: Set the environment variable to bypass the proxy for certain domains. The variable value is a comma-separated list of hostnames or IP addresses that do not require the proxy, even if you specify one.
+
+## The NO_PROXY exclusion rules
+
+Configure NO_PROXY to bypass the proxy for specific hostnames, IP addresses, and port numbers when using Developer Hub.
+
+
+[NOTE]
+----
+The default value for NO_PROXY in RHDH is localhost,127.0.0.1. If you want to override it, include at least localhost or localhost:7007 in the list. Otherwise, the RHDH backend might fail.
+----
+
+Matching follows these rules:
+
+* NO_PROXY=* will bypass the proxy for all requests.
+* Space and commas might separate the entries in the NO_PROXY list. For example, NO_PROXY="localhost,example.com", or NO_PROXY="localhost example.com", or NO_PROXY="localhost, example.com" would have the same effect.
+* If NO_PROXY has no entries, configuring the HTTP(S)_PROXY settings makes the backend send all requests through the proxy.
+* The backend does not perform a DNS lookup to decide if a request should bypass the proxy or not. For example, if DNS resolves example.com to 1.2.3.4, setting NO_PROXY=1.2.3.4 has no effect on requests sent to example.com. Only requests sent to the IP address 1.2.3.4 bypass the proxy.
+* If you add a port after the hostname or IP address, the request must match both the host/IP and port to bypass the proxy. For example, NO_PROXY=example.com:1234 would bypass the proxy for requests to http(s)://example.com:1234, but not for requests on other ports, such as http(s)://example.com.
+* If you do not specify a port after the hostname or IP address, all requests to that host/IP address will bypass the proxy regardless of the port. For example, NO_PROXY=localhost would bypass the proxy for requests sent to URLs such as http(s)://localhost:7077 and http(s)://localhost:8888.
+* IP Address blocks in CIDR notation will not work. So setting NO_PROXY=10.11.0.0/16 will not have any effect, even if the backend sends a request to an IP address in that block.
+* Supports only IPv4 addresses. IPv6 addresses such as ::1 will not work.
+* Generally, the proxy is only bypassed if the hostname is an exact match for an entry in the NO_PROXY list. The only exceptions are entries that start with a dot (.) or with a wildcard (*). In such a case, bypass the proxy if the hostname ends with the entry.
+
+
+[NOTE]
+----
+List the domain and the wildcard domain if you want to exclude a given domain and all its subdomains. For example, you would set NO_PROXY=example.com,.example.com to bypass the proxy for requests sent to http(s)://example.com and http(s)://subdomain.example.com.
+----
+
+## Configure proxy information in Operator deployment
+
+Configure proxy settings for Operator-based deployments by setting environment variables in the ConfigMap or custom resource file.
+
+* As a cluster administrator with access to the Operator namespace, you can configure the proxy variables in the Operator's default ConfigMap file. This configuration applies the proxy settings to all the users of the Operator.
+* As a developer, you can configure the proxy variables in a custom resource (CR) file. This configuration applies the proxy settings to the RHDH application created from that CR.
+
+* You have installed the Red Hat Developer Hub application.
+
+1. Perform one of the following steps based on your role:
+2. As an administrator, set the proxy information in the Operator's default ConfigMap file:
+1. Search for a ConfigMap file named backstage-default-config in the default namespace rhdh-operator and open it.
+2. Find the deployment.yaml key.
+3. Set the value of the HTTP_PROXY, HTTPS_PROXY, and NO_PROXY environment variables in the Deployment spec as shown in the following example:
+
+```yaml
+# ...
+  deployment.yaml: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    spec:
+      template:
+        spec:
+          # ...
+          initContainers:
+            - name: install-dynamic-plugins
+              # ...
+              env:
+                - name: NPM_CONFIG_USERCONFIG
+                  value: /opt/app-root/src/.npmrc.dynamic-plugins
+                - name: HTTP_PROXY
+                  value: 'http://10.10.10.105:3128'
+                - name: HTTPS_PROXY
+                  value: 'http://10.10.10.106:3128'
+                - name: NO_PROXY
+                  value: 'localhost,example.org'
+              # ...
+          containers:
+            - name: backstage-backend
+              # ...
+              env:
+                - name: APP_CONFIG_backend_listen_port
+                  value: "7007"
+                - name: HTTP_PROXY
+                  value: 'http://10.10.10.105:3128'
+                - name: HTTPS_PROXY
+                  value: 'http://10.10.10.106:3128'
+                - name: NO_PROXY
+                  value: 'localhost,example.org'
+```
+
+3. As a developer, set the proxy information in your Backstage CR file as shown in the following example:
+
+```yaml
+spec:
+  # ...
+  application:
+    extraEnvs:
+      envs:
+        - name: HTTP_PROXY
+          value: 'http://10.10.10.105:3128'
+        - name: HTTPS_PROXY
+          value: 'http://10.10.10.106:3128'
+        - name: NO_PROXY
+          value: 'localhost,example.org'
+```
+
+4. Save the configuration changes.
+
+## Configure proxy information in Helm deployment
+
+Configure proxy settings for Helm-based deployments by setting environment variables in the Helm configuration file.
+
+* You have installed the Red Hat Developer Hub application.
+
+1. Set the proxy information in your Helm configuration file:
+
+```yaml
+upstream:
+  backstage:
+    extraEnvVars:
+      - name: HTTP_PROXY
+        value: '<http_proxy_url>'
+      - name: HTTPS_PROXY
+        value: '<https_proxy_url>'
+      - name: NO_PROXY
+        value: '<no_proxy_settings>'
+```
+
+
+Where,
+<http_proxy_url>:: Denotes a variable that you must replace with the HTTP proxy URL.
+<https_proxy_url>:: Denotes a variable that you must replace with the HTTPS proxy URL.
+<no_proxy_settings>:: Denotes a variable that you must replace with comma-separated URLs, which you want to exclude from proxying, for example, <example1>.com,<example2>.com.
+
+For example:
+
+```yaml
+upstream:
+  backstage:
+    extraEnvVars:
+      - name: HTTP_PROXY
+        value: 'http://10.10.10.105:3128'
+      - name: HTTPS_PROXY
+        value: 'http://10.10.10.106:3128'
+      - name: NO_PROXY
+        value: 'localhost,example.org'
+```
+
+2. Save the configuration changes.
+
+# Configure trust for corporate Certificate Authority with NODE_EXTRA_CA_CERTS
+
+Secure communications between RHDH and your corporate Certificate Authority (CA) by configuring the NODE_EXTRA_CA_CERTS environment variable.
+to use the NODE_EXTRA_CA_CERTS environmental variable.
+
+
+[NOTE]
+----
+The steps
+to set up RHDH to trust a CA may vary
+depending on how your specific RHDH deployment is configured.
+The following instructions capture only the general outline of the procedure.
+----
+
+* You have access to the public root or intermediate certificate of the CA you wish to trust.
+
+1. Export the corporate CA certificate chain (root and intermediate certificates) from its source.
+2. Convert the certificate or the entire certificate chain to .pem format.
+
+[IMPORTANT]
+----
+The maximum of file paths in .pem format supported by NODE_EXTRA_CA_CERTS is one.
+You cannot concatenate multiple file paths as values of the environment variable.
+If you want to inject multiple CAs or certificate chains into your .pem file,
+you must first convert them into .pem format and then concatenate them into a single file.
+----
+3. Create a secret  containing the CA.
+4. Mount the secret into RHDH environment.
+5. Set the NODE_EXTRA_CA_CERTS to point to the mount path of the secret.
+
+[IMPORTANT]
+----
+You can only use the file path of the CA as a mount path.
+Setting the CA directly as an environmental value is not supported.
+----
+
+# Configure HTTP server timeouts
+
+Adjust HTTP server timeouts to prevent connection drops behind load balancers or when handling long-running API requests.
+
+If your Red Hat Developer Hub (RHDH) instance is deployed behind a load balancer or reverse proxy, you might need to adjust the backend HTTP server timeouts.
+For example, if the load balancer closes idle connections before the RHDH backend does, clients might experience unexpected disconnects.
+Similarly, long-running operations such as large catalog imports or slow upstream API calls might require longer request timeouts.
+
+* In your app-config.yaml configuration file, add or update the backend.server section:
+
+```yaml
+backend:
+  server:
+    keepAliveTimeout:
+      minutes: 1
+    headersTimeout:
+      minutes: 2
+    requestTimeout:
+      minutes: 1
+    timeout:
+      minutes: 5
+    maxHeadersCount: 2000
+    maxRequestsPerSocket: 100
+```
+
+
+Where:
+keepAliveTimeout:: Maximum time an idle keep-alive connection stays open before the server closes it. Set this higher than your load balancer's idle timeout to avoid premature disconnects.
+headersTimeout:: Maximum time allowed to receive the complete HTTP request headers. Must be greater than keepAliveTimeout.
+requestTimeout:: Maximum time allowed for the entire HTTP request, including headers and body.
+timeout:: Socket inactivity timeout. Maximum time a socket can remain idle before being closed.
+maxHeadersCount:: Maximum number of incoming HTTP headers allowed per request.
+maxRequestsPerSocket:: Maximum number of requests a socket can handle before the connection is closed.
+
+When these settings are not configured, the Node.js defaults apply.
+Timeout values support multiple formats, including human-readable strings, duration objects, and ISO 8601 duration strings.
+For more information, see Time syntax in Red Hat Developer Hub.
+
+* Verify that long-running requests or idle connections behave as expected with the new timeout values.
+
+* Time syntax in Red Hat Developer Hub
+* Override Core Backend Service Configuration
+
+# Use the dynamic plugins cache
+
+Use the dynamic plugins cache to reduce platform boot time by storing already-installed plugins and avoiding redundant downloads.
+
+## Dynamic plugins cache
+
+The dynamic plugins cache reduces platform boot time by storing already-installed plugins and skipping redundant downloads when the configuration does not change.
+
+When you enable dynamic plugins cache:
+
+* The system calculates a checksum of each plugin's YAML configuration (excluding pluginConfig).
+* The system stores the checksum in a file named dynamic-plugin-config.hash within the plugin's directory.
+* During boot, if a plugin's package reference matches the earlier installation and the checksum does not change, the system skips the download.
+* The system automatically removes plugins that you disabled since the earlier boot.
+
+
+[NOTE]
+----
+To enable the dynamic plugins cache in RHDH, the plugins directory dynamic-plugins-root must be a persistent volume.
+----
+
+## Create a PVC for the dynamic plugin cache by using the Operator
+
+Create a persistent volume claim for the dynamic plugin cache in Operator deployments by replacing the default dynamic-plugins-root volume.
+
+* You have installed Red Hat Developer Hub on OpenShift Container Platform using the Red Hat Developer Hub Operator.
+* You have installed the OpenShift CLI (oc).
+
+1. Create the persistent volume definition and save it to a file, such as pvc.yaml. For example:
+
+```yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dynamic-plugins-root
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+
+[NOTE]
+----
+This example uses ReadWriteOnce as the access mode which prevents many replicas from sharing the PVC across different nodes.
+To run many replicas on different nodes, depending on your storage driver, you must use an access mode such as ReadWriteMany.
+----
+2. To apply this PVC to your cluster, run the following command:
+
+```terminal
+$ oc apply -f pvc.yaml
+```
+
+3. Replace the default dynamic-plugins-root volume with a PVC named dynamic-plugins-root. For example:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            volumes:
+              - $patch: replace
+                name: dynamic-plugins-root
+                persistentVolumeClaim:
+                  claimName: dynamic-plugins-root
+```
+
+
+[NOTE]
+----
+To avoid adding a new volume, you must use the $patch: replace directive.
+----
+
+## Fix 404 error after cached dynamic plugins configuration change
+
+When many Developer Hub replicas share a single dynamic plugins cache PVC, updating configurations with the Operator can trigger temporary 404 errors. This occurs because the replicas might access inconsistent cache states during the update process, before all replicas have synchronized.
+
+The solution is to use an individual cache per pod.
+
+* Your API version is v1alpha5 or later.
+
+1. In the Backstage Custom Resource (CR) file, set spec.deployment to use the optional StatefulSet as a resource kind. For example:
+
+```terminal
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: <CR_name>
+...
+spec:
+ deployment:
+  kind: StatefulSet
+  patch:
+   spec:
+     replicas: 2
+     template:
+       spec:
+         volumes:
+           - $patch: replace
+             name: dynamic-plugins-root
+             persistentVolumeClaim:
+               claimName: dynamic-plugins-root
+     volumeClaimTemplates:
+       - apiVersion: v1
+         kind: PersistentVolumeClaim
+         metadata:
+           name: dynamic-plugins-root
+         spec:
+           accessModes:
+             - ReadWriteOnce
+           resources:
+             requests:
+               storage: 1Gi
+```
+
+
+[NOTE]
+----
+Using StatefulSet with a single replica can lead to downtime, while the application deletes the old pod and creates a new pod.
+----
+2. Wait a few minutes until the Operator reconciles the CR and the StatefulSet resource is ready.
+3. If you are updating an existing CR, remove the earlier Deployment resource from the cluster:
+
+```terminal
+oc delete deployment -l app.kubernetes.io/instance=<CR_name>
+```
+
+
+[NOTE]
+----
+The same requirement applies for changing the resource kind from StatefulSet to Deployment. You must manually delete the resource created before from the cluster, because the Operator does not automatically remove the legacy resource.
+----
+
+## Create a PVC for the dynamic plugin cache using the Helm Chart
+
+Create a persistent volume claim for the dynamic plugin cache in Helm deployments to persist the cache across pod restarts.
+
+* You have installed Red Hat Developer Hub using the Helm chart.
+* You have installed the OpenShift CLI (oc).
+
+1. Create the persistent volume definition.
+For example:
+
+```yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dynamic-plugins-root
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+
+[NOTE]
+----
+This example uses ReadWriteOnce as the access mode which prevents many replicas from sharing the PVC across different nodes.
+To run many replicas on different nodes, depending on your storage driver, you must use an access mode such as ReadWriteMany.
+----
+2. To apply this PVC to your cluster, run the following command:
+
+```terminal
+$ oc apply -f pvc.yaml
+```
+
+3. Configure the Helm chart to use the PVC.
+For example:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: dynamic-plugins-root
+        persistentVolumeClaim:
+          claimName: dynamic-plugins-root
+      - name: dynamic-plugins
+        configMap:
+          defaultMode: 420
+          name: '{{ printf "%s-dynamic-plugins" .Release.Name }}'
+          optional: true
+      - name: dynamic-plugins-npmrc
+        secret:
+          defaultMode: 420
+          optional: true
+          secretName: '{{ printf "%s-dynamic-plugins-npmrc" .Release.Name }}'
+      - name: dynamic-plugins-registry-auth
+        secret:
+          defaultMode: 416
+          optional: true
+          secretName: '{{ printf "%s-dynamic-plugins-registry-auth" .Release.Name }}'
+      - name: npmcacache
+        emptyDir: {}
+      - name: temp
+        emptyDir: {}
+```
+
+
+[NOTE]
+----
+When you configure the Helm chart to use the PVC, you must also include the extraVolumes section defined in the default Helm chart values.
+----
+
+## Configure the dynamic plugins cache
+
+Configure the dynamic plugins cache by setting pull policy and download parameters in the dynamic-plugins.yaml file.
+
+* To configure the dynamic plugins cache, set the following optional dynamic plugin cache parameters in your dynamic-plugins.yaml file:
+pullPolicy: IfNotPresent (default):: Download the artifact if it is not already present in the dynamic-plugins-root folder, without checking image digests.
+pullPolicy: Always:: Compare the image digest in the remote registry and downloads the artifact if it has changed, even if Developer Hub has already downloaded the plugin before.
+
+When applied to the Node Package Manager (NPM) downloading method, download the remote artifact without a digest check.
+
+Example dynamic-plugins.yaml file configuration to download the remote artifact without a digest check:
+
+```yaml
+plugins:
+  - disabled: false
+    pullPolicy: Always
+    package: 'oci://quay.io/example-org/example-plugin:v1.0.0'
+```
+
+forceDownload: false (default):: Older option to download the artifact if it is not already present in the dynamic-plugins-root folder, without checking image digests.
+forceDownload: true:: Older option to force a reinstall of the plugin, bypassing the cache.
+
+[NOTE]
+----
+The pullPolicy option takes precedence over the forceDownload option.
+The forceDownload option might become deprecated in a future Developer Hub release.
+----
+
+# Enable the Red Hat Developer Hub plugin assets cache
+
+Use a Redis cache store to improve Developer Hub performance and reliability by caching plugin assets.
+
+* You have installed Red Hat Developer Hub.
+* You have an active Redis server.
+For more information on setting up an external Redis server, see the official Redis documentation.
+
+1. Enable the Developer Hub cache by defining Redis as the cache store type and entering your Redis server connection URL in your app-config.yaml file.
+app-config.yaml file fragment
+
+```yaml
+backend:
+  cache:
+    store: redis
+    connection: redis://user:pass@cache.example.com:6379
+```
+
+2. Enable the cache for TechDocs by adding the techdocs.cache.ttl setting in your app-config.yaml file.
+This setting specifies how long, in milliseconds, a statically built asset should stay in the cache.
+app-config.yaml file fragment
+
+```yaml
+techdocs:
+  cache:
+    ttl: 3600000
+```
+
+
+[TIP]
+----
+Optionally, enable the cache for unsupported plugins that support this feature.
+See the documentation for each plugin for details.
+----
+
+# Inject extra files and environment variables into Backstage containers
+
+Inject extra files and environment variables into Backstage containers by mounting ConfigMaps and Secrets by using the mountPath field.
+
+* If you do not specify key and mountPath: The system mounts each key or value as a filename or content with a subPath.
+* If you specify key with or without mountPath: The system mounts the specified key or value with a subPath.
+* If you specify only mountPath: The system mounts a directory containing all the keys or values without a subPath.
+* If you do not specify the containers field: The volume mounts only to the backstage-backend container. By default, files mount only to the backstage-backend container. You can also specify other targets, including a list of containers by name (such as dynamic-plugin-install or selectcustom sidecars) or select all containers in the Backstage Pod.
+
+[NOTE]
+----
+* OpenShift Container Platform does not automatically update a volume mounted with subPath. By default, the RHDH Operator monitors these ConfigMaps or Secrets and refreshes the RHDH Pod when changes occur.
+* For security purposes, Red Hat Developer Hub does not give the Operator Service Account read access to Secrets. As a result, mounting files from Secrets without specifying both mountPath and key is not supported.
+----
+
+1. Apply the configuration to your Backstage custom resource (CR). The following code block is an example:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      mountPath: _<default_mount_path>_
+      configMaps:
+        - name: _<configmap_name_all_entries>_
+        - name: _<configmap_name_single_key>_
+          key: _<specific_file_key>_
+          containers:
+            - "*"
+        - name: _<configmap_name_custom_path>_
+          mountPath: _<custom_cm_mount_path>_
+          containers:
+            - backstage-backend
+            - install-dynamic-plugins
+      secrets:
+        - name: _<secret_name_single_key>_
+          key: _<specific_secret_key>_
+          containers:
+            - install-dynamic-plugins
+        - name: _<secret_name_custom_path>_
+          mountPath: _<custom_secret_mount_path>_
+      pvcs:
+        - name: _<pvc_name_default_path>_
+        - name: _<pvc_name_custom_path>_
+          mountPath: _<custom_pvc_mount_path>_
+    extraEnvs:
+      configMaps:
+        - name: _<configmap_name_env_var>_
+          key: _<env_var_key>_
+          containers:
+            - "*"
+      secrets:
+        - name: _<secret_name_all_envs>_
+      envs:
+        - name: _<static_env_var_name>_
+          value: "_<static_env_var_value>_"
+          containers:
+           - install-dynamic-plugins
+```
+
+
+where:
+spec.application.extraFiles.mountPath:: Specifies the default base mount path for files if you do not set a specific mountPath for a resource (for example, /<default_mount_path>).
+spec.application.extraFiles.configMaps.name:: Mounts all entries from <configmap_name_all_entries> to the default mount path.
+spec.application.extraFiles.configMaps.key:: Mounts **only the specified key (for example, <specific_file_key>.txt) from the ConfigMap.
+spec.application.extraFiles.configMaps.containers:: Targets all containers ("*") for mounting.
+spec.application.extraFiles.configMaps.mountPath:: Overrides the default and mounts all ConfigMap entries as a directory at the specified path (for example, /<custom_cm_mount_path>).
+spec.application.extraFiles.secrets.key:: Mounts only a specific key from the Secret.
+spec.application.extraFiles.secrets.mountPath:: Overrides the default and mounts all Secret entries as a directory at the specified path (for example, /<custom_secret_mount_path>).
+spec.application.extraFiles.pvcs.name:: Mounts the PVC to the default mount path, appending the PVC name (for example, /<default_mount_path>/<pvc_name_default_path>).
+spec.application.extraFiles.pvcs.mountPath:: Overrides the default and mounts the PVC to the specified path (for example, /<custom_pvc_mount_path>).
+spec.application.extraEnvs.configMaps.containers:: Injects the specified ConfigMap key as an environment variable into all containers ("*").
+spec.application.extraEnvs.secrets.name:: Injects all keys from the Secret as environment variables into the default container.
+spec.application.envs.containers:: Targets only the listed container for the static environment variable injection.
+
+[NOTE]
+----
+The following explicit options are supported:
+1. No or an empty field: Mounts only to the backstage-backend container.
+2. * (asterisk) as the first and only array element: Mounts to all containers.
+3. Explicit container names, for example, install-dynamic-plugins: Mounts only to the listed containers.
+----
+
+Verify the files mount with the following correct paths and container targets:
+
+
+
+# Configure mount paths for default Secrets and Persistent Volume Claims (PVCs)
+
+Configure custom mount paths for Secrets and PVCs by adding the rhdh.redhat.com/mount-path annotation to your resource.
+
+1. To specify a PVC mount path, add the rhdh.redhat.com/mount-path annotation to your configuration file as shown in the following example:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: <my_claim>
+  annotations:
+    rhdh.redhat.com/mount-path: /mount/path/from/annotation
+```
+
+
+Where:
+<my_claim>:: The PVC to mount.
+rhdh.redhat.com/mount-path:: The mount path for the PVC, in this case the /mount/path/from/annotation directory.
+2. To specify a Secret mount path, add the rhdh.redhat.com/mount-path annotation to your configuration file as shown in the following example:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <my_secret>
+  annotations:
+    rhdh.redhat.com/mount-path: /mount/path/from/annotation
+```
+
+
+# Mount secrets and PVCs to specific containers
+
+Mount secrets and PVCs to specific containers by adding the rhdh.redhat.com/containers annotation to your configuration file.
+
+1. To mount Secrets to all containers, set the rhdh.redhat.com/containers annotation to * in your configuration file:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <my_secret>
+  annotations:
+    rhdh.redhat.com/containers: *
+```
+
+
+[IMPORTANT]
+----
+Set rhdh.redhat.com/containers to * to mount it to all containers in the deployment.
+----
+2. To mount to specific containers, separate the names with commas:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: <my_claim>
+  annotations:
+    rhdh.redhat.com/containers: "init-dynamic-plugins,backstage-backend"
+```
+
+
+[NOTE]
+----
+This configuration mounts the <my_claim> PVC to the init-dynamic-plugins and backstage-backend containers.
+----
+
+# Configure Red Hat Developer Hub deployment when using the Operator
+
+Configure Red Hat Developer Hub deployment by using the spec.deployment.patch field in the Red Hat Developer Hub Operator custom resource to control the Deployment resource.
+
+Create a Backstage CR with the following fields:
+
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+```
+
+labels:: Add labels to the Developer Hub pod.
+
+For example, to add the label my=true:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          metadata:
+            labels:
+              my: true
+```
+
+volumes::
+
+Add an additional volume named my-volume and mount it under /my/path in the Developer Hub application container.
+
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: backstage-backend
+                volumeMounts:
+                  - mountPath: /my/path
+                    name: my-volume
+            volumes:
+              - ephemeral:
+                  volumeClaimTemplate:
+                    spec:
+                      storageClassName: "special"
+                name: my-volume
+```
+
+
+Replace the default dynamic-plugins-root volume with a persistent volume claim (PVC) named dynamic-plugins-root.
+Note the $patch: replace directive, otherwise the system adds a new volume.
+
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            volumes:
+              - $patch: replace
+                name: dynamic-plugins-root
+                persistentVolumeClaim:
+                  claimName: dynamic-plugins-root
+```
+
+
+cpu request:: Set the CPU request for the Developer Hub application container to 250m.
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: backstage-backend
+                resources:
+                  requests:
+                    cpu: 250m
+```
+
+my-sidecar container:: Add a new my-sidecar sidecar container into the Developer Hub Pod.
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: my-sidecar
+                image: quay.io/my-org/my-sidecar:latest
+```
+
+* Strategic Merge Patch
+
+# Configure a route with an external TLS certificate by using the Operator
+
+To secure application traffic with your own certificate, configure the Developer Hub route to use a TLS certificate stored in a Kubernetes secret.
+
+
+[IMPORTANT]
+----
+On Red Hat OpenShift Container Platform 4.18 and earlier, securing a route with an external certificate is a Technology Preview feature that requires enabling the RouteExternalCertificate Feature Gate.
+On Red Hat OpenShift Container Platform 4.19 and later, this feature is Generally Available and does not require a Feature Gate.
+For more information, see Securing routes with external certificates in TLS secrets.
+----
+
+* An OpenShift Container Platform administrator has installed the Red Hat Developer Hub Operator.
+* You have a TLS certificate stored in a Kubernetes secret of type kubernetes.io/tls in the same namespace as your Developer Hub instance, and the certificate is valid for the route host configured in your Backstage custom resource, for example my-rhdh.apps.example.com.
+
+1. Add the spec.application.route.tls.externalCertificateSecretName field to your Backstage custom resource, referencing the name of the secret that contains your TLS certificate:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh
+spec:
+  application:
+    route:
+      enabled: true
+      host: my-rhdh.apps.example.com
+      tls:
+        externalCertificateSecretName: my-rhdh-tls-cert
+```
+
+2. Apply the updated custom resource:
+
+```terminal
+$ oc apply -f my-rhdh.yaml
+```
+
+
+* Verify that the route uses your external certificate:
+
+```terminal
+$ oc get route backstage-$cr_name -o jsonpath='{.spec.tls}' | jq .
+```
+
+
+# Configure an RHDH instance with a TLS connection in Kubernetes
+
+Configure RHDH with a TLS connection in Kubernetes to ensure secure connections with third-party applications and external databases.
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+* You have set up an Azure Red Hat OpenShift (ARO) cluster with a public CA-signed certificate. For more information about obtaining CA certificates, refer to your vendor documentation.
+* You have created a namespace and setup a service account with proper read permissions on resources.
+
+For example, you can use the following Kubernetes manifest for role-based access control:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage-read-only
+rules:
+  - apiGroups:
+      - '*'
+    resources:
+      - pods
+      - configmaps
+      - services
+      - deployments
+      - replicasets
+      - horizontalpodautoscalers
+      - ingresses
+      - statefulsets
+      - limitranges
+      - resourcequotas
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+#...
+```
+
+* You have obtained the secret and the service CA certificate associated with your service account.
+* You have created some resources and added annotations to them so the Kubernetes plugin can discover them. You can apply these Kubernetes annotations:
+* backstage.io/kubernetes-id to label components
+* backstage.io/kubernetes-namespace to label namespaces
+
+1. Enable the Kubernetes plugins in the dynamic-plugins-rhdh.yaml file by setting disabled to false:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dynamic-plugins-rhdh
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes
+        disabled: false
+        # ...
+```
+
+
+[NOTE]
+----
+The backstage-plugin-kubernetes plugin is currently in Technology Preview. As an alternative, you can use the ./dynamic-plugins/dist/backstage-plugin-topology-dynamic plugin, which is Generally Available (GA).
+----
+2. Set the Kubernetes cluster details and configure the catalog sync options in the app-config.yaml configuration file:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: my-rhdh-app-config
+data:
+  "app-config.yaml": |
+  # ...
+  catalog:
+    rules:
+      - allow: [Component, System, API, Resource, Location]
+    providers:
+      kubernetes:
+        openshift:
+          cluster: openshift
+          processor:
+            namespaceOverride: default
+            defaultOwner: guests
+          schedule:
+            frequency:
+              seconds: 30
+            timeout:
+              seconds: 5
+  kubernetes:
+    serviceLocatorMethod:
+      type: 'multiTenant'
+    clusterLocatorMethods:
+      - type: 'config'
+        clusters:
+          - url: <target_cluster_api_server_url>
+            name: openshift
+            authProvider: 'serviceAccount'
+            skipTLSVerify: false
+            skipMetricsLookup: true
+            dashboardUrl: <target_cluster_console_url>
+            dashboardApp: openshift
+            serviceAccountToken: ${K8S_SERVICE_ACCOUNT_TOKEN}
+            caData: ${K8S_CONFIG_CA_DATA}
+            # ...
+```
+
+url:: The base URL to the Kubernetes control plane. You can run the kubectl cluster-info command to get the base URL.
+skipTLSVerify:: Set the value of this parameter to false to enable the verification of the TLS certificate.
+dashboardUrl:: (Optional) The link to the Kubernetes dashboard managing the ARO cluster.
+serviceAccountToken:: (Optional) Pass the service account token by using a K8S_SERVICE_ACCOUNT_TOKEN environment variable that you define in your <my_product_secrets> secret.
+caData:: Pass the CA data by using a K8S_CONFIG_CA_DATA environment variable that you define in your <my_product_secrets> secret.
+3. Save the configuration changes.
+
+1. Run the RHDH application to import your catalog:
+
+```terminal
+$ kubectl -n rhdh-operator get pods -w
+```
+
+2. Verify that the pod log shows no errors for your configuration.
+3. Go to Catalog and check the component page in the Developer Hub instance to verify the cluster connection and the presence of your created resources.
+
+
+[NOTE]
+----
+If you meet connection errors, such as certificate issues or permissions, check the message box in the component page or view the logs of the pod.
+----
+
+# Troubleshoot Developer Hub configuration issues
+
+Resolve common configuration issues in Developer Hub, such as Helm overwriting predefined array values.
+
+## Fix Helm overwriting predefined arrays
+
+If you use Helm to install dynamic plugins,
+you might meet an issue where predefined values in fields with arrays are overwritten after you add new values.
+The issue affects fields such as:
+
+* extraEnvVars
+* extraVolumeMounts
+* extraVolumes
+
+Fix this issue
+by duplicating the predefined values from RHDH Helm Chart&#8217;s values.yaml file into your own version of the file.
+
+1. For extraEnvVars, add the following content to your values.yaml file:
+
+```yaml
+extraEnvVars:
+      - name: BACKEND_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: backend-secret
+            name: '{{ include "rhdh.backend-secret-name" $ }}'
+      - name: POSTGRESQL_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: postgres-password
+            name: '{{- include "rhdh.postgresql.secretName" . }}'
+```
+
+2. For extraVolumeMounts, add the following content to your values.yaml file:
+
+```yaml
+extraVolumeMounts:
+      - name: dynamic-plugins-root
+        mountPath: /opt/app-root/src/dynamic-plugins-root
+      - name: temp
+        mountPath: /tmp
+```
+
+3. For extraVolume, add the following content to your values.yaml file:
+
+```yaml
+extraVolumes:
+      - name: dynamic-plugins-root
+        ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 5Gi
+```

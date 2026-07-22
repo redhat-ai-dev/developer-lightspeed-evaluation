@@ -1,0 +1,773 @@
+# Interacting with Model Context Protocol tools for Red Hat Developer Hub
+
+Leverage the Model Context Protocol (MCP) server to integrate Red Hat Developer Hub with AI clients through a standardized method for accessing RHDH information and workflows using defined MCP tools.
+
+# Model Context Protocol
+
+Model Context Protocol (MCP) connects AI applications to external systems, enabling Developer Hub MCP tools through the mcp-actions-backend plugin.
+
+
+[IMPORTANT]
+----
+This section describes Developer Preview features in the Model Context Protocol plugin. Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+Model Context Protocol (MCP) connects AI models and applications (MCP clients) to external systems (MCP servers) to access information and workflows. MCP servers define the tools that MCP clients can interact with. Red Hat Developer Hub (RHDH) supports MCP tools through the mcp-actions-backend plugin available in Backstage 1.40 or later.
+
+
+[IMPORTANT]
+----
+You must verify that your model supports tool calling before you enable Model Context Protocol (MCP) features. Using an incompatible model results in error messages.
+----
+
+# Install MCP server and tool plugins to expose portal capabilities to the AI
+
+Install the Model Context Protocol (MCP) server and its associated tool plugins to expose Red Hat Developer Hub portal capabilities, such as the Software Catalog and TechDocs, to your external AI assistant.
+
+The backend MCP server plugin runs the MCP tools, while the individual tool plugins expose specific capabilities for the Software Catalog, TechDocs, and Scaffolder features.
+
+## Install the backend MCP server plugin
+
+To run MCP tools within RHDH, you must add the MCP server plugin to your configuration. This installation enables the backend infrastructure required to manage MCP actions.
+
+* Your RHDH instance is installed and running.
+
+* In your dynamic plugins ConfigMap (for example, dynamic-plugins-rhdh.yaml), add the updated MCP server plugin:
+
+```yaml
+plugins:
+    - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-plugin-mcp-actions-backend:<tag>
+      disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+* Confirm the plugins are active by checking the RHDH logs for "loaded" status messages, or by verifying that the corresponding MCP tools appear in your product tool registry.
+
+## Install the MCP tool plugins
+
+Install individual extras plugins to expose specific capabilities for the Software Catalog, TechDocs, and Scaffolder features.
+
+
+[IMPORTANT]
+----
+The previous MCP plugins (software-catalog-mcp-tool and techdocs-mcp-tool) are deprecated and no longer updated. You must use the new extras versions listed in the following procedure to receive updates and new features.
+----
+
+* Your RHDH instance is installed and running.
+
+* Install any of the following MCP tools that you want to use:
+* Software Catalog MCP extras:
+
+```yaml
+  - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-software-catalog-mcp-extras:<tag>
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+* TechDocs MCP extras:
+
+```yaml
+- package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-techdocs-mcp-extras:<tag>
+  disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+* Scaffolder MCP extras:
+
+```yaml
+- package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-scaffolder-mcp-extras:<tag>
+    disabled: false
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+1. Find your Backstage version in the RHDH release notes preface.
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+* Confirm the plugins are active by checking the RHDH logs for "loaded" status messages, or by verifying that the corresponding MCP tools appear in your product tool registry.
+
+# Configure MCP tokens and endpoints to authorize client access
+
+Configure Model Context Protocol (MCP) server endpoints, database backends, and authentication tokens to securely authorize client applications to interact with your developer portal.
+
+This configuration is a prerequisite for MCP clients to use the defined MCP tools and access the exposed capabilities of RHDH.
+
+* You have installed the MCP server and tool plugins in Red Hat Developer Hub.
+
+1. In your Red Hat Developer Hub app-config.yaml file, configure a static token for authentication against the MCP server endpoint. MCP clients (such as Cursor, Continue, or Lightspeed Core) use these tokens to authenticate against the Backstage MCP server. For example:
+
+```yaml
+backend:
+  auth:
+    externalAccess:
+      - type: static
+        options:
+          token: ${MCP_TOKEN}
+          subject: mcp-clients
+```
+
+
+where:
+${MCP_TOKEN}:: Set the token value that you generate manually and share with your MCP clients.
+
+[NOTE]
+----
+Tokens must be long and complex strings without whitespace to prevent brute-force guessing.
+1. To generate a sample token, use the following command:
+
+```
+$ node -p `require("crypto").randomBytes(24).toString("base64")`
+```
+
+----
+2. Register the MCP tools that you install as a plugin source in your app-config.yaml file:
+* To use the installed extras plugins, you must register them as plugin sources:
+
+```yaml
+backend:
+  actions:
+    pluginSources:
+      - software-catalog-mcp-extras
+      - techdocs-mcp-extras
+      - scaffolder-mcp-extras
+```
+
+* To fetch entities or manage components, you must register the catalog plugin source. If your workflow requires scaffolding tools, you must also register the scaffolder plugin source. These plugins are optional and required only when using these specific tools.
+
+```yaml
+backend:
+  actions:
+    pluginSources:
+      - catalog
+      - scaffolder
+```
+
+* If you are using OpenAI models with the RHDH MCP server, add the following configuration to your app-config.yaml file to disable namespaced toolnames:
+
+```yaml
+mcpActions:
+  namespacedToolNames: false
+```
+
+
+```yaml
+# Full app-config.yaml file example with MCP configuration
+app:
+  title: AI Dev Developer Hub
+  baseUrl: "${RHDH_BASE_URL}"
+auth:
+  environment: development
+  session:
+    secret: "${BACKEND_SECRET}"
+  providers:
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+backend:
+  actions:
+    pluginSources:
+      - software-catalog-mcp-extras
+      - techdocs-mcp-extras
+      - scaffolder-mcp-extras
+      - catalog
+      - scaffolder
+  auth:
+    externalAccess:
+      - type: static
+        options:
+          token: ${MCP_TOKEN}
+          subject: mcp-clients
+    keys:
+      - secret: "${BACKEND_SECRET}"
+  baseUrl: "${RHDH_BASE_URL}"
+  cors:
+    origin: "${RHDH_BASE_URL}"
+signInPage: oidc
+```
+
+
+## Configure MCP clients to access the RHDH server
+
+Configure Model Context Protocol (MCP) client applications with server URLs and authentication to enable interaction with the RHDH server.
+
+You must configure an MCP client before it can interact with the MCP server. For a list of supported clients and their specific configurations, see Example Clients.
+
+* You have one of the following endpoints for the server URL, where <my_developer_hub_domain> is the hostname of your RHDH instance.
+* Streamable: https://<my_developer_hub_domain>/api/mcp-actions/v1
+* SSE (Legacy): `https://<my_developer_hub_domain>/api/mcp-actions/v1/sse
+
+[NOTE]
+----
+Some clients do not yet support the Streamable endpoint. Use the SSE (Legacy) endpoint if your client requires it.
+----
+* You have set the MCP_TOKEN environment variable in your MCP server configuration as the bearer token for authentication.
+
+1. Configure Developer Lightspeed for RHDH as a client. For more details, see {developer-lightspeed-link}[Red Hat Developer Lightspeed for Red Hat Developer Hub].
+1. In the lightspeed-stack.yaml configuration, add the following mcp_servers configuration:
+
+```yaml
+mcp_servers:
+  - name: mcp::backstage
+    provider_id: model-context-protocol
+    url: https://<my_developer_hub_domain>/api/mcp-actions/v1
+    authorization_headers:
+      Authorization: "client"
+```
+
+model-context-protocol:: Enter the tool runtime provider defined in the llama-stack run.yaml configuration for LCORE.
+2. Optional: To use a custom Llama Stack configuration, add the following code to the run.yaml Llama Stack configuration file.
+
+```yaml
+providers:
+  tool_runtime:
+  - provider_id: model-context-protocol
+    provider_type: remote::model-context-protocol
+    config: {}
+```
+
+3. To authorize requests to the MCP endpoint using <MCP_TOKEN>, add one or more servers to the mcpServers list in the Developer Lightspeed for RHDH app-config.yaml file, to make POST requests to LCORE:
+
+```yaml
+lightspeed:
+  mcpServers:
+  - name: mcp::backstage
+    token: ${MCP_TOKEN}
+  - name: _<mcp_server_name>_
+    token: ${MCP_TOKEN_2}
+```
+
+
+where:
+name:: Enter the server name. This must match the name configured in the LCORE.
+token:: Optional: Enter the static token used to authorize requests. You can also configure the token through the MCP Server Settings in the Developer Lightspeed user interface. The setting remains disabled until you configure the token.
+4. Optional: Query the LCORE /v1/streaming_query endpoint directly by providing the MCP_TOKEN in the header:
+
+```yaml
+curl -X POST \
+  -H `Content-Type: application/json` \
+  -H `MCP-HEADERS: {"mcp::backstage": {"Authorization": "Bearer <MCP_TOKEN>"}}` \
+  -d `{"query": "Can you give me all catalog templates of type 'service', "model": "gpt-4o-mini", "provider": "openai"}` \
+  _<url>_/v1/streaming_query
+```
+
+
+where:
+<url>:: Enter the LCORE endpoint. Use localhost or the service name pass:c,a,q:[<RHDH_servicename>.my-rhdh-project.svc.cluster.local:8080] if you are inside the Backstage container.
+2. Configure Cursor as a client.
+1. From your Desktop app, navigate to Cursor Settings, select MCP Tools > New MCP Server and add the following configuration:
+
+```yaml
+{
+  "mcpServers": {
+    "backstage-actions": {
+      "url": "https://<my_developer_hub_domain>/api/mcp-actions/v1",
+      "headers": {
+        "Authorization": "Bearer <mcp_token>"
+      }
+    }
+  }
+}
+```
+
+
+where:
+<mcp_token>:: Enter the previously configured static token
+<my_developer_hub_domain>:: Enter the hostname of your RHDH instance
+3. Configure Continue as a client.
+1. In your agent yaml configuration file, add the following configuration:
+
+```yaml
+mcpServers:
+  - name: backstage-actions
+    type: sse
+    url: https://<my_developer_hub_domain>/api/mcp-actions/v1/sse
+    requestOptions:
+      headers:
+        Authorization: "Bearer <mcp_token>"
+```
+
+
+where:
+<mcp_token>:: Enter the previously configured static token
+<my_developer_hub_domain>:: Enter the hostname of your RHDH instance
+
+# Store personal access tokens securely to authorize AI workflows on your behalf
+
+When using third-party MCP integrations, you can store your personal access tokens securely and manage credentials in Red Hat Developer Lightspeed for Red Hat Developer Hub so that the AI acts on your behalf.
+
+## Enable encryption and database storage for MCP server tokens
+
+To protect sensitive credentials and persist user preferences, you must configure encryption and database settings in the app-config.yaml file.
+
+Configuring encryption prevents the system from storing Model Context Protocol (MCP) tokens as plaintext in the database.
+
+* You have administrator access to the RHDH environment.
+* Your backend secet is available in the BACKEND_SECRET environment variable.
+
+1. To enable encryption for MCP server tokens, add the following snippet to the backend section of your app-config.yaml file:
+
+```yaml
+backend:
+  auth:
+    keys:
+    - secret: ${BACKEND_SECRET}
+```
+
+2. To store MCP server user preferences, configure the database connection. Use the configuration example that matches your environment:
+* Local development (In-memory):
+
+```yaml
+backend:
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+```
+
+* Local path storage:
+
+```yaml
+backend:
+  database:
+    client: better-sqlite3
+    connection:
+      directory: './sqlite-data'
+```
+
+* Deployed PostgreSQL database:
+
+```yaml
+backend:
+  database:
+    client: pg
+    connection:
+      host: localhost
+      port: 5432
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+```
+
+
+* Restart the RHDH instance and ensure no errors appear in the logs related to the backend-auth or database plugins.
+
+## Toggle MCP tools in the chat interface to control the data context provided to the AI
+
+Use the Red Hat Developer Lightspeed for Red Hat Developer Hub chat interface options to securely configure your personal tokens, toggle specific Model Context Protocol (MCP) services, and directly control the data context made available to the AI assistant.
+
+You can use the MCP settings panel in the Developer Lightspeed for RHDH chat interface to review server status and enable or disable specific tools for your session.
+
+* An administrator has configured encryption and database storage for the backend.
+* You have a valid Personal Access Token for the MCP servers you want to enable.
+
+1. In the Red Hat Developer Lightspeed for Red Hat Developer Hub chat box, click the Chatbot options menu icon in the header.
+2. Select MCP settings.
+![MCP in chat]
+3. In the MCP settings panel, perform any of the following actions to configure your session:
+* Review server status: View whether available MCP servers are enabled or disabled.
+* View available tools: View the count of specific tools available for each server under Status.
+* Configure personal tokens:
+* To add or update a token, click the Edit icon, enter your Personal Access Token in the field, and click Save. The system validates the token automatically.
+* To remove or replace a token, click the Edit icon and select Forget Token.
+![MCP PAT in chat]
+* Enable or disable servers: Use the toggles to select which servers provide tools for your chat session.
+
+[NOTE]
+----
+You must configure a token before you can enable a server that requires authentication.
+----
+
+1. Submit a query in the chat that requires an MCP tool, such as requesting catalog resources or server information.
+2. If you enabled a server, verify that the response contains data from that specific MCP tool.
+3. If you disabled a server, verify that Developer Lightspeed for RHDH uses standard documentation or general knowledge instead of the MCP tool to provide the response.
+
+# Enable Software Catalog MCP tools to allow the AI to query component metadata
+
+Enable and use the Software Catalog MCP tools so that the AI assistant can seamlessly query internal software component metadata, relations, and ownership information on your behalf.
+
+Use Software Catalog MCP tools to manage and retrieve RHDH entities such as Components, Systems, Resources, APIs, Locations, Users, and Groups.
+
+Software Catalog tool reference:
+
+The software-catalog-mcp-extras plugin provides tools to interact with the software catalog. By default, these tools return data in a JSON array format.
+
+The following table lists the available tools in the software-catalog-mcp-tool plugin:
+
+
+
+## Fetch entities using fetch-catalog-entities
+
+List Developer Hub entities including components, APIs, and resources using the fetch-catalog-entities tool.
+
+The fetch-catalog-entities tool lists RHDH entities, including components, APIs, and resources.
+
+Common query examples:
+* "Fetch all ai-model resources in the Backstage catalog"
+* "Fetch the API definition for the beneficiary-management-api API"
+* "Construct a curl command based on the API definition for the “insert beneficiary” endpoint in the beneficiary-management-api"
+
+The following table lists the parameters for the fetch-catalog-entities tool:
+
+
+
+## Register entities using catalog-register-tool
+
+Add new entities to the Software Catalog using the catalog-register-tool.
+
+Use the catalog-register-tool to add new entities to your Software Catalog.
+
+
+
+## Unregister entities using catalog-unregister-tool
+
+Remove existing entities from the Software Catalog using the catalog-unregister-tool.
+
+Use the catalog-unregister-tool to remove an existing entity from the Software Catalog.
+
+The following table lists the parameters for the catalog-unregister-tool:
+
+
+
+## Retrieve Software Template metadata
+
+Retrieve metadata for specific Software Templates using the software-template-metadata-tool.
+
+Use the software-template-metadata-tool to retrieve metadata for a specific Software Template.
+
+The following table lists the parameters for the software-template-metadata-tool:
+
+
+
+# Enable TechDocs MCP tools to allow the AI to read and analyze internal documentation
+
+Enable and use TechDocs MCP tools to allow the AI assistant to search, read, and analyze your internal technical documentation to resolve queries with accurate portal data.
+
+The TechDocs MCP tool enables MCP clients to search and retrieve documentation from RHDH for use as context in AI applications.
+
+The following table lists the TechDocs tools and parameters:
+
+
+
+## Retrieve TechDocs URLs and metadata using fetch-techdocs
+
+List all Backstage entities with TechDocs including URLs, metadata, timestamps, and build information using the fetch-techdocs tool.
+
+The fetch-techdocs TechDocs MCP tool lists all Backstage entities with TechDocs. By default, the tool returns results in a JSON array format. Each entry includes entity details and TechDocs metadata, like last update timestamp and build information.
+
+By default, each entry in the JSON array is an entity with the following fields: name, title, tags, description, owner, lifecycle, namespace, kind, techDocsUrl, matadataUrl, and metadata.
+
+The following examples show common queries:
+
+* “Fetch all techdocs from the Backstage server”
+* “Fetch all techdocs of the default namespace”
+* “Fetch all techdocs created by user:john.doe”
+
+
+
+## Measure documentation gaps using analyze-techdocs-coverage
+
+Calculate documentation coverage percentage and identify gaps using the analyze-techdocs-coverage tool with entity attribute filters.
+
+The analyze-techdocs-coverage TechDocs MCP tool calculates the percentage of entities that have TechDocs configured. Use this tool to identify documentation gaps and improve overall documentation coverage.
+
+You can filter results by the following entity attributes:
+* type
+* namespace
+* owner
+* lifecycle
+* tags
+By default, analyze-techdocs-coverage returns a JSON entity that includes the totalEntities, entitiesWithDocs, and coveragePercentage fields.
+
+The following examples show common queries:
+
+* “What is the coverage of techdocs in the backstage server”
+* “What is the coverage of techdocs in the default namespace”
+
+The following table lists the parameters for the analyze-techdocs-coverage TechDocs MCP tool:
+
+
+
+## Find a specific TechDoc using retrieve-techdocs-content
+
+Retrieve TechDocs content for specific Software Catalog entities using the retrieve-techdocs-content tool with entityRef, name, title, and content fields.
+
+The retrieve-techdocs-content TechDocs MCP tool retrieves the content of a TechDocs resource, enabling AI clients to access documentation content for specific Software Catalog entities. By default, the tool returns a JSON entity with the following fields: entityRef, name, title, kind, namespace, content, path, contentType, lastModified, and metadata.
+
+The following examples show common queries:
+
+* “Fetch techdoc with reference component:default/my-service”
+* “Fetch page about.html from techdoc with reference component:default/my-service”
+
+The following table describes the parameters for the retrieve-techdocs-content TechDocs MCP tool.
+
+
+
+# Automate Software Templates by using Scaffolder MCP tools
+
+Use the Scaffolder Model Context Protocol (MCP) (scaffolder-mcp-extras) tools to query available actions, validate template dry-runs, and retrieve task logs during Software Template development in RHDH.
+
+These tools use provided credentials and adhere to existing role-based access control (RBAC) permissions.
+
+
+[IMPORTANT]
+----
+All operations performed through Scaffolder MCP tools use the On Behalf Of the User (OBOU) security model. The system uses the bearer token from the MCP client to ensure that actions adhere to existing RBAC permissions and maintain a consistent audit trail.
+----
+
+## List Scaffolder actions
+
+Use this tool to list all installed Scaffolder actions and their associated metadata. This tool requires no input parameters. The following table describes the output fields.
+
+
+
+## Get Scaffolder task logs
+
+Retrieve log events for a task to monitor execution progress or diagnose template failures.
+
+The following table describes the input parameters:
+
+
+
+The following table describes the output parameters:
+
+
+
+# Automate software resource creation with Scaffolder MCP tools
+
+You can expose Scaffolder actions to AI agents by using Scaffolder Model Context Protocol (MCP) tools in Red Hat Developer Hub.
+
+These tools enable AI agents to understand and involve Scaffolder capabilities through natural language input within an IDE or chat interface. You can validate template logic by using sandboxed dry-runs and monitor the progress of automated tasks. To maintain security, these tools must adhere to existing role-based access control (RBAC) permissions and maintain a consistent audit trail.
+
+## Software Template validation with Scaffolder dry-run tools
+
+With Software Template validation, you can verify YAML configuration and execution logic in a sandboxed environment. This preliminary testing ensures that your templates function as intended before you deploy them to a production environment.
+
+The validation process involves the following key components:
+
+* User interaction: You must provide the template YAML content, required input values, and any additional files.
+* Agent invocation: The AI agent maps these inputs to the templateYAML, values, and files parameters to invoke the dry-run tool.
+* Outcome processing: The AI agent interprets the valid status and execution logs to provide a plain-language summary or troubleshooting steps if validation fails.
+
+## Scaffolder dry-run tool reference
+
+Use this tool to perform a sandboxed dry-run execution of a Scaffolder template.
+
+The following table describes the input fields:
+
+
+
+The following table describes the output fields:
+
+
+
+## Software Template execution with Scaffolder MCP tools
+
+Automate resource creation, such as repositories or components, by executing Software Templates through the AI agent.
+
+By using Scaffolder MCP tools, the AI agent interacts directly with your existing software templates to streamline the development lifecycle.
+
+The execution process relies on three core components:
+
+* User interaction: You must identify a reference for the target template (for example, template:default/create-node) and provide the necessary input values and secrets.
+* Agent invocation: The AI agent maps the data to the templateRef, values, and secrets parameters to execute the template.
+* Outcome processing: The AI agent confirms the execution and provides the taskId to the user for progress tracking.
+
+## Scaffolder execution tool reference
+
+Run a Software Template to create repositories, register components, or provision infrastructure.
+
+The following table describes the inputs fields:
+
+
+
+The following table describes the output fields:
+
+
+
+## Scaffolder task monitoring with MCP tools
+
+Scaffolder task monitoring provides visibility into the lifecycle of automated resource creation. By using MCP tools, you can track the progress of templates and retrieve execution results for workflows initiated by an AI agent.
+
+Monitoring capabilities include the following features:
+
+* User interaction: You must ask for a status update on your tasks or a list of recent activities.
+* Agent invocation: The AI agent calls the task list tool. To restrict results to only include your own tasks, the agent must set the owned parameter to true.
+* Outcome processing: The AI agent filters and summarizes the tasks[] list, reporting statuses such as processing, completed, or failed.
+
+## Scaffolder tasks list tool reference
+
+Use the Scaffolder tasks list tool to retrieve and filter a list of Scaffolder tasks.
+
+The following table describes the input fields:
+
+
+
+The following table describes the output fields:
+
+
+
+# Troubleshoot MCP server and client problems
+
+Diagnose and resolve common issues with MCP server installation, client configuration, and tool execution in Developer Hub.
+
+## Verify successful installation of MCP plugins
+
+Verify MCP plugin installation by checking pod logs for successful plugin loading and MCP tool registration.
+
+1. Log in to the OCP cluster running RHDH and go to your RHDH project using the following code:
+
+```
+$ oc project my-rhdh-project
+```
+
+2. Inspect the logs for the installation of the RHDH dynamic plugins using the following code:
+
+```
+$ oc logs -c install-dynamic-plugins deployment/<my-product-deployment>
+```
+
+
+1. You must see an entry for the MCP backend server plugin as shown in the following code:
+
+```
+..... prior logs ....
+======= Installing dynamic plugin oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-plugin-mcp-actions-backend:<tag>
+	==> Copying image oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-plugin-mcp-actions-backend:<tag> to local filesystem
+	==> Successfully installed dynamic plugin oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-plugin-mcp-actions-backend:<tag>
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+2. Find your Backstage version in the RHDH release notes preface.
+3. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+4. You must see entries for any of the MCP tool plugins you installed as shown in the following code:
+
+```
+..... prior logs ....
+======= Installing dynamic plugin oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-software-catalog-mcp-tool:<tag>
+	==> Copying image oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-software-catalog-mcp-tool:<tag> to local filesystem
+	==> Successfully installed dynamic plugin oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-software-catalog-mcp-tool:<tag>
+```
+
+
+where:
+<tag>:: Enter your RHDH version of Backstage and the plugin version, in the format bs_<backstage-version>__<plugin-version> (note the double underscore delimiter).
+To find these versions, complete the following steps:
+5. Find your Backstage version in the RHDH release notes preface.
+6. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.9 based on Backstage 1.45.3, use the format bs_1.45.3__<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+## Check MCP tool logs for status and errors
+
+Review Backstage LoggerService logs for MCP tool execution status and error messages.
+
+The Backstage LoggerService target name starts with the name of the MCP tool (either software-catalog-mcp-tool or techdocs-mcp-tool). The MCP tools generate a log by default. For example:
+
+
+```terminal
+`[backend]: 2025-09-25T16:24:22.660Z software-catalog-mcp-tool info fetch-catalog-entities: Fetching catalog entities with options: kind="Component"`
+```
+
+
+If any errors occur in the MCP tools, check the logs.
+
+## MCP tool error messages
+
+MCP tools provide optional error messages that communicate issues including input validation errors encountered during tool use.
+
+The MCP tools response provides an optional error message that communicates any issues encountered during the use of the tool, including potential input validation errors.
+
+## Resolve the Model does not support tool calling error
+
+Resolve tool calling errors by confirming your AI model supports tool calls and switching to a compatible model if needed.
+
+This error indicates that the model configured in your MCP client lacks the required functionality to handle tool calls. The error message appears similar to: Invalid request: model gemma3:27b does not support tool calls.
+
+1. Consult your model documentation to confirm its support for tool calling.
+2. If the current model does not support tool calling, change the model that your MCP client uses to a tool-calling compatible model.
+
+## Resolve authentication issues when tools are not found
+
+Verify authentication tokens and configuration settings when Model Context Protocol (MCP) clients connect to the server but do not display deployed tools.
+
+If an MCP client connects to the server but cannot find deployed tools, verify the authentication status and endpoint resolution.
+
+1. Check the token validation status in the Red Hat Developer Lightspeed for Red Hat Developer Hub interface:
+1. In the Red Hat Developer Lightspeed for Red Hat Developer Hub chat box, click the menu icon (Chatbot options) and select MCP settings.
+2. Locate the relevant server and check the status message displayed below the token field.
+3. If the status is Authorization failed. Try again, the token is incorrect, improperly formatted, or missing. You must verify the token value and ensure the server is enabled.
+2. Verify the authentication token configuration.
+1. Ensure a static token is configured for the RHDH MCP server.
+2. In your MCP client, verify that the token is set as the bearer token. The authorization header must use the Bearer <mcp_token> format.
+3. Check the MCP endpoint configuration.
+1. Confirm that the MCP server URL properly resolves correctly, particularly when using desktop clients.
+2. Use legacy SSE endpoint if your MCP client requires it instead of the Streamable endpoint. (For more details, see the Configuration topic).
+4. Verify the RHDH app-config.yaml file for formatting errors:
+1. Ensure there are no duplicate backend entries and that the YAML indentation is accurate.
+2. Confirm that the configuration for the static token and MCP plugin sources is nested under an existing backend field, if one is present. For a reference configuration, see Configure MCP in RHDH.
+
+## Resolve nonsensical MCP tool output
+
+Improve MCP tool output quality by using larger models or models with larger context windows when nonsensical results occur.
+
+Nonsensical output often occurs when smaller models or models with smaller context sizes cannot effectively manage repeated tool calls within the same context window.
+
+1. Select an appropriate model for tool calling.
+1. Verify that the model has good support for tool calling.
+2. Make sure your model is not too small. We recommend a model with at least 7 billion parameters and a context window of 32k.
+2. Refine your queries.
+1. Use more well-defined queries that limit the amount of data returned in the response from the tool.
+3. If possible, increase the context window size of the model. We recommend at least 32k for these MCP tools.

@@ -1,0 +1,843 @@
+# Navigate Red Hat Developer Hub on your first day
+
+As a new developer, you will learn how to personalize your experience by customizing settings and starring often used items, enabling you to independently find the software catalog, templates, and documentation you need.
+
+# Purpose and structure of Red Hat Developer Hub
+
+To streamline your software development lifecycle, your organization has chosen to use Red Hat Developer Hub (RHDH) as your primary internal developer portal (IDP).
+
+RHDH offers a unified interface to manage infrastructure, generate software projects, use tools and services, and access technical documentation in a centralized location.
+
+The developer experience challenge:: Modern software development often involves fragmented workflows. Developers often switch contexts between code repositories, ticketing systems, CI/CD pipelines, monitoring dashboards, and so on. This separation creates information silos and increases the time needed to find API documentation, service ownership details, or deployment status.
+Improving developer productivity with RHDH:: RHDH centralizes fragmented technical resources to streamline the developer experience. The platform provides the following advantages:
+* Unified discovery: Locate applications, APIs, and documentation in a single, accessible location.
+* Search capabilities: Find users, groups, and catalog using an integrated search feature. Once indexed, all entities become discoverable across the entire ecosystem within seconds.
+* Self-service capabilities: Create projects and deploy services using automated Software Templates. This ensures consistency and reduces reliance on manual ticketing.
+* Service visibility: Map relationships between services, dependencies, and API contracts to clarify ownership and component linkages.
+* Extensibility: Integrate external tools, such as monitoring dashboards and pipelines, directly into the portal to create a unified interface.
+
+## Overview of the onboarding workflow
+
+To begin using RHDH, you must verify your permissions, confirm software entity ownership, and personalize your workspace. After you complete these initial tasks, you can locate team services and use self-service capabilities.
+
+### Log in and verify your profile
+
+Your first step will be to confirm that you log in as the correct user and that the platform recognizes your identity.
+
+* Authenticate: Access your organization's RHDH URL and log in using your corporate credentials.
+* Check your identity: Click your avatar or name in the Global Header and select Settings. Verify that the User Entity matches your corporate identity.
+* Verify ownership: Navigate to My Profile from the user menu. Check the Ownership card to confirm it lists the components, APIs, and systems you or your team are responsible for. If this list is empty, you might need to register your ownership in the Software Catalog.
+For more information, see Log in to RHDH.
+
+### Organize your workspace
+
+To reduce navigation time across the software ecosystem, curate a list of high-priority resources.
+
+* Star your services: Locate your often used components in the Catalog and select the Add to favourites (star) icon to add them to your favorites. See starred items.
+* Access starred items: Use the Starred Items menu in the Global Header to open your favorite resources quickly.
+* Pin the Sidebar: Use this if you switch often between tools. The system pins the sidebar by default. To unpin the sidebar, go to Settings and clear Pin Sidebar. See Customize your RHDH interface settings.
+
+### Explore production resources
+
+Production instances give access to live infrastructure data and technical guides that you need for operational tasks.
+
+* See production documentation: Use the Docs menu to find production-specific documentation, such as run books or deployment guides linked to your components.
+* Check production APIs: Navigate to the APIs page to verify that production endpoint definitions are correct and discoverable.
+* Test Self-Service templates: Click Create (+) in the Global Header to review available Software Templates. Check that you have access to the Software Templates that you need to generate new production services.
+
+### Next steps
+
+* Start your day: Navigate to the RHDH Home Page to view your personalized dashboard.
+* Learn the interface: Understand the Global Header and Sidebar tools.
+* Get AI help: If enabled in production, open Developer Lightspeed for RHDH to ask questions about your new environment.
+
+## Use RHDH capabilities for daily productivity
+
+To streamline your software development lifecycle, use the integrated tools within Red Hat Developer Hub (RHDH). You can use these core capabilities to perform self-service tasks and discover organizational resources from a centralized interface.
+
+By using the following workflow capabilities, you can reduce context switching and automate repetitive setup tasks:
+
+Software Catalog:: Use this centralized inventory to manage software components, APIs, and systems. You can visualize ownership, track dependencies, and monitor the lifecycle status of assets across the organization.
+Software Templates:: Automate the creation of new projects by using self-service templates. These templates bootstrap repositories, configure CI/CD pipelines, and apply organizational best practices to remove manual configuration.
+TechDocs:: Access "docs-as-code" documentation that renders directly within the portal. This makes sure that technical guides remain synchronized with the codebase and are easily discoverable alongside their corresponding services.
+Plugins:: Platform engineers can extend the functionality of the portal by connecting it to your existing set of tools. For example, platform engineers might have configured your RHDH portal so that you can monitor Argo CD deployments, view Jira tickets, or review Quay registry scans without navigating away from the portal interface.
+Global Search:: Find specific components, documentation, or team members instantly by using a unified search engine that indexes the entire software ecosystem.
+
+## Additional resources
+
+* About Red Hat Developer Hub
+:context: {parent-context}
+
+# Log in to Red Hat Developer Hub
+
+To access your organization&#8217;s software catalog, templates, and documentation, authenticate with Red Hat Developer Hub using your configured identity provider. Secure authentication ensures you have appropriate permissions to view and manage software entities.
+
+By logging in, you can access a centralized portal that streamlines your development workflow. With this secure access, you can locate required software building blocks and documentation without navigating many separate systems.
+
+## Log in to RHDH
+
+To access your organization&#8217;s software ecosystem, tools, and self-service templates, log in to the Red Hat Developer Hub (RHDH) web console. With a successful login, you can access resources permitted by your role-based access control (RBAC) settings.
+
+1. Navigate to the RHDH URL provided by your administrator.
+2. On the login page, select the appropriate authentication method configured for your environment:
+3. Enterprise authentication: Log in with your corporate credentials, such as Single Sign-On or Keycloak.
+4. OAuth provider: Select an external provider, such as GitHub or GitLab, if your organization manages developer identities through those services.
+5. Guest access: If available, select Enter as Guest for read-only exploration.
+
+[NOTE]
+----
+Guest access has limited permissions. You cannot create or register components with guest access. Production environments typically disable guest access for security. To perform these actions, you must use an authenticated account with the required permissions.
+----
+6. Enter your credentials and complete the required authentication prompts.
+
+1. The portal redirects you to the Home page.
+
+![Home page with Lightspeed button]
+
+1. The system displays your personalized dashboard, showing your username and recently accessed items.
+
+## Authentication methods to enable self-service capabilities
+
+To access tools, repositories, and permissions assigned to your role, authenticate to Red Hat Developer Hub using a supported provider. The correct authentication method ensures the portal associates your identity with your team&#8217;s software components and capabilities.
+
+### Common authentication methods
+
+Corporate Single Sign-On (SSO):: Select this option to use your standard organizational credentials. This method typically provides full access to internal resources and links your portal identity to your official team membership.
+Federated authentication:: Use services such as Keycloak or Ping Federate to unify your login across many enterprise applications. This makes sure that your permissions remain consistent as you navigate between the portal and external development tools.
+OAuth providers:: Select providers such as GitHub, GitLab, or Azure DevOps to link your developer identity directly to the portal. You must use this method if you need to perform actions in the Software Catalog that involve external version control systems.
+Guest access:: Use this restricted, read-only mode for initial platform exploration.
+
+[IMPORTANT]
+----
+Use Guest access for demonstration purposes only. While in this mode, you cannot register components, use Software Templates, or access restricted organizational data.
+----
+
+## Navigate the RHDH interface
+
+To locate resources, manage projects, and customize your workspace, use the two primary navigation areas in Red Hat Developer Hub (RHDH). By understanding these regions, you can navigate the software ecosystem and run development tasks efficiently.
+
+### Using the global header
+
+The top bar provides immediate access to frequency used actions and personal settings.
+
+Search: Locate components, APIs, documentation, and users across the entire ecosystem instantly.
+
+Self-service (+): Access Software Templates to create new components or projects.
+
+User profile: Manage interface settings, set appearance preferences (such as Dark Mode), or log out.
+
+Help (?): Access support resources and toggle the Quick start panel.
+
+Support and notifications: View system alerts and platform help resources.
+
+Application Launcher: Access integrated applications and tools.
+
+Starred Items: View your bookmarked entities.
+
+### Using the left navigation sidebar
+
+The sidebar organizes core platform features into distinct functional sections.
+
+Home: View your personalized dashboard, including team updates and recently accessed items.
+
+Catalog: Browse the inventory of software components, services, and resources to visualize ownership and dependencies.
+
+Docs: Access the technical documentation library (TechDocs) to read guides linked to specific software entities.
+
+APIs: Explore and test available API definitions in the centralized browser.
+
+## Additional resources
+
+* Authentication in Red Hat Developer Hub
+* Customizing Red Hat Developer Hub
+
+# Find software components to discover assets
+
+To integrate with existing software, check ownership, or prevent duplicate development, use the Software Catalog in Red Hat Developer Hub (RHDH). You can use this centralized inventory to discover assets without searching through many documentation sources or repositories.
+
+By using the Software Catalog, you can achieve the following outcomes:
+
+Reuse existing code:: Locate shared libraries and components to prevent duplication of effort.
+Understand dependencies:: Visualize connections between services and API contracts.
+Identify ownership:: Find the team or individual responsible for an asset to allow collaboration.
+
+
+[NOTE]
+----
+Your administrator must grant specific permissions if you want to add the products you are working on to this catalog. Contact your administrator for more information.
+----
+
+## Filter components in the Software Catalog
+
+To identify existing software building blocks, view source code, or check lifecycle status, use the catalog filters in RHDH. Filtering the catalog helps you locate production-ready components and documentation without doing manual searches across many repositories.
+
+1. Log in to the RHDH interface.
+2. In the navigation sidebar, click Catalog.
+3. Click the Kind filter and select Component.
+4. Optional: Click the Type filter to select a functional category, such as Library, Website, or Tool.
+5. In the Search field, enter the name of the component.
+6. Select the component card to view the Overview, Docs, and Relationships tabs.
+
+## Analyze microservice dependencies in the Software Catalog
+
+To identify backend applications and microservices, view deployment status, and understand API relationships, use filters in the Red Hat Developer Hub Software Catalog. Filtering helps verify architectural connections and ownership without manually tracing code.
+
+1. Navigate to the RHDH interface.
+2. In the left navigation sidebar, click Catalog.
+3. Click the Kind filter and select Component.
+4. Click the Type filter and select Service.
+5. Optional: Narrow the list by selecting a specific Owner or Lifecycle, such as production or experimental.
+6. Select a service card to open the detailed entity view.
+7. Review the Overview tab to identify the assigned owner and access links to the source code repository.
+8. Select the Dependencies or Relations tab to see upstream and downstream connections for that service.
+
+## Review API contracts to verify service endpoints and schemas
+
+To verify endpoints, schemas, and server URLs for your services, locate and inspect API contracts in Red Hat Developer Hub. By reviewing these definitions, you can validate required parameters and data models in a rendered format without searching source code.
+
+1. Navigate to the RHDH interface.
+2. In the left navigation sidebar, click APIs.
+
+[NOTE]
+----
+You can also find these resources by clicking Catalog and selecting API from the Kind filter.
+----
+3. Select an API from the list to open the detail view.
+4. Select the Overview tab to examine the metadata, assigned owner, and lifecycle status.
+5. Select the Definition tab to view the rendered specification, such as an interactive Swagger or AsyncAPI interface.
+
+[NOTE]
+----
+To test APIs in the RHDH interface before writing a single line of code, you must correctly configure the API definition.
+----
+
+## Additional resources
+
+* About Red Hat Developer Hub
+* Customizing Red Hat Developer Hub
+
+# Import and use an existing Software Template for faster development
+
+To standardize and accelerate the creation of new software, use Software Templates in Red Hat Developer Hub (RHDH).
+
+Each template uses a YAML definition to present a functional interface for inputting project metadata. Software Templates run a sequential series of actions, such as scaffolding code or creating repositories, which you can configure to run conditionally based on user input.
+
+## Create a software component using Software Templates
+
+To ensure project consistency and reduce manual configuration time, use Software Templates to create new components.
+
+* You log in to the Red Hat Developer Hub instance.
+* If RBAC is enabled, you have a role with the following permissions: scaffolder.template.parameter.read, scaffolder.template.step.read, scaffolder.task.create.
+
+1. On the Red Hat Developer Hub navigation menu, click Catalog > Self-service or in the Global Header, click Create (+).
+2. On the Self-service page, locate the Templates you want to use and click Choose to start the scaffolding process.
+3. Follow the wizard instructions to enter the required project details.
+4. In the Review step, verify your parameters and click Create.
+
+The scaffolding process begins. You can monitor the progress in the logs or click Cancel to stop the operation.
+
+* If the system creates the component successfully, a success page is displayed.
+![Successful template creation page]
+
+* If the creation process fails, you must review the logs on the error page for specific failure details.
+* To retry, click Start Over; the system keeps your earlier entered values on the Self-service page.
+![Failed template creation page]
+
+## Search and filter Software Templates in your Red Hat Developer Hub instance
+
+Search and filter the available Software Templates to quickly locate the correct configuration for your project.
+
+1. In the Red Hat Developer Hub navigation menu, click Catalog > Self-service.
+2. In the Search field, enter the name for the Software Template.
+3. Optional: To refine the results, select a category from the Category list.
+
+## Import an existing Software Template
+
+You can use the Catalog Processor to import an existing Software Template into your Red Hat Developer Hub instance.
+
+* You have created a directory or repository that has at least one template YAML file or have access to such a directory or repository.
+* Optional: To use a template stored in GitHub, you have configured Developer Hub integration with GitHub.
+
+1. Open your RHDH app-config.yaml configuration file.
+2. In the catalog.rules section, add a rule to allow Templates kinds, as shown in the following example:
+
+```yaml
+# ...
+catalog:
+  rules:
+    - allow: [Template]
+  locations:
+    - type: url
+      target: https://<repository_url/template-name>.yaml
+# ...
+```
+
+
+where:
+catalog.rules.allow:: Specify the Template rule to allow new Software Templates in the catalog.
+catalog.locations.type:: Specify the url type when importing templates from a repository (for example, GitHub or GitLab).
+catalog.locations.target:: Specify the full URL to the template file.
+
+1. In the Red Hat Developer Hub navigation menu, click Catalog.
+2. From the Kind list, select Template.
+3. Verify that the Template list displays your template.
+
+## Additional resources
+
+* About Red Hat Developer Hub
+* Customizing Red Hat Developer Hub
+:context: {parent-context}
+
+# Search for relevant content in Technical Documentation (TechDocs)
+
+To reduce context switching and to ensure technical resources are accessible, use TechDocs in Red Hat Developer Hub. By centralizing documentation, you can review architecture diagrams, installation guides, and component details alongside software entities in a single interface.
+
+## Prerequisites
+
+* Your administrator has enabled and configured the TechDocs plugin.
+* Documentation is imported into TechDocs.
+* You have the required roles and permissions to access TechDocs content.
+
+## Search for relevant content
+
+To quickly find the information needed for your services, search or filter the TechDocs catalog. Narrowing your search helps you find relevant resources without browsing many repositories.
+
+1. In the Red Hat Developer Hub navigation menu, click Docs.
+2. On the Documentation page, use the Search bar or filters to locate your document:
+* Search: Enter keywords to find specific terms within documents.
+* Filter by Owner: View documents owned by specific users or groups.
+* Filter by Tags: Narrow results by specific labels or categories.
+* Filter by Owned: View documents belonging to you or your group.
+* Filter by Starred: View your bookmarked favorites.
+
+The results update automatically to show the number of documents that meet your criteria.
+
+## Access and navigate documentation
+
+Use the built-in navigation tools to move between related documents within a book. This ensures you can easily reference implementation details and requirements in a logical sequence.
+
+1. In the Red Hat Developer Hub navigation menu, click Docs.
+2. In the Documentation table, click the name of the document you want to view.
+3. Navigate the content using the following on-screen tools:
+* Search bar: Find keywords within the current document.
+* Table of contents: Jump to specific sections.
+* Navigation menu: Switch between different documents in the same book.
+* Next: Proceed to the next sequential document.
+* Add-ons: Perform additional actions if the system configures plugins, such as setting the text size.
+
+## Additional resources
+
+* Manage and consume technical documentation within Red Hat Developer Hub
+:context: {parent-context}
+
+# Verify API contracts before integrating with backend services
+
+To integrate with existing services and understand component communication, use the Red Hat Developer Hub (RHDH) API browser to locate, inspect, and validate API definitions in a centralized interface. You can review API contracts and test endpoints to verify responses directly from the portal.
+
+Apart from viewing specifications, you can use the interactive interface to test available endpoints and review data models. This verification confirms that your application correctly interfaces with backend services before you begin integration.
+
+## Test API endpoints interactively
+
+To verify API behavior and debug service responses, use the interactive test interface in Red Hat Developer Hub. Validating endpoints directly within the portal ensures they return expected status codes and data models, eliminating the need for external testing tools.
+
+* You have the required credentials or tokens if the API requires authentication.
+
+1. Navigate to the specific API you must validate and select the Definition tab.
+2. Locate the operation you want to verify and select the header to expand the details.
+3. Click Try it out to enable the interactive input fields.
+4. Enter the required parameters or the request body JSON in the provided fields.
+5. Click Run.
+6. Examine the Server response section to verify the status code, response body, and headers.
+
+[NOTE]
+----
+If you receive 401 (Unauthorized) or 403 (Forbidden) errors, you must verify your credentials with the API owner or check the authorization header requirements in the specification.
+----
+
+## Select supported API specifications
+
+To make API definitions discoverable and interactive within the Red Hat Developer Hub portal, use a supported specification format. The right format allows the platform to render documentation and give testing interfaces for other developers.
+
+### Supported API formats
+
+* OpenAPI: Use this standard format (formerly Swagger) for defining RESTful APIs. RHDH renders these specifications into interactive documentation, allowing users to run requests directly from the Definition tab.
+* AsyncAPI: Use this format for event-driven architectures and message-based services. This ensures that producers and consumers can visualize message schemas and broker details within the Software Catalog.
+* GraphQL: Use this format to define GraphQL schemas. This allows developers to explore your data graph, including queries, mutations, and types, from a centralized location.
+
+
+[NOTE]
+----
+Support for specific formats, such as AsyncAPI or GraphQL, depends on your organization's instance configuration and enabled plugins. If a specification does not render, verify your catalog-info.yaml metadata or contact your platform administrator.
+----
+
+## Additional resources
+
+* Customizing Red Hat Developer Hub
+:context: {parent-context}
+
+# Find resources and documentation using search
+
+To find software components, APIs, and technical documentation across the enterprise, use the centralized search feature in Red Hat Developer Hub. This tool helps you locate services, templates, and team members directly, without navigating nested menus.
+
+By using the Search bar, you can access matching resources from the Software Catalog and TechDocs instantly. This unified access reduces the time spent switching between disparate documentation sites or service registries during the development lifecycle.
+
+## Locate resources instantly
+
+To bypass menu navigation and locate technical assets quickly, use the universal search bar in Red Hat Developer Hub. The search engine provides real-time suggestions to navigate directly to services, documentation, or team members, reducing time spent searching.
+
+1. Click the Search input field in the Global Header.
+2. Enter your query, such as a service name, API endpoint, or technical concept.
+3. Review the instant results in the dropdown menu, which categorize matches by entity types such as Components, APIs, TechDocs, and Users.
+4. Select a suggestion from the list to navigate directly to that resource.
+
+## Filter and refine search results
+
+To isolate specific components, APIs, or documentation, within a large software ecosystem, use the advanced search filters in RHDH. Refining your search results makes sure you can locate production-ready services and ownership details without navigating through unrelated resources.
+
+1. Enter a search term in the Search bar.
+2. Click All results&#8230;&#8203;.
+3. In the Filters panel, select one or more of the following options:
+4. Kind: Filters by entity category, such as Component, API, Template, or Group.
+5. Type: Narrows the results by functional subtype, such as service, library, or website.
+6. Lifecycle: Isolates resources by operational status, such as production, experimental, or deprecated.
+7. Review the filtered results to identify the resource description and owner.
+8. Optional: Use the pagination controls to navigate the results.
+
+## Additional resources
+
+* Customizing Red Hat Developer Hub
+:context: {parent-context}
+
+# Get AI-assisted help for your development tasks
+
+Use Red Hat Developer Lightspeed for Red Hat Developer Hub, a generative AI assistant in Red Hat Developer Hub (RHDH), to ask platform questions, analyze logs, generate code, and create test plans from a chat interface.
+
+## Prerequisites
+
+* Your platform engineer has configured the Developer Lightspeed for RHDH service in your RHDH instance.
+
+## Configure safety guards in Red Hat Developer Hub
+
+To protect users from insecure or harmful AI model outputs, Red Hat Developer Hub (RHDH) uses Llama Guard as a default safety shield. You must configure these guards to align with your organization&#8217;s security policies.
+
+Default safety guard configuration:: The system uses Llama Guard as the default safety shield. Override these settings in the run.yaml file.
+
+
+[NOTE]
+----
+The external_providers_dir parameter defaults to null and is no longer required in your configuration.
+----
+
+Overriding safety guards:: To implement custom security layers or different safety shields, you must define a new safety provider within a custom run.yaml file.
+Disabling safety guards:: To run RHDH without safety guards, you must use the run-no-guard.yaml configuration file.
+
+
+[IMPORTANT]
+----
+Running without safety guards increases the risk of invalid model output. Only use this configuration in secure development environments.
+----
+
+Applying the no-guard configuration:: To run the system without a safety guard, perform these steps:
+
+1. Add the following YAML file as a config map to your namespace:
+
+```yaml
+version: 2
+image_name: redhat-ai-dev-llama-stack-no-guard
+apis:
+  - agents
+  - inference
+  - safety
+  - tool_runtime
+  - vector_io
+  - files
+container_image:
+external_providers_dir:
+providers:
+  agents:
+    - config:
+        persistence:
+          agent_state:
+            namespace: agents
+            backend: kv_default
+          responses:
+            table_name: responses
+            backend: sql_default
+      provider_id: meta-reference
+      provider_type: inline::meta-reference
+  inference:
+    - provider_id: ${env.ENABLE_VLLM:+vllm}
+      provider_type: remote::vllm
+      config:
+        url: ${env.VLLM_URL:=}
+        api_token: ${env.VLLM_API_KEY:=}
+        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+        tls_verify: ${env.VLLM_TLS_VERIFY:=true}
+    - provider_id: ${env.ENABLE_OLLAMA:+ollama}
+      provider_type: remote::ollama
+      config:
+        url: ${env.OLLAMA_URL:=http://localhost:11434}
+    - provider_id: ${env.ENABLE_OPENAI:+openai}
+      provider_type: remote::openai
+      config:
+        api_key: ${env.OPENAI_API_KEY:=}
+    - provider_id: ${env.ENABLE_VERTEX_AI:+vertexai}
+      provider_type: remote::vertexai
+      config:
+        project: ${env.VERTEX_AI_PROJECT:=}
+        location: ${env.VERTEX_AI_LOCATION:=us-central1}
+    - provider_id: sentence-transformers
+      provider_type: inline::sentence-transformers
+      config: {}
+  tool_runtime:
+    - provider_id: model-context-protocol
+      provider_type: remote::model-context-protocol
+      config: {}
+    - provider_id: rag-runtime
+      provider_type: inline::rag-runtime
+      config: {}
+  vector_io:
+    - provider_id: faiss
+      provider_type: inline::faiss
+      config:
+        persistence:
+          namespace: vector_io::faiss
+          backend: faiss_kv
+  files:
+    - provider_id: localfs
+      provider_type: inline::localfs
+      config:
+        storage_dir: /tmp/llama-stack-files
+        metadata_store:
+          table_name: files_metadata
+          backend: sql_files
+storage:
+  backends:
+    kv_default:
+      type: kv_sqlite
+      db_path: /tmp/kvstore.db
+    sql_default:
+      type: sql_sqlite
+      db_path: /tmp/sql_store.db
+    sql_files:
+      type: sql_sqlite
+      db_path: /rag-content/vector_db/rhdh_product_docs/1.9/files_metadata.db
+    faiss_kv:
+      type: kv_sqlite
+      db_path: /rag-content/vector_db/rhdh_product_docs/1.9/faiss_store.db
+  stores:
+    metadata:
+      namespace: registry
+      backend: faiss_kv
+    inference:
+      table_name: inference_store
+      backend: sql_default
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      table_name: openai_conversations
+      backend: sql_default
+registered_resources:
+  models:
+    - model_id: sentence-transformers/all-mpnet-base-v2
+      metadata:
+        embedding_dimension: 768
+      model_type: embedding
+      provider_id: sentence-transformers
+      provider_model_id: /rag-content/embeddings_model
+  tool_groups:
+    - provider_id: rag-runtime
+      toolgroup_id: builtin::rag
+  vector_dbs:
+    - vector_db_id: rhdh-product-docs-1_8
+      embedding_model: sentence-transformers/all-mpnet-base-v2
+      embedding_dimension: 768
+      provider_id: faiss
+server:
+  auth:
+  host:
+  port: 8321
+  quota:
+  tls_cafile:
+  tls_certfile:
+  tls_keyfile:
+```
+
+2. Mount the config map to your Llama Stack container at /app-root/run.yaml to make sure it overrides the default image file:
+
+```yaml
+name: llama-stack
+volumeMounts:
+- mountPath: /app-root/run.yaml
+  subPath: run.yaml
+  name: llama-stack-config
+```
+
+3. Configure the required volume:
+
+```yaml
+volumes:
+- name: llama-stack-config
+  configMap:
+    name: llama-stack-config
+```
+
+
+where:
+llama-stack-config:: The config map where you added the new no-guard configuration file.
+4. Restart the deployment if it does not trigger an automatic rollout.
+
+## Best results for assistant queries
+
+To resolve technical blockers and accelerate development tasks, you must structure your queries to give specific context to the AI assistant. Using precise prompts makes sure that Developer Lightspeed for RHDH generates relevant code snippets, architectural advice, or platform-specific instructions.
+
+Use the following strategies to improve the accuracy of the assistant&#8217;s output during your development workflow:
+
+Specify technologies:: Instead of asking "How do I use templates?", ask "How do I create a Software Template that scaffolds a Node.js service with a CI/CD pipeline".
+Give context:: Include details about your environment, such as "I am deploying to OpenShift; how do I set up my catalog-info.yaml to show pod health?".
+Use conversation context:: Ask follow-up questions to refine an earlier answer. For example, if the assistant gives a code snippet, you can ask "Now rewrite that using TypeScript interfaces."
+Validate with citations:: Check the provided documentation links and citations in the response to verify that the generated advice aligns with your organization's official standards.
+Improve assistant accuracy:: Rate the utility of responses by selecting the Thumbs up or Thumbs down icons. This feedback helps tune the model for your organization's specific requirements.
+
+
+[IMPORTANT]
+----
+To keep your data secure, do not include sensitive personal information, plain text credentials, or confidential business data in your queries.
+----
+
+## AI response monitoring and context management
+
+Developer Lightspeed for RHDH provides features to track the AI reasoning process and keep the context of your development tasks.
+
+Thinking cards:: An expandable thinking card is displayed while the AI processes a query. A pulse animation indicates the reasoning phase. You can expand the card to view detailed reasoning or collapse it to minimize screen clutter.
+Tool call transparency:: An expandable card displays details for Model Context Protocol (MCP) tool calls, which you can use to monitor background processes.
+Context-aware citations:: Retrieval-Augmented Generation (RAG) citations appear only when the AI uses internal documentation. This makes sure that general knowledge responses remain concise.
+Context preservation during model changes:: When you select a different AI model, Developer Lightspeed for RHDH starts a new conversation. This keeps your earlier chats available in your history.
+Structural readability:: The interface formats headings and bullet points automatically to make sure responses are scannable.
+
+## Manage chats
+
+Manage your chat history and configuration in RHDH to organize your workspace, resume earlier tasks, or find past solutions.
+
+![Chat menu options]
+
+* You have configured the Developer Lightspeed for RHDH plugin in Red Hat Developer Hub.
+* You have logged in to the portal.
+
+1. Click the Open Lightspeed floating action button (FAB) at the lower right of the screen to open the chat overlay.
+2. Optional: Configure the interface display and server settings:
+* Click the Chatbot options icon (⋮) to view chat history or start a new chat.
+* Click the Display mode icon and select any of the following views:
+![Chat display options]
+* Overlay: A floating window is displayed over the current page content.
+![Lightspeed overlay mode]
+* Dock to window: A panel attaches to the right side of the screen. Activating this mode automatically closes the quick start panel if it is already open.
+![Lightspeed docked mode]
+* Fullscreen: A dedicated page opens for intensive chat sessions. This mode displays a revised header containing the Lightspeed logo and a horizontal tab bar, which replaces the previous main menu. Bookmark the URL in your browser to save a direct link to the chat interface.
+![Lightspeed full-screen mode]
+* Optional: Toggle Enable pinned chats/Disable pinned chats to enable or hide the pinned chats. The system enables this option by default.
+* Available only if MCP is configured: Manage Model Context Protocol connections.
+![Lightspeed chat mcp mode]
+3. Start a chat or load an earlier session:
+* Enter a prompt: Type a query in the Enter a prompt for Lightspeed chat field and press Enter.
+* Use a sample: Click a prompt tile.
+* Change the AI model: Select a model from the model selector dropdown menu inside the prompt bar.
+![Lightspeed chat AI model]
+* Attach a file: Click the (+) icon on the left of the prompt bar to upload a .yaml, .json, or .txt file. Descriptive text clarifies the function of the icon.
+1. Click the file name to open the preview model.
+2. View or edit the content of the file:
+![Lightspeed file attachment preview]
+* Use voice: Click the Use microphone icon. The microphone and send buttons are located on the right side of the prompt bar.
+* Control AI generation: Use the control buttons on the right side of the prompt bar. Click the start/send (>) button to submit queries, or click the stop ([]) button to halt AI generation.
+![Lightspeed file attachment preview]
+* Resume a chat: Select a title from the Recent list.
+4. Organize your chat history:
+* Start a new topic: Click New chat to reset the assistant's context. When the history panel is collapsed, you must click the Edit square icon to create a new chat.
+![Lightspeed new chat]
+* Search history: Enter a keyword in the Search field.
+* Rename a session: Click Options next to a chat title, select Rename, and enter a new name.
+![Rename chat option]
+* Pin a chat: Click Options next to a chat title and select Pin. The chat moves to the Pinned group.
+* Sort chats: Click Sort control and choose a sorting criteria, such as Date (Newest first).
+![Chat sorting options]
+* Delete a chat: Click Options next to a chat title and select Delete.
+![Delete chat option]
+* Expand or collapse the panel: Click the Expand/collapse icon to toggle the history panel.
+![Collapse chat option]
+
+[NOTE]
+----
+The expanded panel is resizable up to a defined maximum width.
+----
+5. Optional: To hide the interface, if you are in the Overlay or Dock to window mode, click the Close Lightspeed icon (X) to hide the window. If you are in Fullscreen mode, revert to the other modes and click the Close Lightspeed icon (X). The system preserves your active query and history.
+6. Optional: In Fullscreen mode, bookmark the URL in your browser to save a direct link to the chat interface.
+
+1. The main window displays the active chat or selected history.
+2. The chat history list reflects renamed, pinned, or deleted entries.
+
+## Build a private knowledge base with Developer Lightspeed for RHDH Notebooks
+
+Use Developer Lightspeed for RHDH notebooks to create isolated research environments. These workspaces allow you to analyze project data securely by using a large language model (LLM) grounded in your specific documentation.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+### Create isolated research workspaces
+
+Organize your work into individual notebook sessions to keep research topics separate and private.
+
+![Notebook upload option]
+
+1. In the RHDH interface, click the Open Lightspeed floating action button (FAB).
+2. In your Developer Lightspeed page, select the Notebooks tab.
+3. Click Create a new notebook to start a new workspace.
+4. Optional: To manage your workspaces, click the More options icon on a notebook card to Rename, Delete, or add Tags to the session.
+![Notebook rename option]
+![Notebook delete option]
+![Notebook tabs option]
+
+* Confirm the new notebook card appears on the My Notebooks dashboard.
+
+### Provide project context to the AI
+
+To receive answers tailored to your project, upload and manage relevant source material in your active session.
+
+1. Open a Notebook card from the dashboard.
+2. Add resources by using one of the following methods:
+* In the sidebar, click the Add (+) icon.
+* In the main user interface, click Upload a resource.
+![Notebook upload option]
+3. Select and upload your local files. Supported formats include .txt, .md, .pdf, .docx, .log, .yaml, and .json.
+
+1. Adhere to the following constraints:
+File size:: Individual files or URL content must be 20MB or smaller.
+Notebook Capacity:: The total token count per session must not exceed 100k.
+Unsupported content:: Avoid scanned PDF images without text, audio, video, and general image files.
+Persistence requirement:: The internal SQL and KV stores must be mapped to a persistent backend to maintain the 100k token context across sessions.
+2. Wait for the system to process and vectorize the files. This might take several seconds for larger PDFs.
+
+* Ensure the uploaded files appear in the Resources list in the sidebar with a Processed status.
+
+### Extract and verify document-based insights
+
+After providing context, use the AI to perform reasoning across your files and verify the accuracy of the responses.
+
+![Lightspeed Notebook chat preview]
+
+* You have uploaded documents or URLs to the active chat session to establish context.
+
+[NOTE]
+----
+If no documents are uploaded, you cannot communicate with the AI.
+----
+Procedure
+1. Enter a question in the prompt bar at the bottom of the screen.
+2. Analyze the response. The AI identifies relationships across all uploaded documents and URLs in the session.
+3. To verify accuracy, click the Sources chip to view the specific document excerpts used to generate the answer.
+4. Manage your workflow by using the history panel in the sidebar to expand or collapse previous interactions.
+
+* Confirm that the Sources panel displays the correct filenames and text snippets corresponding to the AI's response.
+
+# Integrate and customize your daily tools using extensions
+
+To integrate development tools into a single interface and customize your experience, use extensions and plugins in Red Hat Developer Hub. Add plugins to interact with external services such as Jira, Jenkins, or ArgoCD, extending portal capabilities.
+
+## Access platform-wide tools using global plugins
+
+To manage technology standards, track project costs, or access AI help, use the global plugins located in the main navigation sidebar of Red Hat Developer Hub (RHDH). These plugins give features that apply across the whole portal instead of to a specific software entity.
+
+1. Log in to your RHDH instance.
+2. In the left navigation sidebar, locate the standard or custom items that represent specific global extensions, such as:
+3. Tech Radar: Use this to visualize your organization's approved and deprecated technologies.
+4. Cost Insights: Use this to track and analyze cloud infrastructure spending for your projects.
+5. Developer Lightspeed for RHDH: Access this conversational interface for AI-assisted development help and platform queries.
+6. Learning Paths: Access training and educational resources to improve your technical skills.
+
+## Review RHDH resource data
+
+To review data specific to a particular resource in RHDH, use entity plugins that appear when viewing components, services, or APIs in the Software Catalog.
+
+1. Navigate to the RHDH interface.
+2. In the left navigation sidebar, click Catalog.
+3. Select a Component or Service card.
+4. Review the tabs at the top of the entity page to view configured plugins:
+5. CI/CD: Displays build status and history from tools such as Jenkins or GitHub Actions.
+6. Kubernetes: Shows deployment status and pod health.
+7. Topology: Visualizes the relationships and status of running resources.
+
+1. If a build fails in the CI/CD tab, select the build number to view the logs in the source provider.
+2. If a pod is failing in the Kubernetes tab, examine the error events to troubleshoot the deployment.
+
+## Identify integrations in the RHDH extensions marketplace
+
+To enhance your development workflow with additional tools, browse the extensions marketplace in Red Hat Developer Hub. Identifying available plugins shows which integrations are active or which supported tools your team can request to improve visibility and automation.
+
+1. In the left navigation sidebar, click Extensions.
+2. Browse the marketplace to review the following categories:
+3. Installed: Review the integrations currently active in your instance, such as Jira, ArgoCD, or GitHub.
+4. Available: Examine additional integrations supported by the platform that are not yet enabled for your workspace.
+
+[NOTE]
+----
+End users typically cannot install plugins. If you locate a plugin in the marketplace or the Backstage Plugin Directory that your team requires, contact your administrator to request its installation.
+----
+
+## Additional resources
+
+* Installing and viewing plugins in Red Hat Developer Hub
+
+# Customize your RHDH interface settings
+
+Personalize your Red Hat Developer Hub (RHDH) environment to align the portal with your system preferences and optimize your workspace. Reviewing your user profile also confirms your account details and software ownership in the Software Catalog.
+
+## Customize your interface settings and profile details
+
+Personalize your workspace appearance and verify that you are correctly associated with your team&#8217;s services.
+
+1. In the RHDH global header, click your avatar or name to open the user menu.
+2. To customize the interface:
+1. Select Settings.
+2. In the Appearance section, configure the following options:
+* Theme: Select Light, Dark, or Auto to synchronize the portal with your operating system preferences.
+* Language: Select your preferred interface language from the list.
+* Pin Sidebar: Use this toggle to keep the left navigation menu expanded. The system enables this feature by default.
+3. To check your identity and software ownership:
+1. Open the user menu again and select My Profile.
+2. Review the About card to confirm that your account details, such as email and team tags, are right.
+3. Examine the Ownership card to identify the software components, APIs, and systems linked to your identity.
+4. Use the relations toggle to switch between the following views:
+* Direct Relations: View entities where you are explicitly listed as the owner.
+* Aggregated Relations: View entities inherited through team memberships or group hierarchies.
+
+## Additional resources
+
+* Customizing Red Hat Developer Hub
+* Authentication in Red Hat Developer Hub
+* About Red Hat Developer Hub
+:context: {parent-context}
+
+# Manage starred items for quick access
+
+To streamline your daily workflow and reduce navigation time, use the starring feature in Red Hat Developer Hub. By starring key components, APIs, and services in the Software Catalog, you create a personalized list accessible from your sidebar or homepage.
+
+This personalization makes sure that you can locate the specific tools and documentation you use most often without performing repetitive searches across the software ecosystem.
+
+## Star key components in the Software Catalog
+
+You can add commonly used components to the Your Starred Entities card for quick access.
+
+1. In the Red Hat Developer Hub navigation menu, select Catalog.
+2. Locate the components you want to add as a favorite.
+3. In the Actions column for that component, click the Add to favorites (star) icon.
+
+* Navigate to the Home page and verify that the Your Starred Entities card lists the component.
+
+## Additional resources
+
+* About Red Hat Developer Hub
+* Customizing Red Hat Developer Hub
+:context: {parent-context}

@@ -1,0 +1,1694 @@
+# Installing Red Hat Developer Hub in an air-gapped environment
+
+Configure and deploy Developer Hub on a supported platform in a network-restricted environment by using either the Operator or Helm chart.
+
+# Air-gapped environment
+
+An air-gapped environment ensures security by physically segregating systems from external networks.
+
+Also known as an air-gapped network or isolated network, this isolation prevents unauthorized access, data transfer, or communication between the air-gapped system and external sources.
+
+You can install the Red Hat Developer Hub in an air-gapped environment to ensure security and meet specific regulatory requirements.
+
+Air-gapped environments fall into two types:
+
+Fully disconnected environment:: In environments without internet access, a fully disconnected installation ensures that Red Hat Developer Hub can run reliably without external dependencies. This method requires mirroring images to disk and transferring them manually to the air-gapped environment.
+Partially disconnected environment:: In a partially disconnected environment, the cluster cannot access external registries, for example, registry.redhat.io, but it can access an internal mirror registry. This method requires direct access to an internal mirror registry from the cluster.
+
+# Install Red Hat Developer Hub in an air-gapped environment with the Operator
+
+Install Red Hat Developer Hub in fully or partially disconnected environments by using the Operator.
+
+## Install Red Hat Developer Hub in a fully disconnected environment with the Operator
+
+Mirror Operator images to disk and transfer them to a fully disconnected environment without internet access.
+
+In environments without internet access (whether for security, compliance, or operational reasons), a fully disconnected installation ensures that Red Hat Developer Hub can run reliably without external dependencies.
+
+If your network has access to the registry through a bastion host, you can use the helper script to install Red Hat Developer Hub.
+
+* You have installed GNU sed, GNU tar 1.35 or later, jq 1.7 or later, the oc-mirror tool (recommended on OpenShift Container Platform), the opm CLI tool, Podman 5.3 or later, Skopeo 1.20 or later, the umoci CLI tool, and yq 4.44 or later on your workstation.
+* You have an active oc registry, podman, or skopeo session to the Red Hat Container Registry (registry.redhat.io).
+* Make sure that your system meets the minimum sizing requirements. See Sizing requirements for Red Hat Developer Hub.
+
+1. Download the mirroring script to disk by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/prepare-restricted-environment.sh
+```
+
+2. Run the mirroring script by using the bash command with the appropriate set of options:
+
+```terminal
+$ bash prepare-restricted-environment.sh
+ --filter-versions "1.10"
+ --to-dir <my_pulled_image_location>
+ [--use-oc-mirror true]
+```
+
+
+where:
+--to-dir <my_pulled_image_location>:: Enter the absolute path to a directory where you want to pull all of the necessary images, for example, /home/user/rhdh-operator-mirror-dir.
+--use-oc-mirror true:: (Recommended on OpenShift Container Platform) Use the oc-mirror OpenShift Container Platform CLI plugin to mirror images.
+
+[NOTE]
+----
+The script can take several minutes to complete as it copies many images to the mirror registry.
+----
+3. Transfer the directory specified by the --to-dir option to your disconnected environment.
+4. From a machine in your disconnected environment that has access to both the cluster and the target mirror registry, run the mirroring script by using the bash command with the appropriate set of options:
+
+```terminal
+$ bash <my_pulled_image_location>/install.sh
+    --from-dir <my_pulled_image_location>
+    [--to-registry <my.registry.example.com>]
+    [--use-oc-mirror true]
+```
+
+
+where:
+<my_pulled_image_location>/install.sh:: Enter the downloaded installation script and the absolute path to the directory where you stored it on your system.
+--from-dir <my_pulled_image_location>:: Enter the directory where you want to pull all of the necessary images.
+--to-registry:: (Optional) Enter the URL for the target mirror registry where you want to mirror the images.
+--use-oc-mirror true:: Recommended on OpenShift Container Platform: Use the oc mirror OpenShift Container Platform CLI plugin to mirror images.
+
+[IMPORTANT]
+----
+If you used oc mirror to mirror the images to disk, you must also use oc mirror to mirror the images from disk due to the folder layout that oc mirror uses.
+----
+
+[NOTE]
+----
+The script can take several minutes to complete as it automatically installs the Red Hat Developer Hub Operator.
+----
+5. If deploying on OpenShift Container Platform, update the cluster pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ oc get secret pull-secret -n openshift-config -o json | \
+  jq -r '.data.".dockerconfigjson"' | base64 -d | \
+  jq --arg registry "<mirror_registry>" \
+     --arg auth "$(echo -n '<username>:<password>' | base64)" \
+     '.auths[$registry] = {"auth": $auth}' | \
+  oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/dev/stdin
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry, for example, registry.example.com:5000.
+<username>:<password>:: Enter the credentials for authenticating to your mirror registry.
+
+[NOTE]
+----
+Wait for all machine config pools to finish updating before proceeding.
+----
+6. If deploying on a supported Kubernetes platform, create a pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ kubectl create secret docker-registry rhdh-pull-secret \
+    --docker-server=<mirror_registry> \
+    --docker-username=<username> \
+    --docker-password=<password> \
+    --namespace=<target_namespace>
+
+$ kubectl patch serviceaccount default \
+    --namespace=<target_namespace> \
+    --type='json' \
+    --patch='[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"rhdh-pull-secret"}}]'
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry.
+<username>:: Enter the username for authenticating to your mirror registry.
+<password>:: Enter the password for authenticating to your mirror registry.
+<target_namespace>:: Enter the namespace where the Operator will deploy Red Hat Developer Hub instances, for example, rhdh.
+7. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+8. Export the plugin catalog index and all referenced plugin OCI artifacts to disk by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-dir <my_plugin_mirror_dir>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the absolute path to a directory where you want to export the plugin artifacts, for example, /home/user/rhdh-plugins-mirror.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+9. Transfer the directory specified by the --to-dir option to your disconnected environment.
+10. From a machine in your disconnected environment that has access to the target mirror registry, import the plugin artifacts by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --from-dir <my_plugin_mirror_dir> \
+  --to-registry <target_registry>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the path to the directory containing the exported plugin artifacts.
+<target_registry>:: Enter the URL of the target mirror registry, for example, registry.example.com.
+11. Create a config map containing a registries.conf file that redirects the install-dynamic-plugins init container to your mirror registry:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-plugin-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "<target_registry>/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "<target_registry>/rhdh"
+```
+
+
+where:
+<target_registry>:: Enter the URL of your mirror registry, for example, registry.example.com.
+12. Mount the config map in the install-dynamic-plugins init container by adding the following to your Backstage CR:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      configMaps:
+        - name: rhdh-plugin-mirror-conf
+          key: rhdh-registries.conf
+          mountPath: /etc/containers/registries.conf.d
+          containers:
+            - install-dynamic-plugins
+```
+
+
+[NOTE]
+----
+Cluster-level mirroring resources such as ImageDigestMirrorSet or ImageContentSourcePolicy do not apply to the install-dynamic-plugins init container because it uses skopeo directly to pull plugin artifacts.
+----
+13. Optional: To enforce signature verification in production environments, create a policy.json config map and mount it in the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<target_registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path_to_gpg_key>"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+Then add the following to the extraFiles.configMaps list in your Backstage CR:
+
+```yaml
+        - name: rhdh-mirror-policy
+          key: policy.json
+          mountPath: /etc/containers
+          containers:
+            - install-dynamic-plugins
+```
+
+
+For a full example CR showing how to configure plugin mirroring when using the Operator, see plugin-mirroring.yaml.
+
+1. If you are using Red Hat OpenShift Container Platform, the Red Hat Developer Hub Operator is in the Installed Operators list in the web console.
+2. If you are using a supported Kubernetes platform, you can check the list of pods running in the rhdh-operator namespace by running the following command in your terminal:
+
+```terminal
+kubectl -n rhdh-operator get pods
+```
+
+
+1. Use the Operator to create a Red Hat Developer Hub instance on a supported platform. For more information, see the following documentation for the platform that you want to use:
+* Installing Red Hat Developer Hub on OpenShift Container Platform with the Operator
+* Installing Developer Hub on EKS with the Operator
+* Installing Developer Hub on AKS with the Operator
+* Installing Developer Hub on Google Cloud with the Operator
+* Deploying Developer Hub on GKE with the Operator
+
+* Installing the oc-mirror OpenShift CLI plugin
+* Installing the opm CLI
+* Red Hat Container Registry Authentication
+* Loading a plugin packaged as an OCI image
+* Installing plugins from OCI registries by using custom certificates
+
+## Install Red Hat Developer Hub in a partially disconnected environment with the Operator
+
+Mirror Operator images directly to a target registry in a partially disconnected environment.
+
+On an OpenShift Container Platform cluster operating on a restricted network, public resources are not available.
+However, deploying the Red Hat Developer Hub Operator and running Developer Hub requires the following public resources:
+
+* Operator images (bundle, operator, catalog)
+* Operands images (RHDH, PostgreSQL)
+
+To make these resources available, replace them with their equal resources in a mirror registry accessible to your cluster.
+
+You can use a helper script that mirrors the necessary images and provides the necessary configuration to ensure the system uses those images when installing the Red Hat Developer Hub Operator and creating Developer Hub instances.
+This script requires a target mirror registry.
+You likely have a target mirror registry if your cluster is already operating on a disconnected network.
+If you do not already have a target registry, and if you have an OpenShift Container Platform cluster, you might want to expose and use the internal cluster registry.
+
+When connected to a OpenShift Container Platform cluster, the helper script detects it and automatically exposes the cluster registry.
+If connected to a Kubernetes cluster, you can manually specify the target registry to mirror the images.
+
+* You have installed GNU sed, GNU tar 1.35 or later, jq 1.7 or later, the opm CLI tool, Podman 5.3 or later, Skopeo 1.20 or later, the umoci CLI tool, and yq 4.44 or later on your workstation.
+* You have an active oc registry, podman, or skopeo session to the Red Hat Container Registry (registry.redhat.io).
+* You have an active Skopeo session with administrative access to the target mirror registry.
+* If you are using an OpenShift Container Platform cluster, you have the following prerequisites:
+* Recommended: You have installed the oc-mirror tool, with a version corresponding to the version of your OpenShift Container Platform cluster.
+* If you are using a supported Kubernetes cluster, you have the following prerequisites:
+* You have installed the Operator Lifecycle Manager (OLM) on the disconnected cluster.
+* You have a mirror registry that is reachable from the disconnected cluster.
+* Make sure that your system meets the minimum sizing requirements.
+See Sizing requirements for Red Hat Developer Hub.
+
+1. In your terminal, navigate to the directory where you want to save the mirroring script.
+2. Download the mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/prepare-restricted-environment.sh
+```
+
+3. Run the mirroring script by using the bash command with the appropriate set of options:
+
+```terminal
+$ bash prepare-restricted-environment.sh \
+ --filter-versions "1.10" \
+  [--to-registry <my.registry.example.com>] \
+  [--use-oc-mirror true]
+```
+
+
+where:
+--to-registry _<my.registry.example.com>:: Enter the URL for the target mirror registry where you want to mirror the images.
+--use-oc-mirror true:: Optional: Use the oc mirror OpenShift Container Platform CLI plugin to mirror images.
+
+[NOTE]
+----
+The script can take several minutes to complete as it copies many images to the mirror registry.
+----
+4. If deploying on OpenShift Container Platform, update the cluster pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ oc get secret pull-secret -n openshift-config -o json | \
+  jq -r '.data.".dockerconfigjson"' | base64 -d | \
+  jq --arg registry "<mirror_registry>" \
+     --arg auth "$(echo -n '<username>:<password>' | base64)" \
+     '.auths[$registry] = {"auth": $auth}' | \
+  oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/dev/stdin
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry, for example, registry.example.com:5000.
+<username>:<password>:: Enter the credentials for authenticating to your mirror registry.
+
+[NOTE]
+----
+Wait for all machine config pools to finish updating before proceeding.
+----
+5. If deploying on a supported Kubernetes platform, create a pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ kubectl create secret docker-registry rhdh-pull-secret \
+    --docker-server=<mirror_registry> \
+    --docker-username=<username> \
+    --docker-password=<password> \
+    --namespace=<target_namespace>
+
+$ kubectl patch serviceaccount default \
+    --namespace=<target_namespace> \
+    --type='json' \
+    --patch='[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"rhdh-pull-secret"}}]'
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry.
+<username>:: Enter the username for authenticating to your mirror registry.
+<password>:: Enter the password for authenticating to your mirror registry.
+<target_namespace>:: Enter the namespace where the Operator will deploy Red Hat Developer Hub instances, for example, rhdh.
+6. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+7. Mirror the plugin catalog index and all referenced plugin OCI artifacts to your target registry by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-registry <target_registry>
+```
+
+
+where:
+<target_registry>:: Enter the URL of the target mirror registry, such as, registry.example.com.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+8. Create a config map containing a registries.conf file that redirects the install-dynamic-plugins init container to your mirror registry:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-plugin-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "<target_registry>/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "<target_registry>/rhdh"
+```
+
+
+where:
+<target_registry>:: Enter the URL of your mirror registry, for example, registry.example.com.
+9. Mount the config map in the install-dynamic-plugins init container by adding the following to your Backstage CR:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      configMaps:
+        - name: rhdh-plugin-mirror-conf
+          key: rhdh-registries.conf
+          mountPath: /etc/containers/registries.conf.d
+          containers:
+            - install-dynamic-plugins
+```
+
+
+[NOTE]
+----
+Cluster-level mirroring resources such as ImageDigestMirrorSet or ImageContentSourcePolicy do not apply to the install-dynamic-plugins init container because it uses skopeo directly to pull plugin artifacts.
+----
+10. Optional: To enforce signature verification in production environments, create a policy.json config map and mount it in the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<target_registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path_to_gpg_key>"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+Then add the following to the extraFiles.configMaps list in your Backstage CR:
+
+```yaml
+        - name: rhdh-mirror-policy
+          key: policy.json
+          mountPath: /etc/containers
+          containers:
+            - install-dynamic-plugins
+```
+
+
+For a full example CR showing how to configure plugin mirroring when using the Operator, see plugin-mirroring.yaml.
+
+1. If you are using Red Hat OpenShift Container Platform, the Red Hat Developer Hub Operator is in the Installed Operators list in the web console.
+2. If you are using a supported Kubernetes platform, you can check the list of pods running in the rhdh-operator namespace by running the following command in your terminal:
+
+```terminal
+$ kubectl -n rhdh-operator get pods
+```
+
+
+1. Use the Operator to create a Red Hat Developer Hub instance on a supported platform.
+For more information, see the following documentation for the platform that you want to use:
+* Installing Red Hat Developer Hub on OpenShift Container Platform with the Operator
+* Installing Developer Hub on EKS with the Operator
+* Installing Developer Hub on AKS with the Operator
+* Installing Developer Hub on Google Cloud with the Operator
+* Deploying Developer Hub on GKE with the Operator
+
+* Installing the oc-mirror OpenShift CLI plugin
+* Installing the opm CLI
+* Red Hat Container Registry Authentication
+* Loading a plugin packaged as an OCI image
+* Installing plugins from OCI registries by using custom certificates
+
+## Additional resources
+
+* Red Hat Developer Hub Life Cycle page
+
+# Install Red Hat Developer Hub on OpenShift Container Platform in an air-gapped environment with the Helm chart
+
+Install Red Hat Developer Hub on OpenShift Container Platform in fully or partially disconnected environments by using the Helm chart.
+
+## Install Red Hat Developer Hub on OpenShift Container Platform in a fully disconnected environment with the Helm chart
+
+Mirror Helm chart images to disk and transfer them to a fully disconnected OpenShift Container Platform environment.
+
+If your network has access to the registry through a bastion host, you can use the Helm chart to install Red Hat Developer Hub.
+
+* You have set up your workstation.
+* You have an account in Red Hat Developer portal.
+* You have access to the charts.openshift.io Helm chart repository.
+* You have installed GNU tar 1.35 or later, jq 1.7 or later, the OpenShift CLI (oc), the oc-mirror OpenShift CLI plugin v2, and Skopeo 1.20 or later on your workstation.
+* You have set up your intermediary host.
+* Your host has access to the Red Hat Container Registry (registry.redhat.io).
+* Your host has access to image registry on the destination host.
+For more information, see the Exposing the registry topic in the OpenShift Container Platform documentation.
+* You have set up your destination host.
+* You have installed Red Hat OpenShift Container Platform 4.18 or later.
+* Your system meets the minimum sizing requirements. See Sizing requirements for Red Hat Developer Hub.
+
+1. Create an ImageSetConfiguration file to specify the resources that you want to mirror. For example:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  helm:
+    repositories:
+      - name: openshift-charts
+        url: https://charts.openshift.io
+        charts:
+          - name: redhat-developer-hub
+            version: "1.10"
+```
+
+
+where:
+version: "1.10":: Enter the Red Hat Developer Hub version to mirror.
+2. Mirror the resources specified in the ImageSetConfiguration.yaml file by running the oc mirror command. For example:
+
+```terminal
+$ oc mirror --v2 -c <mirror_config_directory>/ImageSetConfiguration.yaml file://<mirror_archive_directory>/
+```
+
+where:
+<mirror_config_directory>:: Enter the location of your image set configuration file on your system, for example, .user.
+<mirror_archive_directory>:: Enter the location of your directory where the system creates the mirror archive, for example, file://.user.
+
+[NOTE]
+----
+1. The --v2 flag is required for OpenShift Container Platform 4.21 and later.
+2. Running the oc mirror command generates a local workspace containing the mirror archive file, the Helm chart, ImageDigestMirrorSet (IDMS) and ImageTagMirrorSet (ITMS) manifests. The IDMS and ITMS manifests contain files that you must apply against the cluster in a later step.
+----
+
+Example output:
+
+```terminal
+Creating archive /path/to/mirror-archive/mirror_seq1_000000.tar
+```
+
+3. Transfer the generated archive file (for example, mirror_seq1_000000.tar) to the air-gapped environment.
+4. Connect to your air-gapped environment and make sure that you are also connected to the following objects:
+5. The local target registry
+6. The target OpenShift Container Platform cluster
+7. From your air-gapped environment, mirror the resources from the archive to the target registry by running the oc mirror command. For example:
+
+```terminal
+$ oc mirror --v2 -c <image_set_config> --from file://<mirror_archive_directory> docker://<target_registry>
+```
+
+where:
+<mirror_archive_file>:: Enter the name of the file containing the resources that you want to mirror, for example,mirror_seq1_0000.tar.
+<target_registry>:: Enter the name of the target registry that you want to push the mirrored images to, for example, docker://registry.localhost:5000.
+8. In your workspace, locate the IDMS and ITMS files by running the following command. For example:
+
+```terminal
+$ ls <workspace_directory>/working-dir/cluster-resources/
+```
+
+where:
+<workspace_directory>:: Specifies the name of your workspace directory, for example, oc-mirror-workspace.
+<results_directory>:: Specifies the name of your results directory, for example, results-1738070846.
+9. To mirror the Helm chart, deploy the IDMS and ITMS files in the disconnected cluster by running the oc apply command. For example:
+
+```terminal
+$ oc apply -f <workspace_directory>/working-dir/cluster-resources
+```
+
+where:
+<workspace_directory>:: Enter the name of your workspace directory, for example, oc-mirror-workspace.
+<results_directory>:: Enter the name of your results directory, for example, results-1738070846.
+10. Update the cluster pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ oc get secret pull-secret -n openshift-config -o json | \
+  jq -r '.data.".dockerconfigjson"' | base64 -d | \
+  jq --arg registry "<mirror_registry>" \
+     --arg auth "$(echo -n '<username>:<password>' | base64)" \
+     '.auths[$registry] = {"auth": $auth}' | \
+  oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/dev/stdin
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry, for example, registry.example.com:5000.
+<username>:<password>:: Enter the credentials for authenticating to your mirror registry.
+
+[NOTE]
+----
+Wait for all machine config pools to finish updating before proceeding.
+----
+11. In your air-gapped environment, deploy the Helm chart to the namespace that you want to use by running the helm install command with namespace and set options. For example:
+
+```terminal
+CLUSTER_ROUTER_BASE=$(oc get route console -n openshift-console -o=jsonpath='{.spec.host}' | sed 's/[.]*\.//') helm install <rhdh_instance> <workspace_directory>/working-dir/helm/charts/<archive_file> --namespace <your_namespace> --create-namespace \ --set global.clusterRouterBase="$CLUSTER_ROUTER_BASE"
+```
+
+where:
+<rhdh_instance>:: Enter the name of your Red Hat Developer Hub instance, for example, my-rhdh-project.
+<workspace_directory>:: Enter the name of your workspace directory, for example, oc-mirror-workspace.
+<results_directory>:: Enter the name of your results directory, for example, results-1738070846.
+<archive_file>:: Enter the name of the archive file containing the resources that you want to mirror, for example, redhat-developer-hub-1.4.1.tgz.
+<your_namespace>:: Enter the namespace that you want to deploy the Helm chart to, for example, my-rhdh-project.
+
+1. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. Export the plugin catalog index and all referenced plugin OCI artifacts to disk by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-dir <my_plugin_mirror_dir>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the absolute path to a directory where you want to export the plugin artifacts, for example, /home/user/rhdh-plugins-mirror.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+3. Transfer the directory specified by the --to-dir option to your disconnected environment.
+4. From a machine in your disconnected environment that has access to the target mirror registry, import the plugin artifacts by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --from-dir <my_plugin_mirror_dir> \
+  --to-registry <target_registry>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the path to the directory containing the exported plugin artifacts.
+<target_registry>:: Enter the URL of the target mirror registry, for example, registry.example.com.
+
+1. Create a config map containing a registries.conf file that redirects the install-dynamic-plugins init container to your mirror registry:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-plugin-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "<target_registry>/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "<target_registry>/rhdh"
+```
+
+
+where:
+<target_registry>:: Enter the URL of your mirror registry, for example, registry.example.com.
+2. Mount the config map in the install-dynamic-plugins init container by adding the following to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-plugin-mirror-conf
+        configMap:
+          name: rhdh-plugin-mirror-conf
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-plugin-mirror-conf
+            mountPath: /etc/containers/registries.conf.d/rhdh-registries.conf
+            subPath: rhdh-registries.conf
+            readOnly: true
+```
+
+
+[IMPORTANT]
+----
+Because of Helm merge limitations, you must include all existing default volumes, volume mounts, and init container fields from the Red Hat Developer Hub Helm chart alongside your additions. Omitting the defaults overwrites them and can break the deployment.
+----
+
+[NOTE]
+----
+Cluster-level mirroring resources, such as ImageDigestMirrorSet or ImageContentSourcePolicy, do not apply to the install-dynamic-plugins init container because it uses skopeo directly to pull plugin artifacts.
+----
+3. Optional: To enforce signature verification in production environments, create a policy.json config map and mount it in the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<target_registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path_to_gpg_key>"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+Then add the following volumes and volume mount entries to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-mirror-policy
+        configMap:
+          name: rhdh-mirror-policy
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-mirror-policy
+            mountPath: /etc/containers/policy.json
+            subPath: policy.json
+            readOnly: true
+```
+
+
+* Installing the oc-mirror OpenShift CLI plugin
+* Exposing the registry
+* Loading a plugin packaged as an OCI image
+* Installing plugins from OCI registries by using custom certificates
+
+## Install Red Hat Developer Hub on OpenShift Container Platform in a partially disconnected environment with the Helm chart
+
+Mirror Helm chart images directly to a target registry in a partially disconnected OpenShift Container Platform environment.
+
+If your network has access to the registry.redhat.io registry and the charts.openshift.io Helm chart repository, you can deploy your Red Hat Developer Hub instance in your partially disconnected environment.
+
+* You have installed Red Hat OpenShift Container Platform 4.18 or later.
+* You have access to the charts.openshift.io Helm chart repository.
+* You have access to the registry.redhat.io.
+* You have access to a mirror registry that the disconnected cluster can reach, for example, the OpenShift Container Platform image registry.
+* You have logged in to your target mirror registry and have permissions to push images to it.
+* You have installed GNU tar 1.35 or later, jq 1.7 or later, the OpenShift CLI (oc), the oc-mirror OpenShift CLI plugin v2 (recommended), and Skopeo 1.20 or later on your workstation.
+* You have an account in Red Hat Developer portal.
+* Make sure that your system meets the minimum sizing requirements. See Sizing requirements for Red Hat Developer Hub.
+
+1. Log in to your OpenShift Container Platform account using the OpenShift CLI (oc) by running the following command:
+
+```terminal
+$ oc login -u <user> -p <password> https://api.<hostname>:6443
+```
+
+2. From your disconnected cluster, log in to the image registry that you want to mirror, for example, the OpenShift Container Platform image registry.
+3. Create an ImageSetConfiguration.yaml file to specify the resources that you want to mirror. For example:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  helm:
+    repositories:
+      - name: openshift-charts
+        url: https://charts.openshift.io
+        charts:
+          - name: redhat-developer-hub
+            version: "1.10"
+```
+
+version: "1.10":: Enter the Red Hat Developer Hub version to mirror.
+4. Mirror the resources specified in the image set configuration file directly to the target registry by running the oc mirror command. For example:
+
+```terminal
+$ oc mirror --v2 --config=<mirror_config_directory>/ImageSetConfiguration.yaml docker://<target_mirror_registry>
+```
+
+where:
+<mirror_config_directory>:: Specifies the location of your image set configuration file on your system, for example, .user.
+<target_mirror_registry>:: Specifies the location and name of your target mirror registry, for example, registry.example:5000.
+
+[NOTE]
+----
+1. The --v2 flag is required for OpenShift Container Platform 4.21 and later.
+2. Running the oc mirror command generates a local workspace containing the Helm chart, ImageDigestMirrorSet (IDMS) and ImageTagMirrorSet (ITMS) manifests. The IDMS and ITMS manifests contain files that you must apply against the cluster in a later step.
+----
+5. In your workspace, locate the ImageDigestMirrorSet (IDMS) and ImageTagMirrorSet (ITMS) files by running the ls command. For example:
+
+```terminal
+$ ls <workspace_directory>/working-dir/cluster-resources/
+```
+
+where:
+<workspace_directory>:: Specifies the name of your workspace directory, for example, oc-mirror-workspace.
+<results_directory>:: Specifies the name of your results directory, for example, results-1738070846.
+6. To configure image mirroring, deploy the IDMS and ITMS files in the disconnected cluster by running the oc apply command. For example:
+
+```terminal
+$ oc apply -f <workspace_directory>/working-dir/cluster-resources
+```
+
+where:
+<workspace_directory>:: Enter the name of your workspace directory, for example, oc-mirror-workspace.
+<results_directory>:: Enter the name of your results directory, for example, results-1738070846.
+7. Update the cluster pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ oc get secret pull-secret -n openshift-config -o json | \
+  jq -r '.data.".dockerconfigjson"' | base64 -d | \
+  jq --arg registry "<mirror_registry>" \
+     --arg auth "$(echo -n '<username>:<password>' | base64)" \
+     '.auths[$registry] = {"auth": $auth}' | \
+  oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/dev/stdin
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry, for example, registry.example.com:5000.
+<username>:<password>:: Enter the credentials for authenticating to your mirror registry.
+
+[NOTE]
+----
+Wait for all machine config pools to finish updating before proceeding.
+----
+8. In your air-gapped environment, deploy the Helm chart to the namespace that you want to use by running the helm install command with namespace and set options. For example:
+
+```terminal
+CLUSTER_ROUTER_BASE=$(oc get route console -n openshift-console -o=jsonpath='{.spec.host}' | sed 's/[.]*\.//')
+
+helm install <rhdh_instance> <workspace_directory>/<results_directory>/charts/<archive_file> --namespace <your_namespace> --create-namespace \
+  --set global.clusterRouterBase="$CLUSTER_ROUTER_BASE"
+```
+
+where:
+<rhdh_instance>:: Specifies the name of your Red Hat Developer Hub instance, for example, my-rhdh.
+<workspace_directory>:: Specifies the name of your workspace directory, for example, oc-mirror-workspace.
+<results_directory>:: Specifies the name of your results directory, for example, results-1738070846.
+<archive_file>:: Specifies the name of the archive file containing the resources that you want to mirror, for example, redhat-developer-hub-1.4.1.tgz.
+<your_namespace>:: Specifies the namespace that you want to deploy the Helm chart to, for example, my-rhdh-project.
+
+1. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. Mirror the plugin catalog index and all referenced plugin OCI artifacts to your target registry by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-registry <target_registry>
+```
+
+
+where:
+<target_registry>:: Enter the URL of the target mirror registry, such as, registry.example.com.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+
+1. Create a config map containing a registries.conf file that redirects the install-dynamic-plugins init container to your mirror registry:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-plugin-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "<target_registry>/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "<target_registry>/rhdh"
+```
+
+
+where:
+<target_registry>:: Enter the URL of your mirror registry, for example, registry.example.com.
+2. Mount the config map in the install-dynamic-plugins init container by adding the following to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-plugin-mirror-conf
+        configMap:
+          name: rhdh-plugin-mirror-conf
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-plugin-mirror-conf
+            mountPath: /etc/containers/registries.conf.d/rhdh-registries.conf
+            subPath: rhdh-registries.conf
+            readOnly: true
+```
+
+
+[IMPORTANT]
+----
+Because of Helm merge limitations, you must include all existing default volumes, volume mounts, and init container fields from the Red Hat Developer Hub Helm chart alongside your additions. Omitting the defaults overwrites them and can break the deployment.
+----
+
+[NOTE]
+----
+Cluster-level mirroring resources, such as ImageDigestMirrorSet or ImageContentSourcePolicy, do not apply to the install-dynamic-plugins init container because it uses skopeo directly to pull plugin artifacts.
+----
+3. Optional: To enforce signature verification in production environments, create a policy.json config map and mount it in the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<target_registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path_to_gpg_key>"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+Then add the following volumes and volume mount entries to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-mirror-policy
+        configMap:
+          name: rhdh-mirror-policy
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-mirror-policy
+            mountPath: /etc/containers/policy.json
+            subPath: policy.json
+            readOnly: true
+```
+
+
+* Installing the oc-mirror OpenShift CLI plugin
+* Exposing the registry
+* Configuring credentials for mirroring images
+* Loading a plugin packaged as an OCI image
+* Installing plugins from OCI registries by using custom certificates
+
+## Additional resources
+
+* Red Hat Container Registry Authentication
+
+# Install Red Hat Developer Hub on a supported Kubernetes platform in an air-gapped environment with the Helm chart
+
+Install Red Hat Developer Hub on supported Kubernetes platforms in fully or partially disconnected environments by using the Helm chart.
+
+Supported Kubernetes platforms include the following:
+
+* Microsoft Azure Kubernetes Service
+* Amazon Elastic Kubernetes Service
+* Google Kubernetes Engine
+
+## Install Red Hat Developer Hub on a supported Kubernetes platform in a fully disconnected environment with the Helm chart
+
+Mirror Helm chart images to disk and transfer them to a fully disconnected Kubernetes environment.
+
+In environments without internet access, a fully disconnected installation ensures that Red Hat Developer Hub can run reliably without external dependencies.
+
+* You have installed GNU tar 1.35 or later, Helm 3.13 or later, jq 1.7 or later, Skopeo 1.20 or later, and yq 4.4 or later on your workstation.
+* You authenticated to registry.redhat.io for pulling images by using the skopeo login command.
+* You have access to the Kubernetes cluster with kubectl configured.
+
+1. On the mirroring host, in a terminal, fetch the Helm charts values by running the following commands:
+
+```terminal
+$ helm repo add <helm_chart_repo_name> https://charts.openshift.io/
+$ helm repo update
+$ helm show values <helm_chart_repo_name>/redhat-developer-hub --version <rhdh_version>  values.default.yaml
+$ helm pull <helm_chart_repo_name>/redhat-developer-hub --version <rhdh_version>
+```
+
+
+where
+<helm_chart_repo_name>:: Specifies the name of the Helm chart repository, for example, openshift-helm-charts.
+<rhdh_version>:: Specifies the Red Hat Developer Hub version that you want to use, for example, 1.10.2.
+
+[NOTE]
+----
+The helm pull <helm_chart_repo_name>/redhat-developer-hub --version <rhdh_version> command automatically creates the Helm chart archive file and downloads the Helm chart to your current working directory.
+----
+2. Extract the image digests by running the following commands:
+
+```terminal
+RHDH_IMAGE=$(yq '.upstream.backstage.image | .registry + "/" + .repository' values.default.yaml)
+RHDH_DIGEST=$(yq '.upstream.backstage.image.tag' values.default.yaml)
+PG_IMAGE=$(yq '.upstream.postgresql.image | .registry + "/" + .repository' values.default.yaml)
+PG_DIGEST=$(yq '.upstream.postgresql.image.tag' values.default.yaml)
+```
+
+3. Mirror the images to your local archive by running the following commands:
+
+```terminal
+$ skopeo login registry.redhat.io
+$ skopeo copy --all docker://$RHDH_IMAGE}:$RHDH_DIGEST} dir:./rhdh-hub
+$ skopeo copy --all docker://${PG_IMAGE}:${PG_DIGEST} dir:./postgresql
+```
+
+4. Transfer the following files and directories to your air-gapped environment:
+5. rhdh-hub directory containing the mirrored Red Hat Developer Hub image.
+6. postgresql directory containing the mirrored PostgreSQL image.
+7. Helm chart archive file, for example, redhat-developer-hub-1.10.2.tgz.
+8. Load the images onto the air-gapped host by running the following commands:
+
+```terminal
+$ skopeo copy --all dir:./rhdh-hub docker://<mirror_registry_name>/<rhdh_repo_name>:$RHDH_DIGEST}
+
+$ skopeo copy --all dir:./postgresql docker://<mirror_registry_name>/<postgresql_repo_name>:${PG_DIGEST}
+```
+
+
+where
+<mirror_registry_name>:: Specifies the name of the target mirror registry that you want to push the images to, for example, registry.example.com.
+<rhdh_repo_name>:: Specifies the name of the repository that stores your Red Hat Developer Hub image, for example, rhdh/rhdh-hub-rhel9. This value must match the name of the Red Hat Developer Hub image that you loaded onto the air-gapped host.
+<postgresql_repo_name>:: Specifies the name of the repository that stores your PostgreSQL image, for example, rhdh/postgresql-15.
+9. Create a pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ kubectl create secret docker-registry rhdh-pull-secret \
+    --docker-server=<mirror_registry> \
+    --docker-username=<username> \
+    --docker-password=<password> \
+    --namespace=<target_namespace>
+
+$ kubectl patch serviceaccount default \
+    --namespace=<target_namespace> \
+    --type='json' \
+    --patch='[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"rhdh-pull-secret"}}]'
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry, for example, registry.example.com:5000.
+<username>:: Enter the username for authenticating to your mirror registry.
+<password>:: Enter the password for authenticating to your mirror registry.
+<target_namespace>:: Enter the namespace where you will deploy Red Hat Developer Hub, for example, rhdh.
+10. Create a values.yaml file for the Kubernetes platform that you want to use and add the following image references to the file to reflect local use:
+
+```yaml
+upstream:
+  backstage:
+    image:
+      registry: "<mirror_registry_name>"
+      repository: <rhdh_repo_name>
+      tag: "$RHDH_DIGEST}"
+
+  postgresql:
+    image:
+      registry: "<mirror_registry_name>"
+      repository: <postgresql_repo_name>
+      tag: "${PG_DIGEST}"
+```
+
+
+where
+<mirror_registry_name>:: Specifies the name of the target mirror registry that you want to push the images to, for example, registry.example.com.
+<rhdh_repo_name>:: Specifies the name of the repository that stores your Red Hat Developer Hub image, for example, rhdh/rhdh-hub-rhel9. This value must match the name of the Red Hat Developer Hub image that you loaded onto the air-gapped host.
+<postgresql_repo_name>:: Specifies the name of the repository that stores your PostgreSQL image, for example, rhdh/postgresql-15.
+11. For AKS, use the following values.yaml file template:
+
+```yaml
+global:
+  host: <app_address>
+route:
+  enabled: false
+upstream:
+  ingress:
+    enabled: true
+    className: webapprouting.kubernetes.azure.com
+    host:
+  backstage:
+    image:
+      pullSecrets:
+        - rhdh-pull-secret
+    podSecurityContext:
+      fsGroup: 3000
+  postgresql:
+    image:
+      pullSecrets:
+        - rhdh-pull-secret
+    primary:
+      podSecurityContext:
+        enabled: true
+        fsGroup: 3000
+  volumePermissions:
+    enabled: true
+```
+
+12. For EKS, use the following values.yaml file template:
+
+```yaml
+global:
+  # TODO: Set your application domain name.
+  host: <my_developer_hub_domain>
+
+route:
+  enabled: false
+
+upstream:
+  service:
+    # NodePort is required for the ALB to route to the Service
+    type: NodePort
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: alb
+
+      alb.ingress.kubernetes.io/scheme: internet-facing
+
+      # TODO: Using an ALB HTTPS Listener requires a certificate for your own domain. Fill in the ARN of your certificate, e.g.:
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:xxx:xxxx:certificate/xxxxxx
+
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+
+      alb.ingress.kubernetes.io/ssl-redirect: '443'
+
+      # TODO: Set your application domain name.
+      external-dns.alpha.kubernetes.io/hostname: <your rhdh domain name>
+
+  backstage:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    podSecurityContext:
+      # you can assign any random value as fsGroup
+      fsGroup: 2000
+  postgresql:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    primary:
+      podSecurityContext:
+        enabled: true
+        # you can assign any random value as fsGroup
+        fsGroup: 3000
+  volumePermissions:
+    enabled: true
+```
+
+13. For GKE, use the following values.yaml file template:
+
+```yaml
+global:
+  host: <rhdh_domain_name>
+route:
+  enabled: false
+upstream:
+  service:
+    type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: gce
+      kubernetes.io/ingress.global-static-ip-name: <ADDRESS_NAME>
+      networking.gke.io/managed-certificates: <rhdh_certificate_name>
+      networking.gke.io/v1beta1.FrontendConfig: <ingress_security_config>
+    className: gce
+  backstage:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    podSecurityContext:
+      fsGroup: 2000
+  postgresql:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    primary:
+      podSecurityContext:
+        enabled: true
+        fsGroup: 3000
+  volumePermissions:
+    enabled: true
+```
+
+14. Install the Helm chart in the current namespace by running the following command:
+
+```terminal
+$ helm install rhdh ./<helm_chart_archive_file_name> -f values.yaml
+```
+
+
+where
+<helm_chart_archive_file_name>:: Specifies the name of the Helm chart archive file, for example, redhat-developer-hub-1.4.0.tgz.
+
+1. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. Export the plugin catalog index and all referenced plugin OCI artifacts to disk by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-dir <my_plugin_mirror_dir>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the absolute path to a directory where you want to export the plugin artifacts, for example, /home/user/rhdh-plugins-mirror.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+3. Transfer the directory specified by the --to-dir option to your disconnected environment.
+4. From a machine in your disconnected environment that has access to the target mirror registry, import the plugin artifacts by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --from-dir <my_plugin_mirror_dir> \
+  --to-registry <target_registry>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the path to the directory containing the exported plugin artifacts.
+<target_registry>:: Enter the URL of the target mirror registry, for example, registry.example.com.
+
+1. Create a config map containing a registries.conf file that redirects the install-dynamic-plugins init container to your mirror registry:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-plugin-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "<target_registry>/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "<target_registry>/rhdh"
+```
+
+
+where:
+<target_registry>:: Enter the URL of your mirror registry, for example, registry.example.com.
+2. Mount the config map in the install-dynamic-plugins init container by adding the following to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-plugin-mirror-conf
+        configMap:
+          name: rhdh-plugin-mirror-conf
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-plugin-mirror-conf
+            mountPath: /etc/containers/registries.conf.d/rhdh-registries.conf
+            subPath: rhdh-registries.conf
+            readOnly: true
+```
+
+
+[IMPORTANT]
+----
+Because of Helm merge limitations, you must include all existing default volumes, volume mounts, and init container fields from the Red Hat Developer Hub Helm chart alongside your additions. Omitting the defaults overwrites them and can break the deployment.
+----
+
+[NOTE]
+----
+Cluster-level mirroring resources, such as ImageDigestMirrorSet or ImageContentSourcePolicy, do not apply to the install-dynamic-plugins init container because it uses skopeo directly to pull plugin artifacts.
+----
+3. Optional: To enforce signature verification in production environments, create a policy.json config map and mount it in the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<target_registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path_to_gpg_key>"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+Then add the following volumes and volume mount entries to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-mirror-policy
+        configMap:
+          name: rhdh-mirror-policy
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-mirror-policy
+            mountPath: /etc/containers/policy.json
+            subPath: policy.json
+            readOnly: true
+```
+
+
+* Loading a plugin packaged as an OCI image
+* Installing plugins from OCI registries by using custom certificates
+
+## Install Red Hat Developer Hub on a supported Kubernetes platform in a partially disconnected environment with the Helm chart
+
+Mirror Helm chart images directly to a target registry in a partially disconnected Kubernetes environment.
+
+In a partially disconnected environment, the cluster cannot access external registries, for example, registry.redhat.io, but it can access an internal mirror registry. This method requires direct access to an internal mirror registry from the cluster.
+
+* You have set up your workstation.
+* You have installed GNU tar 1.35 or later, Helm 3.13 or later, jq 1.7 or later, Skopeo 1.20 or later, and yq 4.4 or later.
+* You have an active Skopeo session against registry.redhat.io
+* You have an active Skopeo session against your target mirror registry, for example, registry.internal.example.com
+* You have access to the Kubernetes cluster with kubectl configured
+
+1. In a terminal, download and extract the Helm chart by running the following commands:
+
+```terminal
+$ helm repo add <helm_chart_repo_name> https://charts.openshift.io/
+$ helm repo update
+$ helm pull <helm_chart_repo_name>/redhat-developer-hub --version <rhdh_version>
+$ helm show values <helm_chart_repo_name>/redhat-developer-hub --version <rhdh_version> > values.default.yaml
+```
+
+
+where:
+<helm_chart_repo_name>:: Enter the name of the Helm chart repository, for example, openshift-helm-charts.
+<rhdh_version>:: Enter the Red Hat Developer Hub version that you want to use, for example, 1.10.2.
+2. Use yq to extract the image digests by running the following commands:
+
+```terminal
+RHDH_IMAGE=$(yq '.upstream.backstage.image | .registry + "/" + .repository' values.default.yaml)
+RHDH_DIGEST=$(yq '.upstream.backstage.image.tag' values.default.yaml)
+PG_IMAGE=$(yq '.upstream.postgresql.image | .registry + "/" + .repository' values.default.yaml)
+PG_DIGEST=$(yq '.upstream.postgresql.image.tag' values.default.yaml)
+```
+
+3. Mirror the images to the internal mirror registry by entering the following commands:
+
+```terminal
+$ skopeo login registry.redhat.io
+
+$ skopeo login _<mirror_registry_name>_
+
+$ skopeo copy --remove-signatures \
+  docker://${PG_IMAGE}@${PG_DIGEST} \
+  docker://_<mirror_registry_name>_/_<postgresql_repo_name>_:${PG_DIGEST}
+
+$ skopeo copy --remove-signatures \
+  docker://$RHDH_IMAGE}@$RHDH_DIGEST} \
+  docker://_<mirror_registry_name>_/_<rhdh_repo_name>_$RHDH_DIGEST}
+```
+
+
+where
+<mirror_registry_name>:: Specifies the name of the internal mirror registry, for example, registry.internal.example.com.
+<postgresql_repo_name>:: Specifies the name of the PostgreSQL repository, for example, rhdh/postgresql-15.
+<rhdh_repo_name>:: Specifies the name of the Red Hat Developer Hub repository, for example, rhdh/rhdh-hub-rhel9.
+4. Create a pull secret to allow the kubelet to pull all Red Hat Developer Hub images from your mirror registry:
+
+```terminal
+$ kubectl create secret docker-registry rhdh-pull-secret \
+    --docker-server=<mirror_registry> \
+    --docker-username=<username> \
+    --docker-password=<password> \
+    --namespace=<target_namespace>
+
+$ kubectl patch serviceaccount default \
+    --namespace=<target_namespace> \
+    --type='json' \
+    --patch='[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"rhdh-pull-secret"}}]'
+```
+
+
+where:
+<mirror_registry>:: Enter the hostname and port of your mirror registry, for example, registry.example.com:5000.
+<username>:: Enter the username for authenticating to your mirror registry.
+<password>:: Enter the password for authenticating to your mirror registry.
+<target_namespace>:: Enter the namespace where you will deploy Red Hat Developer Hub, for example, rhdh.
+5. Create a values.yaml file for the Kubernetes platform that you want to use and add the following image references to the file to reflect local use:
+
+```yaml
+upstream:
+  backstage:
+    image:
+      registry: "_<mirror_registry_name>_"
+      repository: _<rhdh_repo_name>_
+      tag: "$RHDH_DIGEST}"
+
+  postgresql:
+    image:
+      registry: "_<mirror_registry_name>_"
+      repository: _<postgresql_repo_name>_
+      tag: "${PG_DIGEST}"
+```
+
+6. For AKS, use the following values.yaml file template:
+
+```yaml
+global:
+  host: <app_address>
+route:
+  enabled: false
+upstream:
+  ingress:
+    enabled: true
+    className: webapprouting.kubernetes.azure.com
+    host:
+  backstage:
+    image:
+      pullSecrets:
+        - rhdh-pull-secret
+    podSecurityContext:
+      fsGroup: 3000
+  postgresql:
+    image:
+      pullSecrets:
+        - rhdh-pull-secret
+    primary:
+      podSecurityContext:
+        enabled: true
+        fsGroup: 3000
+  volumePermissions:
+    enabled: true
+```
+
+7. For EKS, use the following values.yaml file template:
+
+```yaml
+global:
+  # TODO: Set your application domain name.
+  host: <your Developer Hub domain name>
+
+route:
+  enabled: false
+
+upstream:
+  service:
+    # NodePort is required for the ALB to route to the Service
+    type: NodePort
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: alb
+
+      alb.ingress.kubernetes.io/scheme: internet-facing
+
+      # TODO: Using an ALB HTTPS Listener requires a certificate for your own domain. Fill in the ARN of your certificate, e.g.:
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:xxx:xxxx:certificate/xxxxxx
+
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+
+      alb.ingress.kubernetes.io/ssl-redirect: '443'
+
+      # TODO: Set your application domain name.
+      external-dns.alpha.kubernetes.io/hostname: <your rhdh domain name>
+
+  backstage:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    podSecurityContext:
+      # you can assign any random value as fsGroup
+      fsGroup: 2000
+  postgresql:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    primary:
+      podSecurityContext:
+        enabled: true
+        # you can assign any random value as fsGroup
+        fsGroup: 3000
+  volumePermissions:
+    enabled: true
+```
+
+8. For GKE, use the following values.yaml file template:
+
+```yaml
+global:
+  host: <rhdh_domain_name>
+route:
+  enabled: false
+upstream:
+  service:
+    type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: gce
+      kubernetes.io/ingress.global-static-ip-name: <ADDRESS_NAME>
+      networking.gke.io/managed-certificates: <rhdh_certificate_name>
+      networking.gke.io/v1beta1.FrontendConfig: <ingress_security_config>
+    className: gce
+  backstage:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    podSecurityContext:
+      fsGroup: 2000
+  postgresql:
+    image:
+      pullSecrets:
+      - rhdh-pull-secret
+    primary:
+      podSecurityContext:
+        enabled: true
+        fsGroup: 3000
+  volumePermissions:
+    enabled: true
+```
+
+9. Install the Helm chart in the current namespace by running the following command:
+
+```terminal
+$ helm install rhdh ./_<helm_chart_archive_file_name>_ -f values.yaml
+```
+
+
+where
+<helm_chart_archive_file_name>:: Specifies the name of the Helm chart archive file, for example, redhat-developer-hub-1.10.2.tgz.
+
+1. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. Mirror the plugin catalog index and all referenced plugin OCI artifacts to your target registry by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-registry <target_registry>
+```
+
+
+where:
+<target_registry>:: Enter the URL of the target mirror registry, such as, registry.example.com.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+
+1. Create a config map containing a registries.conf file that redirects the install-dynamic-plugins init container to your mirror registry:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-plugin-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "<target_registry>/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "<target_registry>/rhdh"
+```
+
+
+where:
+<target_registry>:: Enter the URL of your mirror registry, for example, registry.example.com.
+2. Mount the config map in the install-dynamic-plugins init container by adding the following to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-plugin-mirror-conf
+        configMap:
+          name: rhdh-plugin-mirror-conf
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-plugin-mirror-conf
+            mountPath: /etc/containers/registries.conf.d/rhdh-registries.conf
+            subPath: rhdh-registries.conf
+            readOnly: true
+```
+
+
+[IMPORTANT]
+----
+Because of Helm merge limitations, you must include all existing default volumes, volume mounts, and init container fields from the Red Hat Developer Hub Helm chart alongside your additions. Omitting the defaults overwrites them and can break the deployment.
+----
+
+[NOTE]
+----
+Cluster-level mirroring resources, such as ImageDigestMirrorSet or ImageContentSourcePolicy, do not apply to the install-dynamic-plugins init container because it uses skopeo directly to pull plugin artifacts.
+----
+3. Optional: To enforce signature verification in production environments, create a policy.json config map and mount it in the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<target_registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path_to_gpg_key>"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+Then add the following volumes and volume mount entries to your Helm values file:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      - name: rhdh-mirror-policy
+        configMap:
+          name: rhdh-mirror-policy
+    initContainers:
+      - name: install-dynamic-plugins
+        volumeMounts:
+          - name: rhdh-mirror-policy
+            mountPath: /etc/containers/policy.json
+            subPath: policy.json
+            readOnly: true
+```
+
+
+* Loading a plugin packaged as an OCI image
+* Installing plugins from OCI registries by using custom certificates
+
+## Additional resources
+
+* Deploying Developer Hub on AKS with the Helm chart
+* Installing Developer Hub on EKS with the Helm chart
+* Installing Developer Hub on GKE with the Helm chart

@@ -1,0 +1,1294 @@
+# Interacting with Red Hat Developer Lightspeed for Red Hat Developer Hub
+
+Red Hat Developer Lightspeed for Red Hat Developer Hub (Developer Lightspeed for RHDH) is an AI-powered virtual assistant for Red Hat Developer Hub (RHDH). You can interact with Developer Lightspeed for RHDH to explore RHDH capabilities in detail.
+
+# Chat assistance with Developer Lightspeed for RHDH
+
+Use Developer Lightspeed for RHDH to find product information, discover features, and resolve technical questions using natural language prompts directly within the RHDH console.
+
+
+[IMPORTANT]
+----
+Developer Lightspeed for RHDH uses a FAB instead of a sidebar navigation item. If your environment uses another global FAB, you must move the existing button or disable it to prevent interface elements from overlapping. In your dynamic plugin configuration file, make the following update:
+
+```yaml
+- package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import
+  disabled: true
+  pluginConfig:
+    dynamicPlugins:
+      frontend:
+        red-hat-developer-hub.backstage-plugin-bulk-import:
+          mountPoints:
+            - mountPoint: global.floatingactionbutton/config
+              importName: BulkImportPage # Example
+              config:
+                slot: 'bottom-left'
+                icon: BulkImportIcon
+                label: 'Bulk import'
+                toolTip: 'Register multiple repositories in bulk'
+                to: /bulk-import
+          translationResources:
+          - importName: bulkImportTranslations
+            module: Alpha
+            ref: bulkImportTranslationRef
+          appIcons:
+          - name: bulkImportIcon
+            importName: BulkImportIcon
+          dynamicRoutes:
+          - path: /bulk-import
+            importName: BulkImportPage
+            menuItem:
+              icon: bulkImportIcon
+              text: Bulk import
+              textKey: menuItem.bulkImport
+```
+
+----
+
+![Lightspeed chatbot on the home page]
+
+# Red Hat Developer Lightspeed for Red Hat Developer Hub architecture for your AI backend deployment
+
+Review the Developer Lightspeed for RHDH component architecture to plan your system layout and coordinate connections with your artificial intelligence (AI) backend deployment.
+
+The architecture relies on the Lightspeed Core Service (LCORE) container, which operates as the primary intermediary layer to manage Developer Lightspeed for RHDH functionality and console user interactions. By default, the interface appears as a floating action button (FAB) on all platforms that host RHDH.
+
+* Red Hat Developer Hub Life Cycle and supported platforms
+
+## AI reference and tool-calling capabilities through Lightspeed Core Service
+
+Review the core components managed by the Lightspeed Core Service(LCORE) sidecar container to plan integrations with large language models (LLM) and tool runtime providers.
+
+The LCORE container deploys as a sidecar to extend RHDH functionality. The container integrates and manages the following core architectural components:
+
+* Large language model (LLM) inference providers
+* Model Context Protocol (MCP) or Retrieval Augmented Generation (RAG) tool runtime providers
+
+[IMPORTANT]
+----
+Verify that your model supports tool calling before you enable MCP features. Using an incompatible model results in error messages.
+----
+* Safety providers
+* Vector database settings
+
+LCORE also manages critical operational configuration and key data, specifically:
+
+* User feedback collection
+* MCP server configuration
+* Chat history
+
+Developer Lightspeed for RHDH sends prompts and receives LLM responses through the LCORE sidecar.
+
+# Retrieval augmented generation (RAG) embeddings for grounded AI responses
+
+Use retrieval-augmented generation (RAG) embeddings to ground artificial intelligence (AI) responses in your internal documentation and provide verified citations during user interactions.
+
+The RHDH documentation serves as the primary data source for RAG operations. To provide accurate citations to production documentation during inference, the system uses RAG embeddings stored within a vector database.
+
+The system processes RAG data through the following sequence:
+
+* An initialization container copies the RAG data to a shared volume.
+* The Lightspeed Core Service (LCORE) sidecar container mounts the shared volume to access the data.
+* The sidecar layer uses the embeddings to attach precise documentation references to the chat responses.
+
+# Configure Developer Lightspeed for RHDH to initialize the AI assistant
+
+Red Hat Developer Lightspeed for Red Hat Developer Hub is enabled by default on Red Hat Developer Hub (RHDH) instances. To provide developers with chat assistance, configure your deployment settings by using either the Operator or the Helm chart.
+
+## Configure Developer Lightspeed for RHDH by using the Operator
+
+Configure Developer Lightspeed for RHDH by updating your Backstage custom resource (CR) to map environment variables, manage configurations, and set access rights.
+
+* The RHDH Operator is installed on your cluster.
+* You have cluster administrator privileges.
+
+1. Create an opaque Kubernetes Secret containing your operational credentials and query safety guardrails before applying the Backstage CR. Refer to the following key definitions for required environment variables:
+
+[IMPORTANT]
+----
+To disable an inference provider or configuration feature, you must leave the corresponding ENABLE_* variable completely unset. Setting an ENABLE_* variable to false does not disable the component because the underlying system checks only whether the variable is defined.
+----
+
+
+The following code shows an example configuration Secret for vLLM with validation:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lightspeed-auth-secrets
+type: Opaque
+stringData:
+  ENABLE_VLLM: "true"
+  VLLM_URL: "https://<api_endpoint>/v1"
+  VLLM_API_KEY: "<api_key>"
+  ENABLE_VALIDATION: "true"
+  VALIDATION_PROVIDER: "vllm"
+  VALIDATION_MODEL_NAME: "llama3.1"
+```
+
+2. Map your secret inside the extraEnvs section of the Backstage CR to complete container provisioning:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: lightspeed-rhdh
+spec:
+  application:
+    extraEnvs:
+      secrets:
+        - name: lightspeed-auth-secrets
+          containers:
+            - lightspeed-core
+```
+
+3. Optional: To protect settings such as Model Context Protocol (MCP) server additions from being overwritten during reconciliation loops, define a custom ConfigMap mapping in the extraFiles section of the CR:
+
+```yaml
+    extraFiles:
+      configMaps:
+        - name: "my-custom-config"
+          mountPath: /app-root
+          key: lightspeed-stack.yaml
+          containers:
+            - lightspeed-core
+```
+
+4. Configure access rights by updating the RBAC policy inside your Backstage CR:
+
+To grant non-administrator teams access to the virtual assistant, append permission lines to the rbac-policies.csv section, replacing <team> with your target team name:
+
+```text
+p, role:default/<team>, lightspeed.chat.read, read, allow
+p, role:default/<team>, lightspeed.chat.create, create, allow
+```
+
+5. Apply the updated custom resource manifest to your cluster:
+
+```bash
+$ oc apply -f <backstage_cr_file>.yaml
+```
+
+
+1. Log in to your console instance.
+2. Verify that the Open Lightspeed floating action button (FAB) appears on the home page.
+3. Select the FAB and confirm that the chat window initializes successfully.
+
+## Configure Developer Lightspeed for RHDH by using the Helm chart
+
+Configure Developer Lightspeed for RHDH by using the Helm chart to manage large language model (LLM) providers, enable validation guardrails, and authorize custom role-based access control (RBAC) policies.
+
+* You have access to a running RHDH instance deployed with Helm.
+* You have operational credentials for your chosen LLM provider.
+
+1. Create a manual Kubernetes Secret to store your provider credentials by adding the required keys to your Secret based on your provider requirements:
+
+[IMPORTANT]
+----
+To disable an inference provider or configuration feature, you must leave the corresponding ENABLE_* variable completely unset. Setting an ENABLE_* variable to false does not disable the component because the underlying system checks only whether the variable is defined.
+----
+
+
+[NOTE]
+----
+* By default, the Helm installation creates a temporary Kubernetes Secret containing keys for various LLM providers. On subsequent helm upgrade cycles, the system overwrites this default Secret. Create a manual Kubernetes Secret to persist your credentials.
+* Vertex AI requires custom architecture mapping and has received limited testing.
+----
+
+[TIP]
+----
+To filter and reject off-topic user queries, you can optionally configure query safety validation guardrails within this Secret by defining the ENABLE_VALIDATION, VALIDATION_PROVIDER, and VALIDATION_MODEL_NAME keys.
+----
+2. Reference your manual secret inside the values.yaml file:
+
+```yaml
+global:
+  lightspeed:
+    secret:
+      create: false
+      name: "my-custom-secret"
+```
+
+3. Optional: Configuration files such as lightspeed-stack.yaml, config.yaml and rhdh-profile.py are managed by the Helm deployment and overwrites changes on Helm upgrade runs. To protect changes to a file, create a custom config map and reference it in the values.yaml file:
+
+[IMPORTANT]
+----
+Only modify the create and nameOverride fields. Keep the default mount paths and file configurations unchanged.
+----
+
+```yaml
+global:
+  lightspeed:
+    configMaps:
+      - name: stack
+        create: false
+        nameOverride: "my-custom-stack"
+        mountPath: /app-root/lightspeed-stack.yaml
+        subPath: lightspeed-stack.yaml
+        sourceFile: lightspeed-stack.yaml
+        optional: false
+```
+
+4. Configure access rights by updating your RBAC definitions:
+
+To grant non-administrator teams access to the virtual assistant, append permission lines to the rbac-policies.csv section, replacing <team> with your target team name:
+
+```text
+p, role:default/<team>, lightspeed.chat.read, read, allow
+p, role:default/<team>, lightspeed.chat.create, create, allow
+```
+
+5. Run the helm upgrade command to apply your configurations to the cluster.
+
+1. Log in to your console instance.
+2. Verify that the Open Lightspeed floating action button (FAB) appears on the home page.
+3. Select the FAB and confirm that the chat window initializes successfully.
+
+## Disable Developer Lightspeed for RHDH by using the Operator
+
+Disable the Developer Lightspeed for RHDH chat interface and stop associated container processes to remove the service from your Operator-backed deployment.
+
+* You have access to the cluster where your instance is deployed.
+* You have cluster administrator privileges.
+
+1. Open your Backstage custom resource (CR) YAML file.
+2. In the spec section, set the enabled flag to false for the lightspeed flavour. This disables the chat interface and prevents the Operator from injecting unconfigured sidecar containers:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: lightspeed-disabled
+spec:
+  flavours:
+    - name: lightspeed
+      enabled: false
+```
+
+1. Apply the updated custom resource manifest to your cluster:
+
+```bash
+oc apply -f <backstage_cr_file>.yaml
+```
+
+
+1. Log in to your console instance.
+2. Verify that the Open Lightspeed floating action button (FAB) no longer appears on the home page.
+
+## Disable Developer Lightspeed for RHDH by using the Helm chart
+
+Disable the Developer Lightspeed for RHDH chat interface and stop associated container processes to remove the service from your Helm-deployed environment.
+
+* You have access to the cluster where your instance is deployed.
+* You have cluster administrator privileges.
+
+1. Open your Helm values.yaml file.
+2. Update the global.lightspeed.enabled parameter to false to disable the chat interface:
+
+```yaml
+global:
+  lightspeed:
+    enabled: false
+```
+
+3. Run the helm upgrade command to apply the configuration change to your cluster.
+
+1. Log in to your console instance.
+2. Verify that the Open Lightspeed floating action button (FAB) no longer appears on the home page.
+
+## Mirror Developer Lightspeed for RHDH images for air-gapped environments
+
+To provide chat assistance in a network environment without internet access, you must mirror the required Developer Lightspeed for RHDH container images and dynamic plugins to your local registry. This ensures your secure environment can pull the necessary components inside your network perimeter.
+
+### Mirror Developer Lightspeed for RHDH images for Operator deployments
+
+Mirror the required Developer Lightspeed for RHDH container images and plugins to your local registry to provide chat assistance in an air-gapped environment.
+
+The prepare-restricted-environment.sh script does not automatically parse Developer Lightspeed for RHDH images from the bundle manifest, so mirror these images manually before running the script.
+
+* You have a target mirror registry accessible to your disconnected cluster.
+* You authenticated to the Red Hat Container Registry and your target mirror registry.
+* You have configured image pull authentication for your mirror registry as described in Install Red Hat Developer Hub in an air-gapped environment with the Operator. The kubelet requires these credentials to pull all Red Hat Developer Hub container images, including the Developer Lightspeed for RHDH sidecar images.
+
+1. Extract the deployment configurations from the official Operator bundle:
+
+```terminal
+BUNDLE_IMAGE="registry.redhat.io/rhdh/rhdh-operator-bundle:1.10"
+CONTAINER_ID=$(podman create "${BUNDLE_IMAGE}")
+podman cp $CONTAINER_ID:/manifests/rhdh-flavour-lightspeed-config_v1_configmap.yaml ./lightspeed-config.yaml
+podman rm $CONTAINER_ID
+```
+
+2. Identify the initialization and sidecar container image tags from the extracted configuration file:
+
+```terminal
+LS_RAG_IMAGE=$(yq '.data["deployment.yaml"]' lightspeed-config.yaml | yq '.spec.template.spec.initContainers[] | select(.name == "init-rag-data") | .image')
+LS_CORE_IMAGE=$(yq '.data["deployment.yaml"]' lightspeed-config.yaml | yq '.spec.template.spec.containers[] | select(.name == "lightspeed-core") | .image')
+```
+
+3. Mirror the images to your internal registry by running the skopeo copy command:
+
+```terminal
+skopeo copy docker://${LS_RAG_IMAGE} docker://<mirror_registry>/<ls_rag_repo>@<digest>
+skopeo copy docker://${LS_CORE_IMAGE} docker://<mirror_registry>/<ls_core_repo>@<digest>
+```
+
+
+* Installing Red Hat Developer Hub in an air-gapped environment
+* Mirroring Red Hat Developer Hub dynamic plugins in disconnected environments
+
+### Mirror Developer Lightspeed for RHDH images for Helm deployments on OpenShift Container Platform
+
+Mirror the required Developer Lightspeed for RHDH container images to your local registry by using the oc-mirror plugin when deploying the Helm chart on an OpenShift Container Platform cluster.
+
+* You have a target mirror registry accessible to your disconnected OpenShift Container Platform cluster.
+* You authenticated to the Red Hat Container Registry and your target mirror registry.
+* You have configured image pull authentication for your mirror registry as described in Install Red Hat Developer Hub on OpenShift Container Platform in an air-gapped environment with the Helm chart. The kubelet requires these credentials to pull all Red Hat Developer Hub container images, including the Developer Lightspeed for RHDH sidecar images.
+
+1. Identify the initialization and sidecar container images from the default values file of the chart:
+
+```terminal
+helm show values redhat-developer-hub --repo https://charts.openshift.io/ --version 1.10.2 > values.default.yaml
+
+LS_RAG_IMAGE=$(yq '.global.lightspeed.initContainer.image | .registry + "/" + .repository' values.default.yaml)
+LS_RAG_DIGEST=$(yq '.global.lightspeed.initContainer.image.tag' values.default.yaml)
+LS_CORE_IMAGE=$(yq '.global.lightspeed.sidecar.image | .registry + "/" + .repository' values.default.yaml)
+LS_CORE_DIGEST=$(yq '.global.lightspeed.sidecar.image.tag' values.default.yaml)
+```
+
+2. Add these images to the additionalImages section of your ImageSetConfiguration file:
+
+```yaml
+apiVersion: mirror.openshift.io/v2alpha1
+kind: ImageSetConfiguration
+mirror:
+  additionalImages:
+    - name: ${LS_RAG_IMAGE}:${LS_RAG_DIGEST}
+    - name: ${LS_CORE_IMAGE}:${LS_CORE_DIGEST}
+  helm:
+    repositories:
+      - name: openshift-charts
+        url: https://charts.openshift.io
+        charts:
+          - name: redhat-developer-hub
+            version: "1.10"
+```
+
+
+* Installing Red Hat Developer Hub in an air-gapped environment
+* Mirroring Red Hat Developer Hub dynamic plugins in disconnected environments
+
+### Mirror Developer Lightspeed for RHDH images for Helm deployments on Kubernetes
+
+Isolate image references, copy them manually to your internal registry, and update your configuration file when deploying the Helm chart on non-OpenShift platforms.
+
+* You have a target mirror registry accessible to your disconnected cluster.
+* You authenticated to the Red Hat Container Registry and your target mirror registry.
+* You have configured image pull authentication for your mirror registry as described in Install Red Hat Developer Hub on a supported Kubernetes platform in an air-gapped environment with the Helm chart. The kubelet requires these credentials to pull all Red Hat Developer Hub container images, including the Developer Lightspeed for RHDH sidecar images.
+
+1. Extract the image references from the default values file of the chart:
+
+```terminal
+$ helm show values redhat-developer-hub --repo https://charts.openshift.io/ --version 1.10.2 > values.default.yaml
+
+LS_RAG_IMAGE=$(yq '.global.lightspeed.initContainer.image | .registry + "/" + .repository' values.default.yaml)
+LS_RAG_DIGEST=$(yq '.global.lightspeed.initContainer.image.tag' values.default.yaml)
+LS_CORE_IMAGE=$(yq '.global.lightspeed.sidecar.image | .registry + "/" + .repository' values.default.yaml)
+LS_CORE_DIGEST=$(yq '.global.lightspeed.sidecar.image.tag' values.default.yaml)
+```
+
+2. Mirror the images to your internal mirror registry:
+
+```terminal
+skopeo copy --all docker://${LS_RAG_IMAGE}:${LS_RAG_DIGEST} docker://<mirror_registry_name>/<ls_rag_repo_name>:${LS_RAG_DIGEST}
+skopeo copy --all docker://${LS_CORE_IMAGE}:${LS_CORE_DIGEST} docker://<mirror_registry_name>/<ls_core_repo_name>:${LS_CORE_DIGEST}
+```
+
+3. Update your custom Helm values file with the mirrored registry locations and plugin references. Mirror the dynamic plugins to the local registry before you add their package paths to the file. For mirroring instructions, see Mirroring Red Hat Developer Hub dynamic plugins in disconnected environments:
+
+```yaml
+global:
+  lightspeed:
+    initContainer:
+      image:
+        registry: "<mirror_registry_name>"
+        repository: <ls_rag_repo_name>
+        tag: "${LS_RAG_DIGEST}"
+    sidecar:
+      image:
+        registry: "<mirror_registry_name>"
+        repository: <ls_core_repo_name>
+        tag: "${LS_CORE_DIGEST}"
+    plugins:
+      - package: "oci://<mirror_registry_name>/rhdh/red-hat-developer-hub-backstage-plugin-lightspeed@<ls_frontend_digest>"
+        disabled: false
+      - package: "oci://<mirror_registry_name>/rhdh/red-hat-developer-hub-backstage-plugin-lightspeed-backend@<ls_backend_digest>"
+        disabled: false
+```
+
+
+* Mirror Red Hat Developer Hub dynamic plugins in disconnected environments
+
+# Customize Developer Lightspeed for RHDH AI responses
+
+You can customize Developer Lightspeed for RHDH to align model behavior with your operational goals, enhance developer productivity, and ensure secure data retention.
+
+Customize Developer Lightspeed for RHDH by enabling user feedback, persisting chat history, and configuring Model Context Protocol (MCP) tools.
+
+## Enable user feedback to improve model performance
+
+Enable user feedback collection to allow users to rate chat responses and submit text comments directly within the console interface.
+
+The Lightspeed Core Service (LCORE) stores this data as JSON files inside your cluster. Because Red Hat does not collect or access this data, platform administrators must manage, analyze, and delete these files locally.
+
+* You have platform administrator privileges.
+* You created and referenced a custom config map in your deployment to ensure configuration changes persist during system upgrades or Operator reconciliation loops. For more information, see Provision your custom Red Hat Developer Hub configuration.
+
+1. In your custom configuration file, such as lightspeed-stack.yaml, modify the user_data_collection block to configure your data preferences:
+* To enable feedback collection, set the feedback_enabled parameter to true:
+
+```yaml
+user_data_collection:
+  feedback_enabled: true
+  feedback_storage: "/tmp/data/feedback"
+  transcripts_enabled: true
+  transcripts_storage: "/tmp/data/transcripts"
+```
+
+* To disable feedback collection, set the feedback_enabled parameter to false:
+
+```yaml
+user_data_collection:
+  feedback_enabled: false
+  feedback_storage: "/tmp/data/feedback"
+  transcripts_enabled: true
+  transcripts_storage: "/tmp/data/transcripts"
+```
+
+
+[NOTE]
+----
+Do not modify the feedback_storage or transcripts_storage data paths when disabling feedback. Altering these path strings prevents the service from locating existing historical logs.
+----
+2. Apply the updated configuration file changes to your cluster by running your platform's standard deployment or upgrade sequence.
+
+## Customize AI responses by using system prompts
+
+Configure a custom system prompt to provide environmental context to the large language model (LLM). This custom instruction prefixes user queries, guiding the assistant to generate artificial intelligence (AI) responses tailored to your RHDH instance.
+
+* You have administrative access to the RHDH host platform filesystem.
+
+1. In your app-config.yaml file, add or modify the systemPrompt parameter under the lightspeed section, specifying your custom instruction string:
+
+```yaml
+lightspeed:
+  # ... other lightspeed configurations
+  systemPrompt: "You are a helpful assistant focused on Red Hat Developer Hub development."
+```
+
+2. Save the file.
+3. Restart the RHDH service to apply the updated system prompt configuration.
+
+## Customize chat history storage
+
+Configure chat history storage to choose between non-persistent local logs and a persistent external database for user conversations.
+
+By default, the system stores chat history in a non-persistent local database within the Lightspeed Core Service (LCORE) container. To retain data across system restarts, you must configure a PostgreSQL database connection.
+
+
+[WARNING]
+----
+Storing chat history records user prompts and responses. You must assess data privacy and security implications if your user chat history contains private, sensitive, or confidential information. For users that want to have their chat data removed, they must request their platform administrator to perform this action. Red Hat does not collect or access this chat history data.
+----
+
+* You created and referenced a custom config map in your deployment to ensure configuration changes persist during system upgrades or Operator reconciliation loops. For more information, see Provision your custom Red Hat Developer Hub configuration.
+
+1. In your custom configuration file, such as lightspeed-stack.yaml, modify the conversation_cache block to specify your storage configuration:
+* To enable persistent storage, add your PostgreSQL database credentials and endpoint properties:
+
+```yaml
+conversation_cache:
+  type: "postgres"
+  postgres:
+    host: _<your_database_host>_
+    port: _<your_database_port>_
+    db: _<your_database_name>_
+    user: _<your_user_name>"_
+    password: _<postgres_password>_
+```
+
+* To retain the default non-persistent SQLite setup, verify that the parameters match the following paths:
+
+```yaml
+conversation_cache:
+  type: "sqlite"
+  sqlite:
+    db_path: '/tmp/cache.db'
+```
+
+2. Restart the LCORE service to apply your new database configuration.
+
+# Solve project-specific challenges with Developer Lightspeed for RHDH Notebooks
+
+Use Developer Lightspeed for RHDH Notebooks to research, troubleshoot, and analyze projects by using a large language model (LLM) grounded in your own documentation. Notebooks use Retrieval-Augmented Generation (RAG) to ensure that responses are based strictly on the files you upload.
+
+Use Notebooks to achieve the following goals:
+
+Query your documentation:: Upload project files to ask questions, summarize content, or brainstorm ideas based on those specific documents.
+Troubleshoot with project-specific context:: Upload project logs, architecture diagrams, or onboarding files to receive technical answers tailored to your specific environment.
+Securely analyze private data:: Conduct research in isolated sessions. Your uploaded data and chat history remain private and are inaccessible to other users.
+Run multiple Notebooks:: Uploaded documents and chat history remain available and are re-opened through the Notebook dashboard.
+Verify AI responses with citations:: Use the Sources chips to view the exact document excerpts used to generate an answer.
+Organize research:: Use metadata and tagging to categorize different research topics.
+
+The following constraints apply during the Developer Preview:
+
+Data boundaries:: The AI can only access data within the active Notebook session.
+Private access:: You cannot share notebooks or documents with other team members.
+Manual uploads:: You must upload files directly. The tool does not support URL ingestion or web scraping.
+Ephemeral defaults:: Without a configured Persistent Volume (PV), all Notebook data and uploaded files are lost upon service restart.
+![Lightspeed Notebook Fullscreen page]
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+## Enable secure AI research with Developer Lightspeed Notebooks
+
+Configure Red Hat Developer Hub and Red Hat Developer Lightspeed for Red Hat Developer Hub to provide users with private, document-based AI workspaces.
+
+* A deployed instance of RHDH.
+* By using the OpenShift CLI (oc), you have access, with developer permissions, to the OpenShift Container Platform cluster aimed at containing your Developer Hub instance.
+* A Lightspeed Stack service is running and accessible to the backend.
+* A supported large language model (LLM), such as Granite 7B or higher, is available.
+
+1. Enable the notebook feature and define your model by adding the following configuration to your app-config.yaml file:
+
+```yaml
+lightspeed:
+  notebooks:
+    enabled: true
+    queryDefaults:
+      model: ${NOTEBOOKS_QUERY_MODEL} # Use the exact model name
+      provider_id: ${NOTEBOOKS_QUERY_PROVIDER_ID}
+```
+
+
+[NOTE]
+----
+If the model name is incorrect, an error message appears in the logs and the user interface.
+----
+2. Grant user access through role-based access control (RBAC) policies by defining permissions in your rbac-policy-csv file:
+1. Add the permission policy:
+
+```text
+p, role:default/_<your_team_name>_, lightspeed.notebooks.use, update, allow
+```
+
+2. Assign the role to specific users:
+
+```text
+g, user:default/_<your_user_name>_, role:default/_<your_team_name>_
+```
+
+3. Apply the updated configuration and restart the service.
+
+1. Log in to RHDH using an account assigned to the RBAC role defined in the configuration.
+2. Confirm that the Notebooks tab is visible next to the Chat tab in the primary navigation bar.
+3. Click the Notebooks tab and ensure the My Notebooks dashboard loads without error messages.
+
+## Enable data persistence for Developer Lightspeed Notebooks
+
+To persist Notebook sessions, documents, and AI history across service restarts, you must configure the Notebooks storage backends to use persistent volumes.
+
+By default, the service uses ephemeral storage in the /tmp directory, which the system clears during a pod restart.
+
+* By using the OpenShift CLI (oc), you have access, with developer permissions, to the OpenShift Container Platform cluster aimed at containing your Developer Hub instance.
+* You have authored and provisioned a custom config map for your deployment. For more information, see link:Provision your custom Red Hat Developer Hub configuration.
+* A Persistent Volume Claim (PVC) is provisioned in your cluster and mounted to the LCORE container (for example, at /var/lib/lightspeed-data).
+
+1. Update your custom config map llama-stack-configs/config.yaml file to point the kv_notebooks storage backend to your persistent mount point:
+
+```yaml
+spec:
+  initContainers:
+    - name: init-notebooks-dir
+      # ... complete init container
+  containers:
+    - name: lightspeed-core
+      image: quay.io/lightspeed-core/lightspeed-stack:0.5.1
+      ports:
+        - containerPort: 8080
+      volumeMounts:
+        - name: notebooks-storage
+          mountPath: /var/lib/lightspeed-data
+        - name: config  # ← Added all ConfigMap mounts
+          mountPath: /app-root/config.yaml
+          subPath: config.yaml
+        - name: lightspeed-config
+          mountPath: /app-root/lightspeed-stack.yaml
+          subPath: lightspeed-stack.yaml
+        - name: profile
+          mountPath: /app-root/rhdh-profile.py
+          subPath: rhdh-profile.py
+      livenessProbe:  # ← Added health checks
+        httpGet:
+          path: /readiness
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /readiness
+          port: 8080
+  volumes:  # ← Added all volume definitions
+    - name: notebooks-storage
+      persistentVolumeClaim:
+        claimName: lightspeed-notebooks-pvc
+    - name: config
+      configMap:
+        name: llama-stack-config
+    - name: lightspeed-config
+      configMap:
+        name: lightspeed-core-config
+    - name: profile
+      configMap:
+        name: rhdh-profile
+```
+
+2. Update your deployment manifest to include the init container, volume mounts, and volume definitions:
+
+```yaml
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: init-notebooks-storage
+          image: registry.access.redhat.com/ubi9/ubi-minimal
+          command: ["sh", "-c", "mkdir -p /var/lib/lightspeed-data/notebooks && chmod -R 777 /var/lib/lightspeed-data/notebooks"]
+          volumeMounts:
+            - name: lightspeed-notebooks
+              mountPath: /var/lib/lightspeed-data
+      containers:
+        - name: lightspeed-stack
+          image: quay.io/lightspeed-core/lightspeed-stack:0.5.1
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: lightspeed-notebooks
+              mountPath: /var/lib/lightspeed-data
+            - name: config
+              mountPath: /app-root/config.yaml
+              subPath: config.yaml
+          livenessProbe:
+            httpGet:
+              path: /readiness
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 8080
+      volumes:
+        - name: lightspeed-notebooks
+          persistentVolumeClaim:
+            claimName: lightspeed-notebooks-pvc
+        - name: config
+          configMap:
+            name: llama-stack-config
+```
+
+3. Apply the updated configuration and restart the service.
+
+1. In Red Hat Developer Hub, create a Notebook and upload a test document.
+2. Send a message to the virtual assistant and verify that the response is based on the document.
+3. Restart the pod:
+
+```terminal
+$ oc delete pod <pod_name>
+```
+
+4. After the pod recovers, refresh the My Notebooks dashboard.
+5. Verify that the Notebook and the uploaded file are still accessible.
+
+# Get AI-assisted help for your development tasks
+
+Use Red Hat Developer Lightspeed for Red Hat Developer Hub, a generative AI assistant in Red Hat Developer Hub (RHDH), to ask platform questions, analyze logs, generate code, and create test plans from a chat interface.
+
+## Prerequisites
+
+* Your platform engineer has configured the Developer Lightspeed for RHDH service in your RHDH instance.
+
+## Configure safety guards in Red Hat Developer Hub
+
+To protect users from insecure or harmful AI model outputs, Red Hat Developer Hub (RHDH) uses Llama Guard as a default safety shield. You must configure these guards to align with your organization&#8217;s security policies.
+
+Default safety guard configuration:: The system uses Llama Guard as the default safety shield. Override these settings in the run.yaml file.
+
+
+[NOTE]
+----
+The external_providers_dir parameter defaults to null and is no longer required in your configuration.
+----
+
+Overriding safety guards:: To implement custom security layers or different safety shields, you must define a new safety provider within a custom run.yaml file.
+Disabling safety guards:: To run RHDH without safety guards, you must use the run-no-guard.yaml configuration file.
+
+
+[IMPORTANT]
+----
+Running without safety guards increases the risk of invalid model output. Only use this configuration in secure development environments.
+----
+
+Applying the no-guard configuration:: To run the system without a safety guard, perform these steps:
+
+1. Add the following YAML file as a config map to your namespace:
+
+```yaml
+version: 2
+image_name: redhat-ai-dev-llama-stack-no-guard
+apis:
+  - agents
+  - inference
+  - safety
+  - tool_runtime
+  - vector_io
+  - files
+container_image:
+external_providers_dir:
+providers:
+  agents:
+    - config:
+        persistence:
+          agent_state:
+            namespace: agents
+            backend: kv_default
+          responses:
+            table_name: responses
+            backend: sql_default
+      provider_id: meta-reference
+      provider_type: inline::meta-reference
+  inference:
+    - provider_id: ${env.ENABLE_VLLM:+vllm}
+      provider_type: remote::vllm
+      config:
+        url: ${env.VLLM_URL:=}
+        api_token: ${env.VLLM_API_KEY:=}
+        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+        tls_verify: ${env.VLLM_TLS_VERIFY:=true}
+    - provider_id: ${env.ENABLE_OLLAMA:+ollama}
+      provider_type: remote::ollama
+      config:
+        url: ${env.OLLAMA_URL:=http://localhost:11434}
+    - provider_id: ${env.ENABLE_OPENAI:+openai}
+      provider_type: remote::openai
+      config:
+        api_key: ${env.OPENAI_API_KEY:=}
+    - provider_id: ${env.ENABLE_VERTEX_AI:+vertexai}
+      provider_type: remote::vertexai
+      config:
+        project: ${env.VERTEX_AI_PROJECT:=}
+        location: ${env.VERTEX_AI_LOCATION:=us-central1}
+    - provider_id: sentence-transformers
+      provider_type: inline::sentence-transformers
+      config: {}
+  tool_runtime:
+    - provider_id: model-context-protocol
+      provider_type: remote::model-context-protocol
+      config: {}
+    - provider_id: rag-runtime
+      provider_type: inline::rag-runtime
+      config: {}
+  vector_io:
+    - provider_id: faiss
+      provider_type: inline::faiss
+      config:
+        persistence:
+          namespace: vector_io::faiss
+          backend: faiss_kv
+  files:
+    - provider_id: localfs
+      provider_type: inline::localfs
+      config:
+        storage_dir: /tmp/llama-stack-files
+        metadata_store:
+          table_name: files_metadata
+          backend: sql_files
+storage:
+  backends:
+    kv_default:
+      type: kv_sqlite
+      db_path: /tmp/kvstore.db
+    sql_default:
+      type: sql_sqlite
+      db_path: /tmp/sql_store.db
+    sql_files:
+      type: sql_sqlite
+      db_path: /rag-content/vector_db/rhdh_product_docs/1.9/files_metadata.db
+    faiss_kv:
+      type: kv_sqlite
+      db_path: /rag-content/vector_db/rhdh_product_docs/1.9/faiss_store.db
+  stores:
+    metadata:
+      namespace: registry
+      backend: faiss_kv
+    inference:
+      table_name: inference_store
+      backend: sql_default
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      table_name: openai_conversations
+      backend: sql_default
+registered_resources:
+  models:
+    - model_id: sentence-transformers/all-mpnet-base-v2
+      metadata:
+        embedding_dimension: 768
+      model_type: embedding
+      provider_id: sentence-transformers
+      provider_model_id: /rag-content/embeddings_model
+  tool_groups:
+    - provider_id: rag-runtime
+      toolgroup_id: builtin::rag
+  vector_dbs:
+    - vector_db_id: rhdh-product-docs-1_8
+      embedding_model: sentence-transformers/all-mpnet-base-v2
+      embedding_dimension: 768
+      provider_id: faiss
+server:
+  auth:
+  host:
+  port: 8321
+  quota:
+  tls_cafile:
+  tls_certfile:
+  tls_keyfile:
+```
+
+2. Mount the config map to your Llama Stack container at /app-root/run.yaml to make sure it overrides the default image file:
+
+```yaml
+name: llama-stack
+volumeMounts:
+- mountPath: /app-root/run.yaml
+  subPath: run.yaml
+  name: llama-stack-config
+```
+
+3. Configure the required volume:
+
+```yaml
+volumes:
+- name: llama-stack-config
+  configMap:
+    name: llama-stack-config
+```
+
+
+where:
+llama-stack-config:: The config map where you added the new no-guard configuration file.
+4. Restart the deployment if it does not trigger an automatic rollout.
+
+## Best results for assistant queries
+
+To resolve technical blockers and accelerate development tasks, you must structure your queries to give specific context to the AI assistant. Using precise prompts makes sure that Developer Lightspeed for RHDH generates relevant code snippets, architectural advice, or platform-specific instructions.
+
+Use the following strategies to improve the accuracy of the assistant&#8217;s output during your development workflow:
+
+Specify technologies:: Instead of asking "How do I use templates?", ask "How do I create a Software Template that scaffolds a Node.js service with a CI/CD pipeline".
+Give context:: Include details about your environment, such as "I am deploying to OpenShift; how do I set up my catalog-info.yaml to show pod health?".
+Use conversation context:: Ask follow-up questions to refine an earlier answer. For example, if the assistant gives a code snippet, you can ask "Now rewrite that using TypeScript interfaces."
+Validate with citations:: Check the provided documentation links and citations in the response to verify that the generated advice aligns with your organization's official standards.
+Improve assistant accuracy:: Rate the utility of responses by selecting the Thumbs up or Thumbs down icons. This feedback helps tune the model for your organization's specific requirements.
+
+
+[IMPORTANT]
+----
+To keep your data secure, do not include sensitive personal information, plain text credentials, or confidential business data in your queries.
+----
+
+## AI response monitoring and context management
+
+Developer Lightspeed for RHDH provides features to track the AI reasoning process and keep the context of your development tasks.
+
+Thinking cards:: An expandable thinking card is displayed while the AI processes a query. A pulse animation indicates the reasoning phase. You can expand the card to view detailed reasoning or collapse it to minimize screen clutter.
+Tool call transparency:: An expandable card displays details for Model Context Protocol (MCP) tool calls, which you can use to monitor background processes.
+Context-aware citations:: Retrieval-Augmented Generation (RAG) citations appear only when the AI uses internal documentation. This makes sure that general knowledge responses remain concise.
+Context preservation during model changes:: When you select a different AI model, Developer Lightspeed for RHDH starts a new conversation. This keeps your earlier chats available in your history.
+Structural readability:: The interface formats headings and bullet points automatically to make sure responses are scannable.
+
+## Manage chats
+
+Manage your chat history and configuration in RHDH to organize your workspace, resume earlier tasks, or find past solutions.
+
+![Chat menu options]
+
+* You have configured the Developer Lightspeed for RHDH plugin in Red Hat Developer Hub.
+* You have logged in to the portal.
+
+1. Click the Open Lightspeed floating action button (FAB) at the lower right of the screen to open the chat overlay.
+2. Optional: Configure the interface display and server settings:
+* Click the Chatbot options icon (⋮) to view chat history or start a new chat.
+* Click the Display mode icon and select any of the following views:
+![Chat display options]
+* Overlay: A floating window is displayed over the current page content.
+![Lightspeed overlay mode]
+* Dock to window: A panel attaches to the right side of the screen. Activating this mode automatically closes the quick start panel if it is already open.
+![Lightspeed docked mode]
+* Fullscreen: A dedicated page opens for intensive chat sessions. This mode displays a revised header containing the Lightspeed logo and a horizontal tab bar, which replaces the previous main menu. Bookmark the URL in your browser to save a direct link to the chat interface.
+![Lightspeed full-screen mode]
+* Optional: Toggle Enable pinned chats/Disable pinned chats to enable or hide the pinned chats. The system enables this option by default.
+* Available only if MCP is configured: Manage Model Context Protocol connections.
+![Lightspeed chat mcp mode]
+3. Start a chat or load an earlier session:
+* Enter a prompt: Type a query in the Enter a prompt for Lightspeed chat field and press Enter.
+* Use a sample: Click a prompt tile.
+* Change the AI model: Select a model from the model selector dropdown menu inside the prompt bar.
+![Lightspeed chat AI model]
+* Attach a file: Click the (+) icon on the left of the prompt bar to upload a .yaml, .json, or .txt file. Descriptive text clarifies the function of the icon.
+1. Click the file name to open the preview model.
+2. View or edit the content of the file:
+![Lightspeed file attachment preview]
+* Use voice: Click the Use microphone icon. The microphone and send buttons are located on the right side of the prompt bar.
+* Control AI generation: Use the control buttons on the right side of the prompt bar. Click the start/send (>) button to submit queries, or click the stop ([]) button to halt AI generation.
+![Lightspeed file attachment preview]
+* Resume a chat: Select a title from the Recent list.
+4. Organize your chat history:
+* Start a new topic: Click New chat to reset the assistant's context. When the history panel is collapsed, you must click the Edit square icon to create a new chat.
+![Lightspeed new chat]
+* Search history: Enter a keyword in the Search field.
+* Rename a session: Click Options next to a chat title, select Rename, and enter a new name.
+![Rename chat option]
+* Pin a chat: Click Options next to a chat title and select Pin. The chat moves to the Pinned group.
+* Sort chats: Click Sort control and choose a sorting criteria, such as Date (Newest first).
+![Chat sorting options]
+* Delete a chat: Click Options next to a chat title and select Delete.
+![Delete chat option]
+* Expand or collapse the panel: Click the Expand/collapse icon to toggle the history panel.
+![Collapse chat option]
+
+[NOTE]
+----
+The expanded panel is resizable up to a defined maximum width.
+----
+5. Optional: To hide the interface, if you are in the Overlay or Dock to window mode, click the Close Lightspeed icon (X) to hide the window. If you are in Fullscreen mode, revert to the other modes and click the Close Lightspeed icon (X). The system preserves your active query and history.
+6. Optional: In Fullscreen mode, bookmark the URL in your browser to save a direct link to the chat interface.
+
+1. The main window displays the active chat or selected history.
+2. The chat history list reflects renamed, pinned, or deleted entries.
+
+## Build a private knowledge base with Developer Lightspeed for RHDH Notebooks
+
+Use Developer Lightspeed for RHDH notebooks to create isolated research environments. These workspaces allow you to analyze project data securely by using a large language model (LLM) grounded in your specific documentation.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+### Create isolated research workspaces
+
+Organize your work into individual notebook sessions to keep research topics separate and private.
+
+![Notebook upload option]
+
+1. In the RHDH interface, click the Open Lightspeed floating action button (FAB).
+2. In your Developer Lightspeed page, select the Notebooks tab.
+3. Click Create a new notebook to start a new workspace.
+4. Optional: To manage your workspaces, click the More options icon on a notebook card to Rename, Delete, or add Tags to the session.
+![Notebook rename option]
+![Notebook delete option]
+![Notebook tabs option]
+
+* Confirm the new notebook card appears on the My Notebooks dashboard.
+
+### Provide project context to the AI
+
+To receive answers tailored to your project, upload and manage relevant source material in your active session.
+
+1. Open a Notebook card from the dashboard.
+2. Add resources by using one of the following methods:
+* In the sidebar, click the Add (+) icon.
+* In the main user interface, click Upload a resource.
+![Notebook upload option]
+3. Select and upload your local files. Supported formats include .txt, .md, .pdf, .docx, .log, .yaml, and .json.
+
+1. Adhere to the following constraints:
+File size:: Individual files or URL content must be 20MB or smaller.
+Notebook Capacity:: The total token count per session must not exceed 100k.
+Unsupported content:: Avoid scanned PDF images without text, audio, video, and general image files.
+Persistence requirement:: The internal SQL and KV stores must be mapped to a persistent backend to maintain the 100k token context across sessions.
+2. Wait for the system to process and vectorize the files. This might take several seconds for larger PDFs.
+
+* Ensure the uploaded files appear in the Resources list in the sidebar with a Processed status.
+
+### Extract and verify document-based insights
+
+After providing context, use the AI to perform reasoning across your files and verify the accuracy of the responses.
+
+![Lightspeed Notebook chat preview]
+
+* You have uploaded documents or URLs to the active chat session to establish context.
+
+[NOTE]
+----
+If no documents are uploaded, you cannot communicate with the AI.
+----
+Procedure
+1. Enter a question in the prompt bar at the bottom of the screen.
+2. Analyze the response. The AI identifies relationships across all uploaded documents and URLs in the session.
+3. To verify accuracy, click the Sources chip to view the specific document excerpts used to generate the answer.
+4. Manage your workflow by using the history panel in the sidebar to expand or collapse previous interactions.
+
+* Confirm that the Sources panel displays the correct filenames and text snippets corresponding to the AI's response.
+
+# AI model evaluation data to select the right AI model
+
+Use the Red Hat Developer Lightspeed for Red Hat Developer Hub evaluation framework to validate the performance, accuracy, and reliability of Developer Lightspeed for RHDH.
+
+With this automated toolset, you can measure how effectively various large language models (LLMs) answer questions based on Red Hat Developer Hub documentation.
+
+
+
+## Configure the evaluation environment to validate model accuracy
+
+Set up the evaluation environment to validate the performance and accuracy of Developer Lightspeed for RHDH. Configure this evaluation to ensure the model correctly interprets documentation and provides dependable answers.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+By performing these evaluations, you minimize the risk of the model delivering incorrect or hallucinated information to users in production.
+
+* Install uv for Python package management (Python 3.11 or later).
+
+1. Clone the evaluation repository and navigate to the directory:
+
+```bash
+git clone https://github.com/lightspeed-core/lightspeed-evaluation
+cd lightspeed-evaluation
+```
+
+2. Synchronize the environment and install dependencies:
+
+```bash
+uv sync
+```
+
+3. Configure the environment variables for the judge LLM. You can create a .env file in the root directory or export the keys directly to your terminal.
+* If you use Gemini, you must set the Gemini API key:
+
+```bash
+export GEMINI_API_KEY="your-google-api-key"
+```
+
+* If you use OpenAI, you must set the OpenAI API key:
+
+```bash
+export OPENAI_API_KEY="your-key"
+```
+
+4. Optional: If you test with a live service, set your Developer Lightspeed for RHDH service API key:
+
+```bash
+export API_KEY="your-lightspeed-service-key"
+```
+
+
+* Verify that the environment is synchronized and the virtual environment is active:
+
+```bash
+uv run python --version
+```
+
+
+The output must return Python 3.11 or later.
+
+## Prepare evaluation datasets to verify AI-generated responses
+
+Prepare evaluation data sets to test the performance of Developer Lightspeed for RHDH. You can use pre-generated AI data sets for specific Red Hat Developer Hub releases or generate custom AI data sets from your own documentation.
+
+* You must clone the evaluation repository to your local machine.
+
+1. Download pre-generated data sets: Use this method to test the performance of specific RHDH releases. These data sets are generated using Ragas testset generation for RAG.
+1. In your terminal, navigate to the /dataset folder in the evaluation repository.
+2. Locate the .evaluation_dataset_yaml files. These files are pre-configured for the evaluation tool.
+3. To test a historical release, switch to the corresponding branch.
+For example, to access the Red Hat Developer Hub 1.8 data set, switch to the 1.8 branch.
+
+[IMPORTANT]
+----
+The main branch contains work-in-progress (WIP) data sets. Avoid using this branch for stable evaluations.
+----
+2. Generate custom data sets: Use this method to create a new test set from your own technical documentation.
+1. Generate a diverse set of question-and-answer (Q&A) pairs by following the Ragas test data generation documentation.
+2. Ensure your Q&A pairs match the required format by reviewing the evaluation data structure configuration.
+
+* Verify that your custom data set matches the required schema before you start the evaluation run.
+
+## Run performance tests to ensure AI response reliability
+
+Use the evaluation framework to run performance tests in either static mode to evaluate pre-recorded responses or dynamic mode to call a live service.
+
+These evaluations identify performance gaps, allow you to compare different large language models (LLMs), and ensure that Developer Lightspeed for RHDH provides reliable information to users.
+
+* You must install and configure the evaluation environment.
+* You must prepare an evaluation data set.
+
+1. Download the system.yaml configuration template from the repository.
+2. Configure the parameters in the system.yaml file based on your evaluation mode:
+
+3. Execute the evaluation by using the lightspeed-eval command:
+
+```bash
+lightspeed-eval \
+  --system-config config/system.yaml \
+  --eval-data config/evaluation_data.yaml \
+  --output-dir ./my_evaluation_results
+```
+
+
+* Navigate to the specified output directory and verify that the generated reports contain the model performance scores.
+
+## Analyze evaluation results to identify performance gaps
+
+Determine the performance of Developer Lightspeed for RHDH and identify documentation areas that require model improvement by analyzing evaluation results in the repository. You can use these reports to compare performance across different large language models (LLMs) and topics.
+
+* You must have access to the developer-lightspeed-evaluation repository.
+
+1. In the root of the repository, navigate to the version-specific folder within the /evaluation-result directory.
+2. Open the following files to evaluate performance:
+* Model Pass Rate: Compare the overall performance between different LLMs.
+* Topic Pass Rate: Identify performance trends and gaps within specific documentation areas.
+
+* Verify that the reports display data visualizations or metrics consistent with your recent evaluation run.
+
+## Evaluation metrics and historical data reference
+
+Use the available metrics to evaluate the performance of Developer Lightspeed for RHDH at the conversation turn level.
+
+These metrics provide a standardized way to measure the accuracy and reliability of the generated responses and the retrieved content.
+
+
+
+## Release report and historical data
+
+Use the latest Q&A data set and evaluation results to monitor the current performance of Developer Lightspeed for RHDH.
+
+Access version-specific branches that contain the data sets and evaluation results required to track improvements or regressions across product releases.
+
+
+[IMPORTANT]
+----
+The main branch contains work-in-progress data for versions currently under development. For stable evaluations or historical tracking, you must switch to the branch associated with a specific release.
+----
+
+
+
+# Appendix: LLM requirements
+
+Review large language model (LLM) provider compatibility and system requirements for OpenAI, Red Hat OpenShift AI, Ollama, vLLM, and Vertex AI to plan your Developer Lightspeed for RHDH infrastructure deployment.
+
+## Large language model (LLM) requirements
+
+To plan your Developer Lightspeed for RHDH deployment, you must determine which compatible large language model (LLM) inference provider fits your infrastructure.
+
+Developer Lightspeed for RHDH operates on a Bring Your Own Model (BYOM) architecture. Because the service does not include a native model, you must connect a compatible inference provider during installation.
+
+The underlying LCORE service integrates with platforms that support either the OpenAI API specification or the vLLM inference engine. Developer Lightspeed for RHDH supports the following inference provider configurations:
+
+* OpenAI: Cloud-based inference services.
+* vLLM: Enterprise inference servers, which include models hosted on Red Hat OpenShift AI and Red Hat Enterprise Linux AI.
+* Ollama: Desktop inference servers.
+* Gemini: Services through Vertex AI.
+
+When configuring your deployment, you must account for the following provider behaviors:
+
+* Red Hat OpenShift AI routing: Because the configuration lacks an explicit Red Hat OpenShift AI provider option, you must route these deployments through the vLLM provider settings.
+* vLLM URL syntax: The vllm provider type communicates with endpoints that conform to the OpenAI API schema. You must manually append /v1 to the configured provider URL because the system does not add it automatically. This configuration also applies to other hosted, OpenAI-compliant inference providers.
+
+## OpenAI model integration for your deployment
+
+Use OpenAI models to provide generative artificial intelligence (AI) inference services, such as GPT 5, for your Developer Lightspeed for RHDH deployment.
+
+The system connects directly to the OpenAI API platform to route user prompts and return model insights. To configure this large language model (LLM) provider, you must have an active API key generated from your OpenAI developer account.
+
+* OpenAI API platform
+* OpenAI developer platform documentation
+
+## Ollama model integration requirements
+
+To integrate the open-source Ollama framework with Developer Lightspeed for RHDH, you must ensure that your network topology allows the Developer Lightspeed for RHDH service to route traffic to the Ollama server endpoint.
+
+The Ollama server operates as a containerized layer, providing a command-line interface (CLI) to download, manage, and execute open-source models such as Llama 3 and Mistral. You can deploy Ollama on both local workstations and cluster environments.
+
+However, a cluster-deployed Developer Lightspeed for RHDH instance cannot access an Ollama server that runs exclusively on a workstation localhost interface. For cluster deployments, the Ollama server must reside on an externally accessible network perimeter or run directly inside the cluster.
+
+The following integration configurations are supported:
+
+* Both Developer Lightspeed for RHDH and Ollama deploy on a local workstation.
+* Developer Lightspeed for RHDH deploys locally and connects to an externally accessible cluster Ollama server.
+* Both Developer Lightspeed for RHDH and Ollama deploy inside the cluster infrastructure.
+
+* Ollama project website
+* Ollama server container image
+
+## vLLM model integration for high-throughput inference
+
+Use the open-source vLLM high-throughput serving framework to optimize memory utilization and manage high volumes of concurrent requests for your Developer Lightspeed for RHDH deployment.
+
+The vLLM framework operates as an enterprise inference server that optimizes memory allocation to maximize the processing efficiency of large language models (LLMs). Integrating vLLM ensures that your environment maintains high performance and responsiveness under heavy concurrent user traffic.
+
+* vLLM documentation
+
+## Vertex AI integration for Gemini models
+
+To use Gemini models with Developer Lightspeed for RHDH, you can configure Google Cloud Vertex AI to act as your managed large language model (LLM) inference provider.
+
+The underlying LCORE service connects to Vertex AI to access hosted Gemini models. This integration provides Developer Lightspeed for RHDH with enterprise-grade language processing and chat assistance capabilities without requiring you to maintain a local inference server.
+
+* Vertex AI documentation
+
+# Appendix: Manage user data security
+
+Review data handling practices, feedback storage protocols, and model configuration architectures, such as the Bring Your Own Model approach, to evaluate and enforce information security standards for your organization.
+
+## Data use and privacy practices
+
+Review data routing and privacy practices to evaluate how Developer Lightspeed for RHDH handles chat messages and operational information transmitted to large language model (LLM) providers.
+
+Developer Lightspeed for RHDH sends your chat messages directly to your configured large language model (LLM) provider. Because these messages can contain sensitive operational data regarding your cluster, users, or business environment, ensure that your provider compliance policies align with your organizational security standards.
+
+Developer Lightspeed for RHDH has limited capabilities to filter or redact the information you submit during user interactions. To mitigate data exposure risks, do not enter proprietary or confidential information into Developer Lightspeed for RHDH. To encourage user compliance, Developer Lightspeed for RHDH displays a mandatory warning at the start of each sessions, reminding users to omit personal or sensitive details.
+
+## User feedback collection
+
+Review how Developer Lightspeed for RHDH collects and isolates user feedback data within your cluster to manage local storage requirements and data privacy standards.
+
+Developer Lightspeed for RHDH saves user feedback submissions, including numerical ratings and text commentary, locally within the pod filesystem. Because Red Hat does not collect, access, or transmit this data, local platform administrators must manage and monitor these storage directories.
+
+## Bring Your Own Model integration
+
+Review Bring Your Own Model (BYOM) requirements to select and integrate an OpenAI API-compatible inference service with Lightspeed Core Service.
+
+Developer Lightspeed for RHDH relies on a BYOM architecture that let you connect the Lightspeed Core Service (LCORE) layer to any OpenAI API-compatible inference platforms. To establish connection compatibility, your chosen inference service must satisfy the following technical criteria:
+
+* The service must conform to the OpenAI API specification for chat completions.
+* The host environment must match the specified infrastructure configuration and installation instructions.
+
+Various commercial and open-source inference services support the OpenAI API specification. Because operational costs, performance metrics, and data security controls vary by provider, you must evaluate and test prospective platforms locally to select the service that best meets your organizational requirements.
+
+* OpenAI API specification
+
+## Your compliance and data-sharing responsibility
+
+Review compliance requirements and data-sharing responsibilities to ensure that user interactions with Developer Lightspeed for RHDH align with your organization&#8217;s data privacy policies.
+
+All data that users submit through prompts and responses within Developer Lightspeed for RHDH is transmitted directly to your configured large language model (LLM) inference service. Platform administrators must ensure that these external data transfers comply with corporate security standards, governance frameworks, and local data protection policies.

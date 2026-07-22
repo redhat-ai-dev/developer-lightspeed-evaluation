@@ -1,0 +1,2962 @@
+# Installing and viewing plugins in Red Hat Developer Hub
+
+Administrative users can install and configure plugins to enable other users to use plugins to extend Red Hat Developer Hub (RHDH) functionality.
+
+# Install dynamic plugins in Red Hat Developer Hub
+
+The backend plugin manager package provides dynamic plugin support. This service scans a configured root directory (dynamicPlugins.rootDirectory in the app-config.yaml file) for dynamic plugin packages and loads them dynamically.
+
+You can use the dynamic plugins that come preinstalled with Red Hat Developer Hub or install external dynamic plugins from a public NPM registry.
+
+## Install dynamic plugins with the Red Hat Developer Hub Operator
+
+You can store the configuration for dynamic plugins in a ConfigMap object that your Backstage custom resource (CR) can reference.
+
+Dynamic plugins might require you to configure certain Kubernetes resources. The documentation refers to these resources as plugin dependencies. For more information, see Dynamic plugins dependency management.
+
+In Red Hat Developer Hub (RHDH), you can automatically create these resources when you apply the Backstage CR to the cluster.
+
+
+[NOTE]
+----
+If the pluginConfig field references environment variables, you must define the variables in your <my_product_secrets> secret.
+----
+
+1. From the OpenShift Container Platform web console, select the ConfigMaps tab.
+2. Click Create ConfigMap.
+3. From the Create ConfigMap page, select the YAML view option in Configure via and edit the file, if needed.
+
+The following example shows a ConfigMap object using the GitHub dynamic plugin:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dynamic-plugins-rhdh
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: './dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github-dynamic'
+        disabled: false
+        pluginConfig:
+          catalog:
+            providers:
+              github:
+                organization: "${GITHUB_ORG}"
+                schedule:
+                  frequency: { minutes: 1 }
+                  timeout: { minutes: 1 }
+                  initialDelay: { seconds: 100 }
+```
+
+4. Click Create.
+5. Go to the Topology view.
+6. Click the overflow menu for the Red Hat Developer Hub instance that you want to use and select Edit Backstage to load the YAML view of the Red Hat Developer Hub instance.
+![Editing Backstage from the Topology view]
+7. Add the dynamicPluginsConfigMapName field to your Backstage CR. For example:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh
+spec:
+  application:
+    dynamicPluginsConfigMapName: dynamic-plugins-rhdh
+```
+
+8. Click Save.
+9. Navigate back to the Topology view and wait for the Red Hat Developer Hub pod to start.
+10. Click the Open URL icon to start using the Red Hat Developer Hub platform with the new configuration changes.
+
+* Ensure that the system loads the dynamic plugins configuration, by appending /api/dynamic-plugins-info/loaded-plugins to your Red Hat Developer Hub root URL and checking the list of plugins:
+
+The following example shows a list of plugins:
+
+```json
+[
+  {
+    "name": "backstage-plugin-catalog-backend-module-github-dynamic",
+    "version": "0.5.2",
+    "platform": "node",
+    "role": "backend-plugin-module"
+  },
+  {
+    "name": "backstage-plugin-techdocs",
+    "version": "1.10.0",
+    "role": "frontend-plugin",
+    "platform": "web"
+  },
+  {
+    "name": "backstage-plugin-techdocs-backend-dynamic",
+    "version": "1.9.5",
+    "platform": "node",
+    "role": "backend-plugin"
+  },
+]
+```
+
+
+## Dynamic plugins dependency management
+
+Dynamic plugins configured for the Backstage custom resource (CR) might require Kubernetes resources called plugin dependencies, which RHDH creates automatically when you apply the CR.
+
+### Cluster level plugin dependencies configuration
+
+You can configure plugin dependencies by including the required Kubernetes resources in the /config/profile/{PROFILE}/plugin-deps directory. You must add the required resources as Kubernetes manifests in YAML format in the plugin-deps directory.
+
+Example showing how to add example-dep1.yaml and example-dep2.yaml as plugin dependencies:
+
+
+```terminal
+config/
+  profile/
+    rhdh/
+     kustomization.yaml
+     plugin-deps/
+        example-dep1.yaml
+        example-dep2.yaml
+```
+
+
+
+[NOTE]
+----
+* If a resource manifest does not specify a namespace, the Operator creates it in the namespace of the Backstage CR.
+* Resources can contain {{backstage-name}} and {{backstage-ns}} placeholders.
+The Operator replaces the {{backstage-name}} placeholder with the name of the Backstage CR, and replaces the {{backstage-ns}} placeholder with the namespace of the Backstage CR.
+----
+
+The kustomization.yaml file must contain the following lines:
+
+
+```yaml
+configMapGenerator:
+  - files:
+      - plugin-deps/example-dep1.yaml
+      - plugin-deps/example-dep2.yaml
+    name: plugin-deps
+```
+
+
+### Plugin dependencies infrastructure
+
+To install infrastructural resources that plugin dependencies require, for example, other Operators or custom resources (CR), you can include these in the /config/profile/{PROFILE}/plugin-infra directory.
+
+To create these infrastructural resources (along with the Operator deployment), use the make plugin-infra command.
+
+
+[NOTE]
+----
+On a production cluster, use this command with caution as it might reconfigure cluster-scoped resources.
+----
+
+### Plugin configuration
+
+You must reference the plugin dependencies in the dependencies field of the plugin configuration when you apply the Backstage CR.
+
+The Operator creates the resources that the files in the plugin-deps directory describe.
+
+You can reference plugin dependencies in the dynamic-plugins ConfigMap that can either be part of the default profile configuration for all Backstage custom resources or part of the ConfigMap referenced in the Backstage CR. In Red Hat Developer Hub, you can include plugin dependencies in the dynamic plugin configuration.
+
+Each dependencies.ref value can either match the full file name or serve as a prefix for the file name. The Operator creates the resources that the files in the plugin-deps directory describe that start with the specified ref value or exactly match it
+
+Example showing how to add example-dep plugin dependency:
+
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: default-dynamic-plugins
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - disabled: false
+        package: "path-or-url-to-example-plugin"
+        dependencies:
+          - ref: example-dep
+```
+
+
+## Installing dynamic plugins using the Helm chart
+
+You can deploy a Developer Hub instance by using a Helm chart, which is a flexible installation method. With the Helm chart, you can load dynamic plugins into your Developer Hub instance without having to recompile your code or rebuild the container.
+
+To install dynamic plugins in Developer Hub using Helm, add the following global.dynamic parameters in your Helm chart:
+
+* plugins: the dynamic plugins list intended for installation. By default, the list is empty. You can populate the plugins list with the following fields:
+* package: a package specification for the dynamic plugin package that you want to install. You can use a package for either a local or an external dynamic plugin installation. For a local installation, use a path to the local folder containing the dynamic plugin. For an external installation, use a package specification from a public NPM repository.
+* integrity (required for external packages): an integrity checksum in the form of <alg>-<digest> specific to the package. Supported algorithms include sha256, sha384 and sha512.
+* pluginConfig: an optional plugin-specific app-config.yaml YAML fragment. See plugin configuration for more information.
+* disabled: disables the dynamic plugin if set to true. Default: false.
+* forceDownload: Set the value to true to force a reinstall of the plugin, bypassing the cache. The default value is false.
+* pullPolicy: Similar to the forceDownload parameter and is consistent with other image container platforms. You can use one of the following values for this key:
+* Always: This value compares the image digest in the remote registry and downloads the artifact if it has changed, even if you downloaded the plugin before.
+* IfNotPresent: This value downloads the artifact if it is not already present in the dynamic-plugins-root folder, without checking image digests.
+
+[NOTE]
+----
+The pullPolicy setting is also applied to the NPM downloading method, although Always will download the remote artifact without a digest check. The existing forceDownload option remains functional, however, the pullPolicy option takes precedence. The forceDownload option might be deprecated in a future Developer Hub release.
+----
+* includes: a list of YAML files using the same syntax.
+
+
+[NOTE]
+----
+The system merges the plugins list in the includes file with the plugins list in the main Helm values. If both plugins lists mention a plugin package, the plugins fields in the main Helm values override the plugins fields in the includes file. The default configuration has the dynamic-plugins.default.yaml file, which has all of the dynamic plugins preinstalled in Developer Hub, whether enabled or disabled by default.
+----
+
+## Example Helm chart configurations for dynamic plugin installations
+
+The following examples show how to configure the Helm chart for specific types of dynamic plugin installations.
+
+Configuring a local plugin and an external plugin when the external plugin requires a specific configuration:
+
+
+```yaml
+global:
+  dynamic:
+    plugins:
+      - package: <alocal package-spec used by npm pack>
+      - package: <external package-spec used by npm pack>
+        integrity: sha512-<some hash>
+        pluginConfig: ...
+```
+
+
+Disabling a plugin from an included file:
+
+
+```yaml
+global:
+  dynamic:
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: <some imported plugins listed in dynamic-plugins.default.yaml>
+        disabled: true
+```
+
+
+Enabling a plugin from an included file:
+
+
+```yaml
+global:
+  dynamic:
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: <some imported plugin listed in dynamic-plugins.default.yaml>
+        disabled: false
+```
+
+
+Enabling a plugin that an included file disables:
+
+
+```yaml
+global:
+  dynamic:
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: <some disabled plugin listed in dynamic-plugins.default.yaml>
+        disabled: false # overrides disabled: true from the included file
+```
+
+
+## Install dynamic plugins in an air-gapped environment by using the Helm chart
+
+You can install external plugins in an air-gapped environment by setting up a custom NPM registry.
+
+You can configure the NPM registry URL and authentication information for dynamic plugin packages by using a Helm chart. For dynamic plugin packages obtained through npm pack, you can use a .npmrc file.
+
+Using the Helm chart, add the .npmrc file to the NPM registry by creating a secret. For example:
+
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <release_name>-dynamic-plugins-npmrc
+type: Opaque
+stringData:
+  .npmrc: |
+    registry=<registry_link>
+    //<registry_link>:_authToken=<auth_token>
+          ...
+```
+
+
+Replace <release_name> with your Helm release name. This name is a unique identifier for each chart installation in the Kubernetes cluster.
+
+## Install dynamic plugins in an air-gapped environment by using the Operator
+
+To install external dynamic plugins in an air-gapped environment, configure a custom NPM registry by mounting a secret into the Developer Hub Operator.
+
+* An OpenShift Container Platform administrator has installed the Red Hat Developer Hub Operator.
+* You have set up a custom NPM registry that is accessible from within your cluster and contains the required dynamic plugin packages.
+
+1. Create a secret containing your .npmrc configuration that points to your internal NPM registry:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dynamic-plugins-npmrc
+type: Opaque
+stringData:
+  .npmrc: |
+    registry=https://<your_internal_registry>
+    //<your_internal_registry>:_authToken=<your_auth_token>
+```
+
+2. Apply the secret to your namespace:
+
+```terminal
+$ oc apply -f dynamic-plugins-npmrc.yaml -n my-rhdh-project
+```
+
+3. Add the secret to the spec.application.extraFiles.secrets field in your Backstage custom resource, targeting the install-dynamic-plugins init container:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh
+spec:
+  application:
+    extraFiles:
+      secrets:
+        - name: dynamic-plugins-npmrc
+          mountPath: /opt/app-root/src/.npmrc.dynamic-plugins
+          containers:
+            - install-dynamic-plugins
+```
+
+
+The install-dynamic-plugins init container reads the .npmrc file from /opt/app-root/src/.npmrc.dynamic-plugins/.npmrc to resolve plugin packages from your internal registry.
+4. Apply the updated custom resource:
+
+```terminal
+$ oc apply -f my-rhdh.yaml -n my-rhdh-project
+```
+
+
+* Verify that the init container used your custom registry by checking the init container logs:
+
+```terminal
+$ oc logs -c install-dynamic-plugins deploy/backstage-my-rhdh
+```
+
+
+## Mirror Red Hat Developer Hub dynamic plugins in disconnected environments
+
+Red Hat Developer Hub (RHDH) uses dynamic plugins that Red Hat distributes as Open Container Initiative (OCI) artifacts. In disconnected or restricted environments, you must mirror these plugin artifacts to a registry accessible by your cluster.
+
+To mirror dynamic plugin OCI artifacts for deployments in restricted environments, use the mirror-plugins.sh script.
+
+### Prerequisites
+
+* You have installed Skopeo 1.20 or later. Use Skopeo for multi-arch image operations and manifest conversion.
+* You have installed tar 1.35 or later. Use GNU tar for extracting image layers.
+* You have installed jq 1.7 or later. Use jq for JSON parsing and manipulation. See Download jq.
+* You have installed Podman 5.6 or later. Use Podman for building catalog index images.
+* You have authenticated to the source registry, for example, quay.io or registry.redhat.io for pulling plugin artifacts.
+* If mirroring directly to a registry using --to-registry, you have authenticated to the target registry.
+
+
+[NOTE]
+----
+After mirroring completes, the script generates a rhdh-plugin-mirroring-summary.txt file containing mappings of all mirrored plugins. Use this file to reference the correct mirrored plugin URLs when configuring your RHDH deployment.
+For Operator deployments, you must configure the Backstage Custom Resource with the mirrored plugin references. For Helm deployments, you must update your values file with the mirrored plugin references.
+----
+
+### Mirror plugins from a catalog index to a partially disconnected environment
+
+Use this procedure to mirror plugins from a catalog index to a partially disconnected environment.
+
+1. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. Mirror the plugin catalog index and all referenced plugin OCI artifacts to your target registry by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-registry <target_registry>
+```
+
+
+where:
+<target_registry>:: Enter the URL of the target mirror registry, such as, registry.example.com.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+
+### Mirror plugins from a catalog index to a fully disconnected environment
+
+This two-phase process exports plugins to disk from a connected host, transfers them to a restricted network, then imports them to your internal registry.
+
+1. Download the plugin mirroring script by running the following command:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. Export the plugin catalog index and all referenced plugin OCI artifacts to disk by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 \
+  --to-dir <my_plugin_mirror_dir>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the absolute path to a directory where you want to export the plugin artifacts, for example, /home/user/rhdh-plugins-mirror.
+
+[NOTE]
+----
+The script can take several minutes to complete. It mirrors the catalog index image and all plugin OCI artifacts that the index references.
+----
+3. Transfer the directory specified by the --to-dir option to your disconnected environment.
+4. From a machine in your disconnected environment that has access to the target mirror registry, import the plugin artifacts by running the following command:
+
+```terminal
+$ bash mirror-plugins.sh \
+  --from-dir <my_plugin_mirror_dir> \
+  --to-registry <target_registry>
+```
+
+
+where:
+<my_plugin_mirror_dir>:: Enter the path to the directory containing the exported plugin artifacts.
+<target_registry>:: Enter the URL of the target mirror registry, for example, registry.example.com.
+
+### Mirror specific plugins by direct reference
+
+Use this procedure to mirror specific plugins by specifying their OCI URLs directly.
+
+1. Download the mirroring script:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. To mirror individual plugins by specifying their OCI URLs directly, run the mirroring script by using the bash command with the appropriate set of options:
+
+For example:
+
+```terminal
+bash mirror-plugins.sh \
+    --plugins oci://quay.io/rhdh-plugin-catalog/backstage-community-plugin-quay:<tag> \
+              oci://quay.io/rhdh-plugin-catalog/backstage-community-plugin-github-actions:<tag> \
+    --to-registry <my.registry.example.com>
+```
+
+
+where:
+<tag>:: Enter your RHDH version and the plugin version, in the format <rhdh-version>--<plugin-version>.
+To find these versions, complete the following steps:
+3. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.10, use the format 1.10--<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+
+where:
+--to-registry <my.registry.example.com>:: Enter the URL for the target mirror registry where you want to mirror the catalog index.
+
+### Mirror plugins from a file
+
+Use this procedure to mirror plugins from a file containing a list of plugin URLs.
+
+1. Create a text file listing the plugins to mirror (one per line), as follows:
+
+Example plugins.txt file:
+
+```text
+oci://quay.io/rhdh-plugin-catalog/backstage-community-plugin-quay:<tag>
+oci://quay.io/rhdh-plugin-catalog/backstage-community-plugin-github-actions:<tag>
+oci://quay.io/rhdh-plugin-catalog/backstage-community-plugin-azure-devops:<tag>
+```
+
+
+where:
+<tag>:: Enter your RHDH version and the plugin version, in the format <rhdh-version>--<plugin-version>.
+To find these versions, complete the following steps:
+2. Locate the plugin version in the Dynamic Plugins Reference guide.
+For example, for RHDH 1.10, use the format 1.10--<plugin-version>.
+
+[TIP]
+----
+To ensure environment stability, use a SHA256 digest instead of a version tag.  See Determining SHA256 Digests.
+----
+3. Download the mirroring script:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+4. Run the mirroring script by using the bash command with the appropriate set of options:
+
+For example:
+
+```terminal
+bash mirror-plugins.sh \
+    --plugin-list plugins.txt \
+    --to-registry <my.registry.example.com>
+```
+
+
+where:
+--plugin-list plugins.txt:: A text file listing the plugins to mirror.
+--to-registry <my.registry.example.com>:: Enter the URL for the target mirror registry where you want to mirror the catalog index.
+
+### Combine many plugin sources
+
+You can combine any of the plugin sources (for example, catalog index, plugin list file, and direct URLs) in a single mirroring operation. The script automatically deduplicates plugins if the same plugin is present in many sources.
+
+1. Download the mirroring script:
+
+```terminal
+$ curl -sSLO https://raw.githubusercontent.com/redhat-developer/rhdh-operator/refs/heads/release-1.10/.rhdh/scripts/mirror-plugins.sh
+```
+
+2. To combine many plugin sources, run the mirroring script by using the bash command with the appropriate set of options:
+
+For example:
+
+```terminal
+bash mirror-plugins.sh \
+    --plugin-index oci://registry.access.redhat.com/rhdh/plugin-catalog-index:1.9 \
+    --plugin-list custom-plugins.txt \
+    --plugins 'oci://registry.internal.example.com/custom/my-plugin:1.0' \
+    --to-registry registry.example.com
+```
+
+
+where:
+--plugin-list custom-plugins.txt:: A text file listing the plugins to mirror.
+--to-registry <my.registry.example.com>:: Enter the URL for the target mirror registry where you want to mirror the catalog index.
+
+### Additional resources
+
+* Podman Installation Instructions
+* Red Hat Container Registry Authentication
+:context: {parent-context}
+
+## Deploy Red Hat Developer Hub with mirrored plugins in a disconnected environment
+
+After mirroring completes, the script generates a rhdh-plugin-mirroring-summary.txt file containing mappings of the plugin catalog index image (if specified) and all mirrored plugins.
+
+To use the mirrored plugins in Red Hat Developer Hub, you must configure container registry mirroring so that Red Hat Developer Hub transparently pulls plugins from your mirror registry instead of the original source registries. This is done by mounting a custom registries.conf file and an optional policy.json file as extra files into the Red Hat Developer Hub init container.
+
+### Catalog index image mirroring
+
+When you use the --plugin-index option, the mirroring script mirrors the plugin catalog index image itself in addition to the individual plugin artifacts. The mirrored location is included in the generated rhdh-plugin-mirroring-summary.txt file.
+
+If you configure transparent registry mirroring using registries.conf, as described in the creating registry mirroring ConfigMap procedure, no additional Developer Hub configuration is needed. The catalog index image is pulled from the mirror automatically.
+
+Alternatively, you can explicitly point Developer Hub to the mirrored catalog index images by setting CATALOG_INDEX_IMAGE or EXTRA_CATALOG_INDEX_IMAGES environment variables on the install-dynamic-plugins init container. You can configure these environment variables using extraEnvs in the Backstage custom resource when using the Developer Hub Operator, or using upstream.backstage.initContainers.env in Helm values when using the Developer Hub Helm chart. However, this configuration is not necessary when registries.conf is properly configured for transparent mirroring.
+
+
+[NOTE]
+----
+Unlike container images pulled by the Kubelet, plugin catalog index images are pulled directly by skopeo from inside the install-dynamic-plugins init container. This means that cluster-level mirroring resources such as ImageContentSourcePolicy, ImageDigestMirrorSet, and ImageTagMirrorSet have no effect. You must use the registries.conf-based approach.
+----
+
+### Create the registry mirroring config map
+
+Create a config map containing the mirroring configuration to enable Developer Hub to pull plugins from your mirror registry instead of the original source registries.
+
+* Create a config map containing the registry mirroring configuration:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-rhdh-mirror-conf
+data:
+  rhdh-registries.conf: |
+    [[registry]]
+    # GA and TP plugins
+    prefix = "registry.access.redhat.com/rhdh"
+    location = "my-registry.example.com/rhdh"
+
+    [[registry]]
+    prefix = "quay.io/rhdh"
+    location = "my-registry.example.com/rhdh"
+
+    [[registry]]
+    # Community plugins
+    prefix = "ghcr.io/redhat-developer/rhdh-plugin-export-overlays"
+    location = "my-registry.example.com/rhdh-plugin-export-overlays"
+```
+
+
+[NOTE]
+----
+While GA and Technical Preview plugins can be pulled from registry.access.redhat.com, community-supported plugins might be available from other registries such as ghcr.io or quay.io. You can configure mirroring for those registries as well. Make sure to adjust the location paths accordingly, depending on your target mirror registry.
+----
+
+* Configuring registries
+
+### Create a policy config map (Optional)
+
+Depending on your target mirror registry, you might need to configure a policy file. For production environments, you should use a more restrictive policy that verifies image signatures.
+
+* Create a config map containing the policy configuration:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-mirror-policy
+data:
+  policy.json: |
+    {
+      "transports": {
+        "docker": {
+          "<registry>/<namespace>": [
+            {
+              "type": "signedBy",
+              "keyType": "GPGKeys",
+              "keyPath": "<path>/key.gpg"
+            }
+          ]
+        }
+      }
+    }
+```
+
+
+* Signing container images
+
+### Configure Developer Hub with mirrored plugins using the Operator
+
+Update your Backstage custom resource to mount the registry mirroring configuration files in the install-dynamic-plugins init container.
+
+1. Update your Backstage custom resource to mount the configuration files:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: my-rhdh
+spec:
+  application:
+    extraFiles:
+      configMaps:
+        - name: my-rhdh-mirror-conf
+          key: rhdh-registries.conf
+          mountPath: /etc/containers/registries.conf.d
+          containers: [ install-dynamic-plugins ]
+
+        # OPTIONAL: if you need a policy file
+        # - name: my-mirror-policy
+        #   key: policy.json
+        #   mountPath: /etc/containers
+        #   containers: [ install-dynamic-plugins ]
+```
+
+2. Save the custom resource and wait for the Developer Hub Operator to reconcile the changes.
+
+### Configure Developer Hub with mirrored plugins using Helm
+
+Update your Helm values file to mount the registry mirroring configuration files in the install-dynamic-plugins init container.
+
+1. Update your Helm values file to include the registry mirroring configuration:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      # IMPORTANT: Due to a Helm limitation, you also need to include all the
+      # extra volumes from the RHDH chart, then add the following volumes
+      - name: my-rhdh-mirror-conf
+        configMap:
+          name: my-rhdh-mirror-conf
+      # OPTIONAL: if you need a policy file
+      # - name: my-mirror-policy
+      #   configMap:
+      #     name: my-mirror-policy
+
+    initContainers:
+      # IMPORTANT: Due to a Helm limitation, ensure the install-dynamic-plugins
+      # container has all the other fields defined in the RHDH chart
+      - name: install-dynamic-plugins
+        volumeMounts:
+          # IMPORTANT: Due to a Helm limitation, ensure all the default init
+          # container's volume mounts defined in the RHDH chart are also
+          # included in this list, then add the following volumes
+          - name: my-rhdh-mirror-conf
+            mountPath: /etc/containers/registries.conf.d/rhdh-registries.conf
+            subPath: rhdh-registries.conf
+            readOnly: true
+
+          # OPTIONAL: if you need a policy file
+          # - name: my-mirror-policy
+          #   mountPath: /etc/containers/policy.json
+          #   subPath: policy.json
+          #   readOnly: true
+```
+
+2. Redeploy Developer Hub using your updated values file.
+
+### Registry mirroring advanced features
+
+The plugin mirroring script includes advanced features for path compatibility.
+
+#### Registry path compatibility
+
+The script automatically handles different registry path formats:
+
+* 2-level paths: registry.io/namespace/image (for example, quay.io/rhdh/plugin)
+* 3-level paths: registry.io/org/sub/image (for example, ghcr.io/redhat-developer/rhdh-plugin-export-overlays/plugin)
+
+For {ocp} internal registries, which only support 2-level paths, the script automatically flattens 3-level paths to 2-level paths by keeping only the last two path elements.
+
+# Install plugins from OCI registries by using custom certificates
+
+In RHDH, you can install OCI plugins stored in an internal OCI artifact registry served over HTTPS with customer CA certificates. The following example shows a configuration in the dynamic-plugins.yaml file:
+
+
+```terminal
+includes:
+- dynamic-plugins.default.yaml
+
+plugins:
+- disabled: false
+  package: oci://reg.example.com:5000/myplugin:v0.0.1
+```
+
+
+## Prerequisites
+
+* You have a corporate CA bundle or a set of custom container-registry TLS certificates that the system should trust.
+
+[NOTE]
+----
+You can create a CA bundle from a set of CA certificates manually, by concatenating them into a single file, as follows:
+
+```terminal
+# Concatenate CA certificates
+cat registry.crt intermediate.crt corporate-root.crt > ca-bundle.crt
+
+# Validate
+openssl verify -CAfile ca-bundle.crt registry.crt
+```
+
+----
+
+## Install plugins from OCI plugins by using per-registry TLS configuration
+
+Use this procedure to install plugins from OCI registries by configuring per-registry TLS certificates.
+
+1. Create a ConfigMap from the CA certificate in the namespace where you are deploying your RHDH instance:
+
+```terminal
+oc create configmap registry-ca-crt --from-file=ca.crt
+```
+
+2. Mount the CA certificate ConfigMap into your RHDH configuration:
+1. For a Helm chart installation, update your Helm chart configuration file, as follows:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      # IMPORTANT: Due to a Helm limitation with arrays, you must also
+      # include all the volumes defined in the default Helm Chart
+      # before adding the new one
+      # ...
+      - name: registry-ca-crt
+        configMap:
+          name: registry-ca-crt
+
+    initContainers:
+      - name: install-dynamic-plugins
+        # IMPORTANT: Due to a Helm limitation with arrays, you must also
+        # include all the other fields defined in the default Helm Chart
+        # ...
+
+        volumeMounts:
+          # IMPORTANT: Due to a Helm limitation with arrays, you must also
+          # include all the volume mounts defined in the default Helm Chart
+          # before adding the new one
+          # ...
+          - name: registry-ca-crt
+            # Hostname and port must match your target registry
+            mountPath: '/etc/containers/certs.d/reg.example.com:5000'
+```
+
+2. For Operator-based installations, update your Backstage Custom Resource (CR), as follows:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      configMaps:
+        - name: registry-ca-crt
+          # Hostname and port must match your target registry
+          mountPath: '/etc/containers/certs.d/reg.example.com:5000'
+          containers:
+            - install-dynamic-plugins
+```
+
+
+## Install plugins from OCI plugins by mounting the CA bundle
+
+Use this procedure to install plugins from OCI registries by mounting a CA bundle.
+
+1. Create a ConfigMap from the CA bundle in the namespace where you are deploying your RHDH instance:
+
+```terminal
+oc create configmap registry-ca-bundle --from-file=ca-bundle.crt
+```
+
+2. Mount the CA bundle ConfigMap into your RHDH configuration
+1. For a Helm chart installation, update your Helm chart configuration file, as follows:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      # IMPORTANT: Due to a Helm limitation with arrays, you must also
+      # include all the volumes defined in the default Helm Chart
+      # before adding the new one
+      # ...
+      - name: registry-ca-bundle
+        configMap:
+          name: registry-ca-bundle
+
+    initContainers:
+      - name: install-dynamic-plugins
+        # IMPORTANT: Due to a Helm limitation with arrays, you must also
+        # include all the other fields defined in the default Helm Chart
+        # ...
+
+        volumeMounts:
+          # IMPORTANT: Due to a Helm limitation with arrays, you must also
+          # include all the volume mounts defined in the default Helm Chart
+          # before adding the new one
+          # ...
+          - name: registry-ca-bundle
+            mountPath: /etc/pki/tls/certs/
+```
+
+2. For Operator-based installations, update your Backstage Custom Resource (CR), as follows:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      configMaps:
+        - name: registry-ca-bundle
+          mountPath: /etc/pki/tls/certs/
+          containers:
+            # Note: Set to "*" instead if you want to mount it in all containers
+            - install-dynamic-plugins
+```
+
+
+## Install plugins from OCI plugins in OpenShift
+
+Use this procedure to install plugins from OCI registries in an OpenShift environment by using cluster-wide trusted CA bundles.
+
+* Your cluster administrator must add the trusted corporate CA bundle to the cluster-wide configuration. For more information, see Security and compliance in the OpenShift Container Platform documentation.
+
+1. Create an empty ConfigMap in the namespace where you are deploying your RHDH instance. You must add the config.openshift.io/inject-trusted-cabundle label to your ConfigMap, as follows:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trusted-ca
+  labels:
+    config.openshift.io/inject-trusted-cabundle: "true"
+```
+
+2. Wait for the cluster to inject the trusted CA bundle into the ConfigMap. You can verify with the following command:
+
+```terminal
+oc get cm trusted-ca
+```
+
+
+You should see a block of certificates under the ca-bundle.crt key.
+3. Mount the ConfigMap into the /etc/pki/ca-trust/extracted/pem path of the RHDH init container.
+1. For a Helm chart installation, update your Helm chart configuration file, as follows:
+
+```yaml
+upstream:
+  backstage:
+    extraVolumes:
+      # IMPORTANT: Due to a Helm limitation with arrays, you must also
+      # include all the volumes defined in the default Helm Chart
+      # before adding the new one
+      # ...
+      - name: trusted-ca
+        configMap:
+          name: trusted-ca
+
+    initContainers:
+      - name: install-dynamic-plugins
+        # IMPORTANT: Due to a Helm limitation with arrays, you must also
+        # include all the other fields defined in the default Helm Chart
+        # ...
+
+        volumeMounts:
+          # IMPORTANT: Due to a Helm limitation with arrays, you must also
+          # include all the volume mounts defined in the default Helm Chart
+          # before adding the new one
+          # ...
+          - name: trusted-ca
+            mountPath: /etc/pki/ca-trust/extracted/pem
+```
+
+2. For Operator-based installations, update your Backstage Custom Resource (CR), as follows:
+
+```yaml
+spec:
+  application:
+    extraFiles:
+      configMaps:
+        - name: trusted-ca
+          mountPath: /etc/pki/ca-trust/extracted/pem
+          containers:
+            # Note: Set to "*" instead if you want to mount it in all containers
+            - install-dynamic-plugins
+```
+
+
+# Custom plugins in Red Hat Developer Hub
+
+You can integrate custom dynamic plugins into Red Hat Developer Hub to enhance its functionality without modifying its source code or rebuilding it. To add these plugins, export them as derived packages.
+
+While exporting the plugin package, you must ensure that dependencies are correctly bundled or marked as shared, depending on their relationship to the Developer Hub environment.
+
+To integrate a custom plugin into Developer Hub:
+
+1. First, obtain the plugin's source code.
+2. Export the plugin as a dynamic plugin package.
+3. Package and publish the dynamic plugin.
+4. Install the plugin in the Developer Hub environment.
+
+## Export custom plugins in Red Hat Developer Hub
+
+To use plugins in Red Hat Developer Hub, you can export plugins as derived dynamic plugin packages. These packages contain the plugin code and dependencies, ready for dynamic plugin integration into Developer Hub.
+
+* You have installed the @red-hat-developer-hub/cli package. Use the latest version (@latest tag) for compatibility with the most recent features and fixes.
+
+[NOTE]
+----
+Use the npx @red-hat-developer-hub/cli@latest plugin export command to export an existing custom plugin as a derived dynamic plugin package.
+You must use this command when you have the source code for a custom plugin and want to integrate it into RHDH as a dynamic plugin.
+The command processes the plugin's source code and dependencies and generates the necessary output for dynamic loading by RHDH.
+For an example of using this command, see Example of installing a custom plugin in Red Hat Developer Hub.
+----
+* You have installed and configured Node.js and NPM.
+* The custom plugin is compatible with your Red Hat Developer Hub version. For more information, see Version compatibility matrix.
+* The custom plugin must have a valid package.json file in its root directory, containing all required metadata and dependencies.
+Backend plugins:: 
+
+To ensure compatibility with the dynamic plugin support and enable their use as dynamic plugins, existing backend plugins must be compatible with the new Backstage backend system. Additionally, these plugins must be rebuilt using a dedicated CLI command.
+
+You must export the new Backstage backend system entry point (created using createBackendPlugin() or createBackendModule()) as the default export from either the main package or an alpha package. Export as an alpha package if the plugin instance support still uses alpha APIs. This does not add any additional requirement on top of the standard plugin development guidelines of the plugin instance.
+
+The dynamic export mechanism identifies private dependencies and sets the bundleDependencies field in the package.json file. This export mechanism ensures that you publish the dynamic plugin package as a self-contained package, with its private dependencies bundled in a private node_modules folder.
+
+Certain plugin dependencies require specific handling in the derived packages, such as:
+* Shared dependencies: The RHDH application provides these dependencies and lists them as peerDependencies in the package.json file. The dynamic plugin package does not bundle shared dependencies. For example, by default, all @backstage scoped packages use sharing.
+
+You can use the --shared-package flag to specify shared dependencies that Red Hat Developer Hub application provides and that the dynamic plugin package does not bundle.
+
+To treat a @backstage package as private, use the negation prefix (!). For example, when a plugin depends on the package in @backstage that is not provided by the Red Hat Developer Hub application.
+* Embedded dependencies: The dynamic plugin package bundles these dependencies with their dependencies hoisted to the top level. By default, the package embeds packages with -node or -common suffixes.
+
+You can use the --embed-package flag to specify additional embedded packages. For example, packages from the same workspace that do not follow the default naming convention.
+
+The following is an example of exporting a dynamic plugin with shared and embedded packages:
+
+```terminal
+$ npx @red-hat-developer-hub/cli@latest plugin export --shared-package '!/@backstage/plugin-notifications/' --embed-package @backstage/plugin-notifications-backend
+```
+
+
+In the earlier example:
+* The export treats the @backstage/plugin-notifications package as a private dependency and bundles it in the dynamic plugin package, despite being in the @backstage scope.
+* The export marks the @backstage/plugin-notifications-backend package as an embedded dependency and bundles it in the dynamic plugin package.
+Front-end plugins:: 
+
+Front-end plugins can use scalprum for configuration. The CLI can generate this configuration automatically during the export process. When running the following command, the CLI logs the generated default configuration:
+
+```terminal
+$ npx @red-hat-developer-hub/cli@latest plugin export
+```
+
+
+The following is an example of default scalprum configuration:
+
+```json
+"scalprum": {
+  "name": "<package_name>",  // The Webpack container name matches the NPM package name, with "@" replaced by "." and "/" removed.
+  "exposedModules": {
+    "PluginRoot": "./src/index.ts"  // The default module name is "PluginRoot" and doesn't need explicit specification in the app-config.yaml file.
+  }
+}
+```
+
+
+You can add a scalprum section to the package.json file. For example:
+
+```json
+"scalprum": {
+  "name": "custom-package-name",
+  "exposedModules": {
+    "BazModuleName": "./src/baz.ts",
+    "QuxModuleName": "./src/qux.ts"
+    // Define multiple modules here, with each exposed as a separate entry point in the Webpack container.
+  }
+}
+```
+
+
+Dynamic plugins might need adjustments for Developer Hub needs, such as static JSX for mountpoints or dynamic routes. These changes are optional but might be incompatible with static plugins.
+
+To include static JSX, define an additional export and use it as the dynamic plugin's importName. For example:
+
+```tsx
+// For a static plugin
+$ export const EntityTechdocsContent = () => {...}
+
+// For a dynamic plugin
+$ export const DynamicEntityTechdocsContent = {
+  element: EntityTechdocsContent,
+  staticJSXContent: (
+    <TechDocsAddons>
+      <ReportIssue />
+    </TechDocsAddons>
+  ),
+};
+```
+
+* Use the plugin export command from the @red-hat-developer-hub/cli package to export the plugin:
+
+```terminal
+$ npx @red-hat-developer-hub/cli@latest plugin export
+```
+
+Ensure that you run the earlier command in the root directory of the plugin's JavaScript package (containing package.json file).
+The dist-dynamic subdirectory has the resulting derived package. The exported package name consists of the original plugin name with -dynamic appended.
+
+[WARNING]
+----
+Do not publish the derived dynamic plugin JavaScript packages to the public NPM registry. For more appropriate packaging options, see . If you must publish to the NPM registry, use a private registry.
+----
+
+## Package and publish custom plugins as dynamic plugins
+
+After exporting a custom plugin, you can package the derived package into one of the following supported formats:
+
+* Open Container Initiative (OCI) image (recommended)
+* TGZ file
+* JavaScript package
+
+[IMPORTANT]
+----
+You must publish exported dynamic plugin packages only to private NPM registries.
+----
+
+### Create an OCI image with dynamic packages
+
+Use this procedure to package a dynamic plugin as an OCI image and push it to a container registry.
+
+* You have installed podman or docker.
+
+1. Navigate to the plugin's root directory (not the dist-dynamic directory).
+2. Run the following command to package the plugin into an OCI image:
+
+```terminal
+$ npx @red-hat-developer-hub/cli@latest plugin package --tag quay.io/example/image:v0.0.1
+```
+
+In the earlier command, the --tag argument specifies the image name and tag.
+3. Ensure that your container runtime (podman or docker) is running and that you are logged in to the target image registry:
+
+```terminal
+$ podman login quay.io
+```
+
+4. Run one of the following commands to push the image to a registry:
+
+```terminal
+$ podman push quay.io/example/image:v0.0.1
+```
+
+
+```terminal
+$ docker push quay.io/example/image:v0.0.1
+```
+
+The output of the package-dynamic-plugins command provides the plugin's path for use in the dynamic-plugin-config.yaml file.
+
+### Create a TGZ file with dynamic packages
+
+Use this procedure to package a dynamic plugin as a TGZ file and host it on a web server.
+
+installing-and-viewing-plugins-in-rhdh
+
+1. Navigate to the dist-dynamic directory.
+2. Run the following command to create a tgz archive:
+
+```terminal
+$ npm pack
+```
+
+You can obtain the integrity hash from the output of the npm pack command by using the --json flag as follows:
+
+```terminal
+$ npm pack --json | head -n 10
+```
+3. Host the archive on a web server accessible to your RHDH instance, and reference its URL in the dynamic-plugin-config.yaml file as follows:
+
+```yaml
+plugins:
+  - package: https://example.com/backstage-plugin-myplugin-1.0.0.tgz
+    integrity: sha512-<hash>
+```
+4. Run the following command to package the plugins:
+
+```terminal
+$ npm pack --pack-destination ~/test/dynamic-plugins-root/
+```
+
+
+[TIP]
+----
+To create a plugin registry using HTTP server on OpenShift Container Platform, run the following commands:
+
+```terminal
+$ oc project my-rhdh-project
+$ oc new-build httpd --name=plugin-registry --binary
+$ oc start-build plugin-registry --from-dir=dynamic-plugins-root --wait
+$ oc new-app --image-stream=plugin-registry
+```
+
+----
+5. Configure your RHDH to use plugins from the HTTP server by editing the dynamic-plugin-config.yaml file:
+
+```yaml
+plugins:
+  - package: http://plugin-registry:8080/backstage-plugin-myplugin-1.9.6.tgz
+```
+
+### Create a JavaScript package with dynamic packages
+
+Use this procedure to publish a dynamic plugin to a private NPM registry.
+
+
+[WARNING]
+----
+Do not publish the derived dynamic plugin JavaScript packages to the public NPM registry. If you must publish to the NPM registry, use a private registry.
+----
+
+1. Navigate to the dist-dynamic directory.
+2. Run the following command to publish the package to your private NPM registry:
+
+```terminal
+$ npm publish --registry <npm_registry_url>
+```
+
+
+[TIP]
+----
+You can add the following to your package.json file before running the export command:
+
+```json
+{
+  "publishConfig": {
+    "registry": "<npm_registry_url>"
+  }
+}
+```
+
+If you change publishConfig after exporting the dynamic plugin, re-run the plugin export command to ensure that the correct configuration is in the package.
+----
+
+## Install custom plugins in Red Hat Developer Hub
+
+You can install a custom plugins in Red Hat Developer Hub without rebuilding the RHDH application.
+
+The location of the dynamic-plugin-config.yaml file depends on the deployment method.
+
+The plugins array within the dynamic-plugin-config.yaml file defines plugins. Each object in the array represents a plugin with the following properties:
+
+* package: The plugin's package definition, which can be an OCI image, a TGZ file, a JavaScript package, or a directory path.
+* disabled: A boolean value indicating whether you enable or disable the plugin.
+* integrity: The integrity hash of the package, required for TGZ file and JavaScript packages.
+* pluginConfig: The plugin's configuration. For backend plugins, this is optional; for front-end plugins, you must include it. The pluginConfig is a fragment of the app-config.yaml file, and the system merges any added properties with the RHDH app-config.yaml file.
+
+
+[NOTE]
+----
+You can also load dynamic plugins from another directory, though development or testing purposes use this method and it is not recommended for production, except for plugins included in the RHDH container image.
+----
+
+### Load a plugin packaged as an OCI image
+
+Use this procedure to load a dynamic plugin from an OCI image into Red Hat Developer Hub.
+
+* You packaged the custom plugin as a dynamic plugin in an OCI image.
+
+For more information about packaging a custom plugin, see .
+
+1. To retrieve plugins from an authenticated registry, such as a private repository, complete the following steps:
+
+[NOTE]
+----
+If your OCI image is stored in a public registry, you can skip this step.
+----
+1. Log in to the container image registry.
+
+```yaml
+podman login <registry>
+```
+
+2. Verify the content of the auth.json file created after the login.
+
+```yaml
+cat ${XDG_RUNTIME_DIR:-~/.config}/containers/auth.json
+```
+
+3. Create a secret file using the following example:
+
+```yaml
+oc create secret generic _<secret_name>_ --from-file=auth.json=${XDG_RUNTIME_DIR:-~/.config}/containers/auth.json 1
+```
+
+* For an Operator-based deployment, replace <secret_name> with dynamic-plugins-registry-auth.
+* For a Helm-based deployment, replace <secret_name> with <Helm_release_name>-dynamic-plugins-registry-auth.
+2. Define the plugin with the oci:// prefix by using one of the following formats in your dynamic-plugins.yaml file:
+Standard definition:: Use the format oci://<image_name>:<tag>, as shown in the following example. The installation program automatically extracts the plugin path from the image metadata.
+
+Example configuration in dynamic-plugins.yaml file:
+
+```yaml
+plugins:
+  - disabled: false
+    package: oci://quay.io/example/image:v1.0.0
+```
+
+
+[NOTE]
+----
+You must package images with the @red-hat-developer-hub/cli to ensure the system applies the io.backstage.dynamic-packages annotation.
+You must define exactly one plugin from that OCI image in the configuration files. The system returns an error if the configuration files contain many plugins or no matching plugins.
+----
+Using image digests:: To perform an integrity check, use the image digest in place of the tag in the dynamic-plugins.yaml file as shown in the following example:
+
+Example configuration in dynamic-plugins.yaml file:
+
+```yaml
+plugins:
+  - disabled: false
+    package: oci://quay.io/example/image@sha256:28036abec4dffc714394e4ee433f16a59493db8017795049c831be41c02eb5dc
+```
+
+Using version inheritance:: To inherit a version from a base configuration file, for example, dynamic-plugins.default.yaml, use the {{inherit}} placeholder to inherit the v0.0.2 tag, as shown in the following example:
+
+Example configuration in dynamic-plugins.default.yaml file:
+
+```
+plugins:
+  - disabled: false
+    package: oci://quay.io/example/image:v0.0.2
+```
+
+
+Example configuration in dynamic-plugins.yaml file:
+
+```yaml
+includes:
+  - dynamic-plugins.default.yaml
+plugins:
+  - disabled: false
+    package: oci://quay.io/example/image:{{inherit}}
+```
+
+
+[NOTE]
+----
+An error occurs if you use {{inherit}} in the includes file itself or if no matching plugin key exists in the base configuration.
+----
+3. To apply the changes, restart the RHDH application.
+
+### Load a plugin packaged as a TGZ file
+
+Use this procedure to load a dynamic plugin from a TGZ file into Red Hat Developer Hub.
+
+* You have packaged the custom plugin as a dynamic plugin in a TGZ file.
+
+For more information about packaging a custom plugin, see .
+
+1. Specify the archive URL and its integrity hash in the dynamic-plugins.yaml file using the following example:
+
+```yaml
+plugins:
+  - disabled: false
+    package: https://example.com/backstage-plugin-myplugin-1.0.0.tgz
+    integrity: sha512-9WlbgEdadJNeQxdn1973r5E4kNFvnT9GjLD627GWgrhCaxjCmxqdNW08cj+Bf47mwAtZMt1Ttyo+ZhDRDj9PoA==
+```
+2. To apply the changes, restart the RHDH application.
+
+### Load a plugin packaged as a JavaScript package
+
+Use this procedure to load a dynamic plugin from a JavaScript package into Red Hat Developer Hub.
+
+* You have packaged the custom plugin as a dynamic plugin in a JavaScript package.
+
+For more information about packaging a custom plugin, see .
+
+1. Run the following command to obtain the integrity hash from the NPM registry:
+
+```terminal
+$ npm view --registry <registry_link> <npm_package>@<version> dist.integrity
+```
+2. Specify the package name, version, and its integrity hash in the dynamic-plugins.yaml file as follows:
+
+```yaml
+plugins:
+  - disabled: false
+    package: @example/backstage-plugin-myplugin@1.0.0
+    integrity: sha512-9WlbgEdadJNeQxdn1973r5E4kNFvnT9GjLD627GWgrhCaxjCmxqdNW08cj+Bf47mwAtZMt1Ttyo+ZhDRDj9PoA==
+```
+3. If you are using a custom NPM registry, create a .npmrc file with the registry URL and authentication details:
+
+```text
+registry=<registry_link>
+//<registry_link>:_authToken=<auth_token>
+```
+4. When using OpenShift Container Platform or Kubernetes:
+1. Use the Helm chart to add the .npmrc file by creating a secret. For example:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <release_name>-dynamic-plugins-npmrc
+type: Opaque
+stringData:
+  .npmrc: |
+    registry=<registry_link>
+    //<registry_link>:_authToken=<auth_token>
+```
+
+
+Replace <release_name> with your Helm release name. This name is a unique identifier for each chart installation in the Kubernetes cluster.
+2. For RHDH Helm chart, name the secret using the following format for automatic mounting:
+
+<release_name>-dynamic-plugins-npmrc
+5. To apply the changes, restart the RHDH application.
+
+## Example of installing a custom plugin in Red Hat Developer Hub
+
+This example demonstrates how to package and install dynamic plugins by using the Backstage Entity Feedback community plugin that is not included in Red Hat Developer Hub pre-installed dynamic plugins.
+
+Limitations:
+
+* You need to ensure that you build your custom plugin with a compatible version of Backstage. In Developer Hub, click Settings. Your custom plugin must be compatible with the Backstage Version (or the closest earlier version) that the Metadata section of Red Hat Developer Hub displays.
+
+For example, if you view the history of the backstage.json file for the Entity Feedback plugin, the 1fc87de commit is the closest earlier version to Backstage version of 1.39.1.
+![backstage.json file history in GitHub]
+
+* Your local environment meets the following requirements:
+* Node.js: Version 22.x
+* Yarn: Version 4.x
+* git CLI
+* jq CLI: Command-line JSON processor
+* OpenShift CLI (oc): The client for interacting with your OpenShift cluster.
+* Container runtime: You need either podman or docker to package the plugin into an OCI image and to log in to registries.
+* Container registry access: Access to an OCI-compliant container registry, such as the internal OpenShift registry or a public registry such as Quay.io.
+
+1. Clone the source code for the Entity Feedback plugin, as follows:
+
+```terminal
+$ git clone https://github.com/backstage/community-plugins.git
+$ cd community-plugins
+```
+
+2. Prepare your environment to build the plugin by enabling Yarn for your Node.js installation, as follows:
+
+```terminal
+$ corepack enable yarn
+```
+
+3. Install the dependencies, compile the code, and build the plugins, as follows:
+
+```terminal
+$ cd workspaces/entity-feedback
+$ yarn install
+$ yarn tsc
+$ yarn build:all
+```
+
+
+[NOTE]
+----
+After this step, with upstream Backstage, you publish the built plugins to a NPM or NPM-compatible registry. In this example, as you are building this plugin to support dynamic loading by Red Hat Developer Hub, you can skip the npm publish step that publishes the plugin to a NPM registry. Instead, you can package the plugin for dynamic loading and publish it as a container image on Quay.io or your preferred container registry.
+----
+4. Prepare the Entity Feedback front-end plugin by using the Red Hat Developer Hub CLI. The following command uses the plugin files in the dist folder that the yarn build:all command generated, and creates a new dist-scalprum folder that has the necessary configuration and source files to enable dynamic loading:
+
+```terminal
+$ cd plugins/entity-feedback
+$ npx @red-hat-developer-hub/cli@latest plugin export
+```
+
+
+When this command packages a front-end plugin, it uses a default Scalprum configuration if one is not found. The Scalprum configuration specifies the plugin entry point and exports, and then builds a dist-scalprum folder that has the dynamic plugin. The following example shows the default Scalprum configuration. However, you can add a scalprum key to the package.json file used by your plugin to set custom values, if necessary:
+
+```json
+{
+  "name": "backstage-community.plugin-entity-feedback",
+  "exposedModules": {
+    "PluginRoot": "./src/index.ts"
+  }
+}
+```
+
+
+Red Hat Developer Hub uses the following plugin-manifest.json file to load the plugin. This file is in the dist-dynamic/dist-scalprum folder:
+
+```json
+{
+  "name": "backstage-community.plugin-entity-feedback",
+  "version": "0.6.0",
+  "extensions": [],
+  "registrationMethod": "callback",
+  "baseURL": "auto",
+  "loadScripts": [
+    "backstage-community.plugin-entity-feedback.fd691533c03cb52c30ac.js"
+  ],
+  "buildHash": "fd691533c03cb52c30acbb5a80197c9d"
+}
+```
+
+5. Package the plugin into a container image and publish it to Quay.io or your preferred container registry:
+
+```terminal
+$ export QUAY_USER=replace-with-your-username
+$ export PLUGIN_NAME=entity-feedback-plugin
+$ export VERSION=$(cat package.json | jq .version -r)
+
+$ npx @red-hat-developer-hub/cli@latest plugin package \
+  --tag quay.io/$QUAY_USER/$PLUGIN_NAME:$VERSION
+
+$ podman login quay.io
+$ podman push quay.io/$QUAY_USER/$PLUGIN_NAME:$VERSION
+```
+
+6. Repeat the same steps for the backend plugin. Backend plugins do not require Scalprum, and the export generates a dist-dynamic folder instead of a dist-scalprum folder:
+
+```terminal
+$ cd ../entity-feedback-backend/
+$ npx @red-hat-developer-hub/cli@latest plugin export
+
+$ export QUAY_USER=replace-with-your-username
+$ export PLUGIN_NAME=entity-feedback-plugin-backend
+$ export VERSION=$(cat package.json | jq .version -r)
+
+$ npx @red-hat-developer-hub/cli@latest plugin package \
+  --tag quay.io/$QUAY_USER/$PLUGIN_NAME:$VERSION
+
+$ podman push quay.io/$QUAY_USER/$PLUGIN_NAME:$VERSION
+```
+
+
+Those commands publish two container images to your container registry.
+
+The following image shows the container images published to Quay.io:
+![Container images published to Quay.io]
+
+## Add a custom dynamic plugin to Red Hat Developer Hub
+
+Use this procedure to add custom dynamic plugins to Red Hat Developer Hub by updating the dynamic-plugins.yaml configuration file.
+
+* To add your custom dynamic plugins to Red Hat Developer Hub, update the dynamic-plugins.yaml file by using the following configuration that the npx @red-hat-developer-hub/cli@latest plugin package command generates:
+
+```yaml
+plugins:
+  - package: oci://quay.io/_<user_name>_/entity-feedback-plugin:0.5.0
+    disabled: false
+  - package: oci://quay.io/_<user_name>_/entity-feedback-plugin-backend:0.6.0
+    disabled: false
+```
+
+
+[NOTE]
+----
+Ensure that your container images are publicly accessible, or that you have configured a pull secret in your environment. A pull secret provides Red Hat Developer Hub with credentials to authenticate pulling your plugin container images from a container registry.
+----
+
+## Display the front-end plugin
+
+Use this procedure to configure and display a front-end plugin in the Red Hat Developer Hub UI.
+
+1. Update the pluginConfig section of your dynamic-plugins.yaml file to specify how to add the Entity Feedback to the Red Hat Developer Hub UI.
+dynamic-plugins.yaml file fragment
+
+```yaml
+- package: oci://quay.io/_<user_name>_/entity-feedback-plugin:0.5.0
+  disabled: false
+  pluginConfig:
+    dynamicPlugins:
+      frontend:
+        backstage-community.plugin-entity-feedback:
+          entityTabs:
+            - mountPoint: entity.page.feedback
+              path: /feedback
+              title: Feedback
+          mountPoints:
+            - config:
+                layout:
+                  gridColumn: 1 / -1
+              importName: StarredRatingButtons
+              mountPoint: entity.page.feedback/cards
+            - config:
+                layout:
+                  gridColumn: 1 / -1
+              importName: EntityFeedbackResponseContent
+              mountPoint: entity.page.feedback/cards
+            - config:
+                layout:
+                  gridColumnEnd:
+                    lg: span 6
+                    md: span 6
+                    xs: span 6
+              importName: StarredRatingButtons
+              mountPoint: entity.page.overview/cards
+```
+
+
+where:
+backstage-community.plugin-entity-feedback:entityTabs:: Enter the entityTabs array to define a new tab, named “Feedback” on the Entity Overview screen in Red Hat Developer Hub.
+frontend:mountPoints:: This array defines the following configurations to mount React components exposed by the plugin:
+2. This configuration adds the StarredRatingButtons component to the new Feedback tab defined in entityTabs.
+3. Similar to the StarredRatingButtons, this configuration mounts the  EntityFeedbackResponseContent on the Feedback tab.
+4. This configuration adds the StarredRatingButtons to the default Overview tab for each entity.
+5. To complete installing the Entity Feedback plugins, you must redeploy your Red Hat Developer Hub instance.
+
+When your new instance of Red Hat Developer Hub has started, you can check that your plugins install and enable by visiting the Administration > Extensions screen and searching for “entity” on the Installed tab.
+
+![Custom extensions in the Extensions page]
+
+When you click Catalog, you should see the new Feedback tab, and the StarredRatingButtons displayed, as follows:
+
+![Entity view showing the Feedback tab and StarredRatingButtons]
+
+Selecting a low star rating prompts the user to offer feedback, as follows:
+
+![Feedback overlay dialog prompting for user feedback]
+
+
+[NOTE]
+----
+The system does not save user feedback if you log in as the Guest user.
+----
+
+# Using the dynamic plugin factory to convert plugins into dynamic plugins
+
+You can automate the conversion and packaging of standard Backstage plugins into RHDH dynamic plugins by using the RHDH Dynamic Plugin Factory tool.
+
+
+[IMPORTANT]
+----
+Red Hat maintains the Dynamic Plugin Factory as an open source project, but does not support it or subject it to any service level agreement (SLA).
+----
+
+The core function of the Dynamic Plugin Factory tool is to streamline the dynamic plugin build process, offering the following capabilities:
+
+Source Code Handling:: Manages cloning, checking out, and applying custom patches to the plugin source.
+Dependency Management:: Handles yarn installation and TypeScript compilation.
+Packaging:: Uses the RHDH CLI to build, export, and package the final dynamic plugin.
+Deployment:: Offers an option to push the resulting container image to registries such as Quay or OpenShift.
+
+The Dynamic Plugin Factory tool provides a simplified, reproducible method for developers and platform engineers to create and test dynamic plugins. Using a pre-configured dynamic plugin factory container and documentation, the tool significantly eases migration and testing.
+
+* RHDH Dynamic Plugin Factory
+
+# Enable plugins added in the RHDH container image
+
+The RHDH container image preinstalls a set of dynamic plugins to enhance functionality. However, due to mandatory configuration requirements, the image disables most of the plugins.
+
+You can enable and configure the plugins in the RHDH container image. This includes how to manage the default configuration, set necessary environment variables, and ensure the proper functionality of the plugins within your application.
+
+
+[IMPORTANT]
+----
+Since RHDH 1.10, the latest version of the dynamic-plugins.default.yaml file exists in the plugin catalog index container image.
+----
+
+To retrieve the latest version of the dynamic-plugins.default.yaml file, run the following commands in your terminal:
+
+
+```shell
+$ unpack () {
+  if [[ ! $1 ]]; then
+    echo "Usage: unpack reg/org/container:tagorsha [file(s)-to-unpack-pattern]"
+    echo "Example: unpack quay.io/rhdh/plugin-catalog-index:1.10 dynamic-plugins.default.yaml"
+  else
+    local FILES=""
+    if [[ $2 ]]; then FILES="$2"; fi
+    local IMAGE="$1"
+    local DIR="${IMAGE//:/_}"
+    DIR="/tmp/${DIR//\//-}"
+    rm -fr "$DIR"; mkdir -p "$DIR"; container_id=$(podman create "${IMAGE}")
+    podman export $container_id -o /tmp/image.tar && tar xf /tmp/image.tar -C "${DIR}/" $FILES; podman rm $container_id; rm -f /tmp/image.tar
+    echo "Unpacked $IMAGE into $DIR"
+    cd $DIR;
+    if [[ $FILES ]]; then ls -la $FILES; else tree -d -L 3 -I "usr|root|buildinfo"; fi
+  fi
+}
+
+$ unpack registry.access.redhat.com/rhdh/plugin-catalog-index:1.10 dynamic-plugins.default.yaml
+
+# For a pre-GA CI container:
+$ unpack quay.io/rhdh/plugin-catalog-index:1.10 dynamic-plugins.default.yaml
+```
+
+
+Alternatively, you can use an oci:// plugin reference, and the special {{inherit}} tag will fetch the latest compatible plugin, including its default configuration, for your current RHDH version.
+
+* You have deployed the RHDH application, and have access to the logs of the install-dynamic-plugins init container.
+* You have the necessary permissions to change plugin configurations and access the application environment.
+* You have identified and set the required environment variables referenced by the plugin's default configuration. You must define these environment variables in the Helm Chart or Operator configuration.
+
+1. Start your RHDH application and access the logs of the install-dynamic-plugins init container within the RHDH pod.
+2. Identify the Red Hat supported plugins that the system disables by default.
+3. If you need to provide additional configuration for the plugin, other than enabling it, copy the package configuration from the dynamic-plugins.default.yaml file you extracted above. For plugins which require no configuration, you can simply reference the plugin and set it to disabled:false as in the example below.
+4. To use the latest compatible plugin version, use the special tag {{inherit}}; this will also load the default configuration, which you can then override.
+5. Open the plugin configuration file (Custom Resource or ConfigMap) and locate the plugin entry you want to enable.
+
+The location of the plugin configuration file varies based on the deployment method. For more details, see Installing and viewing plugins in Red Hat Developer Hub.
+6. Change the disabled field to false and add the package name as follows:
+
+```yaml
+plugins:
+  - package: oci://registry.access.redhat.com/rhdh/backstage-community-plugin-analytics-provider-segment:{{inherit}}
+    disabled: false
+```
+
+or using the deprecated wrapper syntax:
+
+```yaml
+plugins:
+  - package: './dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment'
+    disabled: false
+```
+
+For more information about how to configure dynamic plugins in Developer Hub, see Configuring dynamic plugins.
+
+1. Restart the RHDH application and verify that the plugin is successfully activated and configured.
+2. Verify the application logs for confirmation and ensure the plugin is functioning as expected.
+
+# Extensions in Red Hat Developer Hub
+
+Red Hat Developer Hub (RHDH) includes the Extensions feature, which comes preinstalled and enabled by default. The Extensions feature provides users with a centralized interface to browse and manage available plugins
+
+You can use Extensions to discover plugins that extend RHDH functionality, streamline development workflows, and improve the developer experience.
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+## View available plugins
+
+You can view available plugins for your Red Hat Developer Hub application on the Extensions page.
+
+1. Open your RHDH application and click Administration > Extensions.
+2. Go to the Catalog tab to view a list of available plugins and related information.
+![Extensions Catalog]
+
+## View installed plugins
+
+Using the Dynamic Plugins Info front-end plugin, you can view plugins that your Red Hat Developer Hub application currently has installed. Red Hat Developer Hub enables the Dynamic Plugins Info plugin by default.
+
+1. Open your Developer Hub application and click Administration > Extensions.
+2. Go to the Installed tab to view a list of installed plugins and related information.
+
+## Search for plugins by name
+
+You can use the search bar in the header to filter the Extensions plugin cards by name. For example, if you type “A” into the search bar, Extensions shows only the plugins that contain the letter “A”.
+
+1. In the header search bar, enter a plugin name, such as "Dynatrace".
+![Extensions catalog with a Dynatrace search]
+2. Optional: Refine your search by selecting one of the following filters:
+3. Category
+4. Author
+5. Support type
+
+* The Extensions list updates to display only the plugins that match your search text and selected filters.
+
+## Disable the Extensions interface
+
+The Extensions feature is available by default. To remove the Extensions interface (Marketplace) from your instance, you must disable the relevant plugins.
+
+* Edit your dynamic-plugins.yaml with the following content.
+
+```yaml
+plugins:
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-extensions
+    disabled: true
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-extensions-dynamic
+    disabled: true
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-extensions-backend-dynamic
+    disabled: true
+```
+
+
+[NOTE]
+----
+Disabling these plugins removes the Catalog and Installed tabs. You can still view a basic list of installed plugins by selecting Administration > Extensions.
+----
+
+# Use Developer Preview features to install and test plugins in Red Hat Developer Hub
+
+Red Hat Developer Hub (RHDH) includes Developer Preview features that provide early access for developers to functionality that might be included in a future release of RHDH. These features are for development and testing purposes only, not for production use.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+## Configure an RHDH Development environment to install plugins by using Extensions
+
+
+[IMPORTANT]
+----
+This feature is supported in development environments only. In a production environment, the interface prevents plugin installation and is not supported.
+----
+
+When you install a plugin using Extensions UI, the system saves the configuration to a persistent volume, preserving it across application restarts.
+
+You must create a persistent volume claim (PVC) to ensure that the cache persists when you restart the RHDH application. For more information about using the dynamic plugins cache, see Using the dynamic plugins cache.
+
+* You have created a persistent volume claim (PVC) for the dynamic plugins cache with the name dynamic-plugins-root.
+* You have installed Red Hat Developer Hub using the Helm chart or the Operator.
+* You have installed the OpenShift CLI (oc).
+
+1. Create the extensions configuration file and save it as dynamic-plugins.extensions.yaml. For example:
+
+```yaml
+includes:
+  - dynamic-plugins.default.yaml
+
+plugins:
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-extensions
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-marketplace:
+            translationResources:
+              - importName: marketplaceTranslations
+                ref: marketplaceTranslationRef
+                module: Alpha
+            appIcons:
+              - name: pluginsIcon
+                importName: PluginsIcon
+            dynamicRoutes:
+              - path: /extensions
+                importName: DynamicMarketplacePluginRouter
+                menuItem:
+                  icon: pluginsIcon
+                  text: Extensions
+                  textKey: menuItem.extensions
+            menuItems:
+              extensions:
+                parent: default.admin
+  - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-extensions-backend-dynamic
+    disabled: false
+    pluginConfig:
+      extensions:
+        installation:
+          enabled: true
+          saveToSingleFile:
+            file: /opt/app-root/src/dynamic-plugins-root/dynamic-plugins.extensions.yaml
+```
+
+
+where:
+translationResources:: Sets the extension point for localization.
+2. Copy the file to your cluster by running the following commands:
+
+```yaml
+oc get pods -n <your_namespace>
+
+oc cp ./dynamic-plugins.extensions.yaml <your_namespace>/<pod_name>:/opt/app-root/src/dynamic-plugins-root/dynamic-plugins.extensions.yaml
+```
+
+3. Update your RHDH application to use this file:
+1. For operator-based installations:
+1. Update your Backstage CR to update the NODE_ENV environment variable  to development, as follows:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha5
+kind: Backstage
+metadata:
+  name: developer-hub
+  namespace: rhdh
+spec:
+  application:
+    dynamicPluginsConfigMapName: dynamic-plugins-rhdh
+    extraEnvs:
+      envs:
+        - name: NODE_ENV
+          value: "development"
+      secrets:
+        - name: secrets-rhdh
+    extraFiles:
+      mountPath: /opt/app-root/src
+    route:
+      enabled: true
+  database:
+    enableLocalDb: true
+```
+
+2. Update your dynamic-plugins-rhdh config map to include your extensions configuration file, as follows:
+
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dynamic-plugins-rhdh
+  namespace: rhdh
+data:
+ dynamic-plugins.yaml: |
+   includes:
+     - dynamic-plugins.default.yaml
+     - /dynamic-plugins-root/dynamic-plugins.extensions.yaml
+   plugins: []
+```
+
+2. For Helm chart installations:
+1. Upgrade the Helm release to include your extensions configuration file and update the NODE_ENV environment variable  to development:
+
+```yaml
+global:
+  auth:
+    backend:
+      enabled: true
+  clusterRouterBase: apps.<clusterName>.com
+  dynamic:
+    includes:
+      - dynamic-plugins.default.yaml
+      - /dynamic-plugins-root/dynamic-plugins.extensions.yaml
+upstream:
+  backstage:
+    extraEnvVars:
+      - name: NODE_ENV
+        value: development
+```
+
+2. Click Upgrade
+
+Enable a plugin by using the Extensions UI, restart your RHDH application, and refresh the UI to confirm that you enabled the plugin.
+
+### Configure RBAC to manage Extensions
+
+You can add Extensions permissions by creating or updating and existing RBAC role. For more information about using RBAC to manage role-based controls, see Managing role-based access controls (RBAC) using the Red Hat Developer Hub Web UI.
+
+* If RBAC is enabled, you have a role with the following permissions: policy.entity.create, policy.entity.update, policy.entity.read, catalog.entity.read.
+
+1. Go to Administration at the bottom of the sidebar in the Developer Hub.
+
+The RBAC tab is displayed, showing all the created roles in the Developer Hub.
+2. Click Create to create a role.
+3. Enter the user name and description (optional) of role in the given fields and click Next.
+4. In Add users and groups, select the user name, and click Next.
+5. In Add permission policies, select Extensions from the plugins dropdown.
+6. Expand Extensions, select both the Create and Read permissions for the Extensions plugin and click Next.
+7. Click Create to create the role.
+![Creating an RBAC role with Extensions permissions]
+
+After you refresh the RHDH application, when you select a plugin, the Actions drop-down is active.
+When you click the Actions drop-down, you can edit the plugin configuration, and enable or disable the plugin.
+
+* Configure RBAC for Extensions by using the RBAC CSV file
+* Extensions permissions
+
+### Install plugins by using Extensions
+
+You can install and configure plugins by using Extensions.
+
+* You have configured RHDH to allow plugins installation from Extensions.
+* You have added a custom Developer Hub application configuration.
+
+1. Navigate to Extensions.
+2. Select a plugin to install.
+3. Click the Install button.
+![Installing a plugin from the Extensions page]
+
+The code editor is displayed that displays the plugin default configuration.
+4. Update the plugin configuration, if necessary.
+![Plugin configuration code editor]
+5. Click Install
+6. To view the plugins that require a restart, click View plugins in the alert message.
+![Alert showing plugins that require a restart]
+7. Restart your RHDH application.
+
+1. After you restart your RHDH application, navigate to Extensions.
+2. Select the plugin that you have installed.
+3. The Actions button is displayed.
+
+### Enable and disable plugins by using Extensions
+
+Use this procedure to enable or disable plugins through the Extensions interface.
+
+* You have configured RHDH to allow plugins installation from Extensions.
+* You have added a custom Developer Hub application configuration.
+
+1. Navigate to Extensions.
+2. Select a plugin to enable or disable.
+3. Click the Enable/Disable slider.
+![Enable and disable slider for a plugin]
+4. To view the plugins that require a restart, click View plugins in the alert message.
+![Alert showing plugins that require a restart]
+5. Restart your RHDH application.
+
+1. After you restart your RHDH application, navigate to Extensions.
+2. Select the plugin that you have installed.
+3. Verify that the system updated the Enable/Disable slider.
+
+## Use RHDH Local to test installing plugins by using Extensions
+
+RHDH Local provides a ready-to-use environment for testing the Extensions feature without additional configuration. Extensions is enabled by default, allowing you to install and test plugins directly from the RHDH web interface.
+
+
+[IMPORTANT]
+----
+Red Hat maintains RHDH Local as an open source project, but does not support it or subject it to any service level agreement (SLA). There is no official, or commercial support for RHDH Local. Use RHDH Local at your own risk.
+RHDH Local is NOT a substitute for Red Hat Developer Hub. It's intended use is for development and testing purposes only, not for production use.
+RHDH Local is designed for individual developers to try out various RHDH features, not for use by development teams as there is no out-of-the-box RBAC support.
+----
+
+For information about installing and using RHDH Local to manage plugins through the Extensions UI, see Managing plugins from the UI in the RHDH Local documentation.
+
+# Troubleshoot a pod startup failure after enabling a plugin
+
+If the RHDH pod fails to start after enabling a plugin, you can inspect the pod logs and configure the required environment variables.
+
+1. Inspect your RHDH pod logs to identify if the plugin requires specific environment variables or additional configuration, for example:
+
+```terminal
+Plugin '<PLUGIN_NAME>' threw an error during startup, waiting for X other plugins to finish before shutting down the process. Plugin '<PLUGIN_NAME>' startup failed; caused by Error: Missing required config value at '<concretePluginRequiredVariable.name>' in 'app-config.local.yaml' type="initialization"
+```
+
+2. Verify the required configuration by inspecting the dynamic-plugins.default.yaml file that lists the required environment variables for each plugin.
+The variables for each plugin are in the format of ${PLUGIN_VARIABLE_NAME}.
+3. If any required environment variables are missing, set the environment variables by using a secret. For example:
+
+```yaml
+kind: Secret
+apiVersion: v1
+metadata:
+  name: rhdh-secrets
+  labels:
+    backstage.io/kubernetes-id: developer-hub
+data:
+  PLUGIN_VARIABLE_NAME: 'dummy-value'
+type: Opaque
+```
+
+4. Mount the secret:
+1. If you deployed RHDH by using the Operator, update your Backstage CR, as follows:
+
+```yaml
+spec:
+  application:
+    extraEnvs:
+      secrets:
+        - name: rhdh-secrets
+```
+
+2. If you deployed RHDH by using the Helm chart, in the upstream.backstage key in your Helm chart values, enter the name of the Developer Hub rhdh-secrets secret as the value for the extraEnvVarsSecrets field. For example:
+
+```yaml
+upstream:
+  backstage:
+    extraEnvVarsSecrets:
+      - rhdh-secrets
+```
+
+
+# Front-end plugin wiring
+
+You can configure front-end plugins to customize icons, integrate components at mount points, and offer or replace utility APIs.
+
+## Understanding front-end plugin wiring
+
+You can configure front-end plugins to customize icons, integrate components at mount points, and offer or replace utility APIs.
+
+### Front-end plugin wiring
+
+Front-end plugin wiring integrates dynamic front-end plugin components, such as new pages, UI extensions, icons, and APIs, into Red Hat Developer Hub.
+
+Because the dynamic plugins load at runtime, the core application must discover and connect the exported assets of the plugin to the appropriate user interface systems and locations.
+
+#### Understand why front-end wiring is required
+
+Because dynamic front-end plugins load their code at runtime, the Developer Hub application requires explicit instructions to integrate the plugin components in the user interface (UI).
+
+Front-end wiring provides the metadata and instructions necessary to bridge this gap, informing the applications on how to:
+
+* Add new pages and routes to the main application. (using dynamicRoutes)
+* Inject custom components into existing UI pages. (using mountPoints)
+* Configure application-wide customizations, such as new icons or themes. (using appIcons)
+* Add new menu items. (using menuItems)
+* Bind to existing plugins. (using routeBindings)
+
+The wiring configuration, typically located in app-config.yaml or dynamic-plugins-config.yaml, gives the application the necessary metadata (including the component names, paths, and integration points) to render and use the plugin features.
+
+#### Consequences of skipping front-end wiring
+
+If you skip front-end wiring, the system discovers the plugin but does not load it because front-end plugins require explicit configuration.
+
+You can expect the following behavior when you skip front-end wiring:
+
+Disabled functionality:: The Backstage application cannot integrate or use the plugin exports.
+Invisible components:: New pages, sidebar links, or custom cards do not render in the application UI.
+Unregistered APIs:: Custom utility APIs or API overrides provided by the plugin are not registered in the application API system, which can cause plugins or components to fail.
+Unused assets:: Icons, translations, and themes are not registered or available for use.
+
+
+[TIP]
+----
+If a plugin is not visible even with front-end wiring, the plugin is likely misconfigured. Troubleshoot the issue by checking the Console tab in the Developer Tools of your browser for specific error messages or warnings.
+----
+
+#### Dynamic front-end plugins for application use
+
+A dynamic front-end plugin requires front-end wiring when it exports a feature for integration into the main Backstage application UI. The following scenarios require wiring:
+
+
+
+##### Example of Front-end wiring workflow
+
+Front-end wiring configuration occurs in the app-config.yaml or a dedicated dynamic-plugins-config.yaml file. The dynamic plugin exposes components, routes, or APIs. For example, a module exports a plugin component.
+
+The application administrator defines the wiring in the configuration file, using the plugin package name to register the exports, such as adding a new page with a sidebar link.
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          my-plugin-package-name: # The plugin's unique package name
+            dynamicRoutes: # Wiring for a new page/route
+              - path: /my-new-page # The desired URL path
+                importName: <my-plugin>PluginPage # The exported component name
+                menuItem: # Wiring for the sidebar entry
+                  icon: favorite # A registered icon name
+                  text: My Custom Page
+```
+
+
+When the application loads, it performs the following steps:
+
+1. It parses the dynamic-plugins-config.yaml.
+2. It uses the <plugin_path_or_url> to download the plugin bundle using the dynamic loading mechanism.
+3. If the package exports the plugin object, the application adds it to the list provided to the Backstage createApp API, registering the plugin properly with the front-end application.
+4. It uses the configuration block (dynamicRoutes, menuItem) to:
+* Add an entry to the internal router mapping /my-new-page to the <my-plugin>PluginPage component.
+* Construct and render a new sidebar item labeled My Custom Page, pointing to the /my-new-page route.
+
+
+[NOTE]
+----
+If the configuration is missing, steps 1 and 2 might still occur, but the application skips the final registration in step 3 and the wiring/rendering in step 4, and no UI changes occur.
+----
+
+## Extend internal icon catalog
+
+You can use the internal catalog to fetch icons for configured routes with sidebar navigation menu entry.
+
+* Add a custom icon to the internal icon catalog for use in the menu item of a plugin by using the appIcons configuration as shown in the following example:
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          <package_name>:  # The plugin package name.
+            appIcons:
+              - name: <icon_name> # A unique icon name.
+                module: <module_name> # (Optional): Specifies the set of assets to access within the plugin. If not specified, the system uses the default PluginRoot module name.
+                importName: <custom_icon_name> # (Optional): Specifies which component should be rendered. If not specified, the system uses the default export.
+```
+
+
+[IMPORTANT]
+----
+The package_name key must match the scalprum.name value in your plugin's package.json.
+The module key must match the scalprum.exposedModules key in the plugin's package.json file.
+----
+
+## Define dynamic routes for new plugin pages
+
+Use this procedure to configure dynamic routes for new plugin pages in the application.
+
+1. Define each route by specifying a unique path and, if needed, an importName if it is different from the default export.
+2. Expose additional routes in a dynamic plugin by configuring dynamicRoutes in the dynamic-plugins-config.yaml file
+as shown in the following example:
+
+```yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          <package_name>: # The plugin package name
+            dynamicRoutes:
+                # The unique path in the application. The path cannot override existing routes except the / home route.
+              - path: /<plugin_path>
+                # (Optional): Specifies the set of assets to access within the plugin. If not specified, the system uses the default PluginRoot module name.
+                module: CustomModule
+                # (Optional): Specifies which component should be rendered as a standalone page. If not specified, the system uses the default export.
+                importName: <plugin_page>
+                # Lets you extend the main sidebar navigation and point to a new route.
+                menuItem:
+                  icon: # home | group | category | extension | school | <my_icon>
+                  text: <plugin_label>
+                  enabled: false
+                config: # (Optional): Passes props to a custom sidebar item
+                  props: ...
+```
+
+
+[IMPORTANT]
+----
+The package_name key must match the scalprum.name value in your plugin's package.json.
+The module variable must match the scalprum.exposedModules key in the plugin's package.json file.
+----
+
+The menuItem accepts the following properties:
+text:: The label shown to the user.
+icon:: The Backstage system icon name.
+enabled:: Optional: When you set this to false, you can remove a menuItem from the sidebar.
+importName:: Optional: Specifies the name of an exported SidebarItem component. The component receives a to property as well as any properties specified in config.props.
+3. (Optional) To configure a custom SidebarItem to enhance experiences such as notification badges,
+ensure the component accepts the following properties:
+
+```yaml
+export type MySidebarItemProps = {
+  to: string;
+};
+```
+
+
+where:
+string:: Supplied by the sidebar during rendering as the path configured for the dynamicRoute.
+
+Example of a configuration with a specified custom SidebarItem component
+
+
+```
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          my-dynamic-plugin-package-name:
+            dynamicRoutes:
+              - importName: CustomPage
+                menuItem:
+                  config:
+                    props:
+                      text: Click Me!
+                  importName: SimpleSidebarItem
+                path: /custom_page
+```
+
+
+## Customizing menu items in the sidebar navigation
+
+You can customize the order and parent-child relationships of plugin menu items in the main sidebar navigation by using the menu items configuration as shown in the following example:
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          my-plugin:
+            menuItems:
+              <menu_item_name>:
+                icon: <icon_name>Icon
+                title: <plugin_name> Plugin Page
+                priority: 10
+                parent: favorites
+                enabled: false
+```
+
+
+where:
+
+my-plugin:: The plugin package name.
+<menu_item_name>:: The unique name in the main sidebar navigation. Represents either a standalone menu item or a parent menu item.
+icon:: Optional: The icon for the menu item, which refers to a Backstage system icon. If you have already defined the icon in the dynamicRoutes configuration under menuItem.icon, you can omit it in the menuItems configuration.
+title:: Optional: The display title of the menu item. If you have already defined the title in the dynamicRoutes configuration under menuItem.text, you can omit it in the menuItems configuration.
+priority:: Optional: The order in which menu items appear. The default priority is 0, which places the item at the bottom of the list.
+parent:: Optional: Defines the parent menu item to nest the current item under.
+enabled:: Optional: When you set this to false, you can remove a menuItem from the sidebar.
+
+
+[IMPORTANT]
+----
+If menu_item_name represents a plugin menu item, the name must match the corresponding path in dynamicRoutes. For example, if dynamicRoutes defines path: /my-plugin, the menu_item_name must be my-plugin.
+----
+
+Handling simple paths:: 
+* For simple paths such as path: /my-plugin, the menu_item_name should be my-plugin.
+Handling Complex Paths:: 
+* For complex paths such as path: /metrics/users/info, the menu_item_name should represent the full path in dot notation (for example metrics.users.info).
+* Ignore trailing and leading slashes in paths as follows:
+* For path: /docs, the menu_item_name is docs.
+* For path: /metrics/users, the menu_item_name is metrics.users.
+
+
+[NOTE]
+----
+Red Hat Developer Hub supports up to three levels of nested menu items.
+----
+
+## Binding to existing plugins
+
+You can bind to existing plugins and their routes, and declare new targets sourced from dynamic plugins as shown in the following routeBindings configuration:
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          my-plugin:
+            routeBindings:
+              targets:
+                - name: <plugin_name>Plugin
+                  importName: <plugin_key>Plugin
+                  module: CustomModule
+              bindings:
+                - bindTarget: "<plugin_name>Plugin.externalRoutes"
+                  bindMap:
+                    headerLink: "<plugin_name>Plugin.routes.root"
+```
+
+
+where:
+
+my-plugin:: The plugin package name.
+targets:: A new bind target.
+name:: Optional: Defaults to importName. Explicit name of the plugin that exposes the bind target.
+importName:: Required: Explicit import name that references a BackstagePlugin<{}> implementation.
+module:: Optional: Same as the key in scalprum.exposedModules in the package.json file of the plugin.
+bindTarget:: Required: One of the supported or imported bind targets.
+bindMap:: Required: A map of route bindings similar to bind function options.
+
+To configure routeBindings, complete the following steps:
+
+1. Define new targets using routeBindings.targets. Set the required importName to a BackstagePlugin<{}> implementation.
+2. Declare route bindings using the routeBindings.bindings field by setting bindTarget to the name of the target to bind to. This is a dynamic or static target, such as:
+* catalogPlugin.externalRoutes
+* catalogImportPlugin.externalRoutes
+* techdocsPlugin.externalRoutes
+* scaffolderPlugin.externalRoutes
+
+You can extend existing pages with additional content by using mount points. The application defines these identifiers throughout the system.
+
+## Using mount points
+
+Mount points let you attach UI components to predefined locations in the Red Hat Developer Hub interface, such as entity pages, application headers, listeners, and providers.
+
+### Using mount points
+
+Red Hat Developer Hub defines mount points as identifiers available across the application. You can use these points to extend existing pages with additional content.
+
+#### Customizing entity page
+
+You can extend catalog components and additional views.
+
+The available mount points include the following:
+
+
+
+
+[NOTE]
+----
+Mount points within a catalog such as entity.page. render as tabs and become visible only if at least one plugin contributes to them, or if they can render static content.
+----
+
+Each entity.page. mount point has the following variations:
+
+* /context type that serves to create React contexts
+* /cards type for regular React components
+
+The following is an example of the overall configuration structure of a mount point:
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          my-plugin: # The plugin package name
+            mountPoints: # (Optional): Uses existing mount points
+              - mountPoint: <mountPointName>/[cards|context]
+                module: CustomModule
+                importName: <pluginName>PluginPage
+                config: # (Optional): Lets you pass additional configuration to the component
+                  layout: {} # Used only in /cards type
+                  if:  # Used only in /cards type
+                    allOf|anyOf|oneOf:
+                      - isMyPluginAvailable
+                      - isKind: component
+                      - isType: service
+                      - hasAnnotation: annotationKey
+                  props: {} # React props passed to the component
+```
+
+
+Each mount point supports additional configuration:
+
+* layout: Used only in */cards type which renders visible content.
+Lets you pass MUI sx properties to the component.
+This is useful when you want to control the layout of the component.
+The entity.page.* mount points are rendered as CSS grid,
+so SX property lets you to control the grid layout and exact positioning of the rendered component.
+* props: React props passed to the component. Useful when you want to pass additional data to the component.
+* if: Used only in \*/cards type which renders visible content.
+Passed to <EntitySwitch.Case if={<here>}.
+
+The available conditions include:
+
+* allOf: The configuration must meet all conditions
+* anyOf: The configuration must meet at least one condition
+* oneOf: The configuration must meet only one condition
+
+Conditions are:
+
+* isKind: Accepts a string or a list of string with entity kinds. For example isKind: component renders the component only for entity of kind: Component.
+* isType: Accepts a string or a list of string with entity types. For example isType: service renders the component only for entities of spec.type: 'service'.
+* hasAnnotation: Accepts a string or a list of string with annotation keys. For example hasAnnotation: my-annotation renders the component only for entities that have defined metadata.annotations['my-annotation'].
+* Condition imported from the module of the plugin: Must be function name exported from the same module within the plugin. For example isMyPluginAvailable renders the component only if isMyPluginAvailable function returns true. The function must have the following signature: (e: Entity) => boolean.
+
+The entity page supports adding more items to the menu at the top right of the page. The exported component is a form of dialog wrapper component that accepts an open boolean property and an onClose event handler property as shown in the following example:
+
+
+```yaml
+export type SimpleDialogProps = {
+  open: boolean;
+  onClose: () => void;
+};
+```
+
+
+You can configure the menu entry by using the props configuration entry for the mount point. The title and icon properties sets the text and icon of the menu item. You can use any system icon or icon added through a dynamic plugin. The following is an example configuration:
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          my-dynamic-plugin-package:
+            appIcons:
+              - name: dialogIcon
+                importName: DialogIcon
+            mountPoints:
+              - mountPoint: entity.context.menu
+                importName: SimpleDialog
+                config:
+                  props:
+                    title: Open Simple Dialog
+                    icon: dialogIcon
+```
+
+
+#### Adding application header
+
+You can customize global headers by specifying configurations in the app-config.yaml file as shown in the following example:
+
+
+```yaml
+# app-config.yaml
+dynamicPlugins:
+  frontend:
+    my-plugin:  # The plugin package name
+      mountPoints:
+        - mountPoint: application/header # Adds the header as a global header
+          importName: <header_component> # Specifies the component exported by the global header plugin
+          config:
+            position: above-main-content # Supported values: (`above-main-content`| above-sidebar`)
+```
+
+
+
+[NOTE]
+----
+To configure many global headers at different positions, add entries to the mountPoints field.
+----
+
+#### Adding application listeners
+
+You can add application listeners by using the application/listener mount point as shown in the following example:
+
+
+```yaml
+# app-config.yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      mountPoints:
+        - mountPoint: application/listener
+          importName: <exported listener component>
+```
+
+
+
+[NOTE]
+----
+You can configure many application listeners by adding entries to the mountPoints field.
+----
+
+#### Adding application providers
+
+You can add application providers by using the application/provider mount point. You can use a mount point to configure a context provider as shown in the following example:
+
+
+```yaml
+# app-config.yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      dynamicRoutes:
+        - path: /<route>
+          importName: Component # The component to load on the route
+      mountPoints:
+        - mountPoint: application/provider
+          importName: <exported provider component>
+```
+
+
+
+[NOTE]
+----
+1. You can configure many application providers by adding entries to the mountPoints field.
+2. The package_name key under dynamicPlugins.frontend must match the scalprum.name value in the package.json file of your plugin. This ensures your dynamic plugin loads correctly at runtime.
+----
+
+## Application drawers
+
+Use the application drawer system to create and customize persistent side drawers.
+Multiple drawer plugins can coexist and Red Hat Developer Hub automatically manages which drawer is displayed.
+
+
+[NOTE]
+----
+Only one application drawer is visible at a time.
+When you open a drawer, any previously opened drawer is automatically closed.
+----
+
+### Architecture overview
+
+
+[IMPORTANT]
+----
+The application/internal/drawer-state and application/internal/drawer-content mount points are for internal use only and are subject to change. These will be updated with the introduction of the new frontend system.
+----
+
+The drawer system uses three key mount points defined in the app-config.yaml file.
+
+application/provider:: Wraps the application and manages the drawer's full internal state. This is a standard React context provider.
+application/internal/drawer-state:: Reads from the plugin's context and exposes the minimal drawer state to RHDH.
+The component receives onStateChange callback from RHDH and exposes following properties:
+* id: Unique drawer identifier.
+* isDrawerOpen: Current state of the drawer (opened or closed).
+* drawerWidth: Current drawer width measured in pixels.
+* setDrawerWidth: Function for updating the drawer's width.
+* closeDrawer: Function for closing the drawer.
+
+The component returns null: it doesn&#8217;t render anything and only acts as a bridge.
+
+
+[NOTE]
+----
+RHDH detects state transitions (closed to open, open to closed) automatically. When a drawer opens, RHDH closes other open drawers by calling their closeDrawer. function.
+----
+
+application/internal/drawer-content:: Specifies the content to be rendered inside the drawer. The component uses following properties:
+* id: (required) Unique identifier that must match the id in the provider's context.
+* props.resizable: (optional) Boolean enabling a resize handle on the drawer (managed by the setDrawerWidth function).
+Example of a configured application drawer:: 
+
+
+```yaml
+# app-config.yaml
+dynamicPlugins:
+  frontend:
+    <package_name>: # plugin package name
+      mountPoints:
+        - mountPoint: application/provider
+          importName: MyDrawerProvider
+
+        - mountPoint: application/internal/drawer-state
+          importName: MyDrawerStateExposer
+
+        - mountPoint: application/internal/drawer-content
+          importName: MyDrawerContent
+          config:
+            id: my-drawer # Unique identifier matching the context id
+            props:
+              resizable: true # Enable resize handle (optional, default: false)
+```
+
+
+### Automatic drawer coordination
+
+RHDH automatically manages drawer visibility through state transition detection. Opening a drawer initiates the following workflow:
+
+1. The plugin's internal state changes (isDrawerOpen is set to true).
+2. State exposer detects the change and calls onStateChange.
+3. RHDH receives the state update and sets the drawer as active.
+4. RHDH automatically calls closeDrawer on any previously opened drawer.
+Example scenario:: 
+
+
+```
+# Both plugins configured, but only one drawer visible at a time
+red-hat-developer-hub.backstage-plugin-quickstart:
+  mountPoints:
+    - mountPoint: application/provider
+      importName: QuickstartDrawerProvider
+    - mountPoint: application/internal/drawer-state
+      importName: QuickstartDrawerStateExposer
+    - mountPoint: application/internal/drawer-content
+      importName: QuickstartDrawerContent
+      config:
+        id: quickstart
+    - mountPoint: global.header/help
+      importName: QuickstartButton
+      config:
+        priority: 100
+
+
+
+red-hat-developer-hub.backstage-plugin-test-drawer:
+  mountPoints:
+    - mountPoint: application/provider
+      importName: TestDrawerProvider
+    - mountPoint: application/internal/drawer-state
+      importName: TestDrawerStateExposer
+    - mountPoint: application/internal/drawer-content
+      importName: TestDrawerContent
+      config:
+        id: test-drawer
+    - mountPoint: global.header/help
+      importName: TestButton
+
+# Flow: User opens Quickstart → Quickstart drawer shows
+#       User opens Test Drawer → Quickstart auto-closes, Test drawer shows
+#       User opens Quickstart → test drawer auto-closes, Quickstart shows
+```
+
+
+## Customizing and extending entity tabs
+
+You can customize and extend the set of tabs by using the entityTabs configuration as in the following example:
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          <package_name>: # The plugin package name
+            entityTabs:
+              # Specifies a new tab
+              - path: /new-path
+                title: My New Tab
+                mountPoint: entity.page.my-new-tab
+              # Changes an existing tab's title or mount point
+              - path: /
+                title: General
+                mountPoint: entity.page.overview # Can be customized
+                # Specifies the sub-path route in the catalog where this tab is available
+              - path: "/pr"
+                title: "Changed Pull/Merge Requests" # Specifies the title you want to display
+                priority: 1
+                # The base mount point name available on the tab
+                mountPoint: "entity.page.pull-requests"
+              - path: "/"
+                title: "Changed Overview"
+                mountPoint: "entity.page.overview"
+                # Specifies the order of tabs. The tabs with higher priority values appear first
+                priority: -6
+```
+
+
+Each entity tab entry requires the following attributes:
+* path: Specifies the sub-path route in the catalog where this tab is available.
+* title: The title displayed to the user.
+* mountPoint: The base mount point name available on the tab.
+This name is expanded to create two mount points per tab,
+one appended with /context and the second appended with /cards.
+* priority: (Optional): Determines the order of tabs. Tabs with higher priority values appear first. You can set a negative priority to hide default tabs.
+
+You can configure dynamic front-end plugins to target the mount points exposed by the entityTabs configuration. The following are the default catalog entity routes in the default order:
+
+
+
+
+[NOTE]
+----
+Mount points within Catalog such as `entity.page.*` render as tabs and become visible only if at least one plugin contributes to them, or if they can render static content.
+----
+
+## Translation resources for dynamic plugins
+
+You can add translation resources as well as override default plugin translation options in the dynamic plugin configuration file.
+
+Example of an added translation resource:: 
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          <package_name>: # same as `scalprum.name` key in plugin's `package.json`
+            translationResources:
+              # Adding the exported translations
+              - importName: <plugin translation>
+```
+
+
+Example of default translation replaced by the native JSON-based plugin translation:: 
+
+
+```yaml
+# dynamic-plugins-config.yaml
+plugins:
+  - plugin: <plugin_path_or_url>
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          <package_name>: # must match the `scalprum.name` key in plugin's `package.json`
+            translationResources:
+              # Adding the exported translations for this plugin
+              - importName: <plugin translation>
+                ref: <plugin translation ref> # Ref is required for `jsonTranslations`
+```
+
+
+## Using a custom SignInPage component
+
+In Red Hat Developer Hub (RHDH), the SignInPage component manages authentication flow. By default, Developer Hub uses a static SignInPage.
+
+When you configure a custom SignInPage:
+
+* Only one signInPage is specified and used by the application.
+* The system loads the specified importName component from your dynamic plugin.
+* The component returns a configured SignInPage that connects the required authentication provider factories.
+* The optional module field specifies the set of assets that should be accessed within the dynamic plugin. By default, the system uses the PluginRoot module.
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    <package_name>: # The plugin package name
+      signInPage:
+        importName: CustomSignInPage
+```
+
+
+
+[IMPORTANT]
+----
+The package_name specified under dynamicPlugins.frontend must match the scalprum.name value in the package.json file of your plugin to ensure the dynamic plugin loads correctly at runtime.
+----
+
+## Providing custom Scaffolder field extensions
+
+With the Scaffolder component in Red Hat Developer Hub (RHDH), you can create software components by using templates through a guided wizard. You can extend the functionality of the Scaffolder by adding custom form fields as dynamic plugins by using the scaffolderFieldExtensions configuration.
+
+With custom field extensions, you can add specialized form fields that capture domain-specific data during the scaffolding process, such as environment selectors, input validations, or repository checks.
+
+When you configure custom Scaffolder field extensions:
+
+* The dynamic plugin exposes the field extension component using createScaffolderFieldExtension.
+* You can register multiple field extensions by listing each one in the configuration.
+* Each field extension requires a unique importName for registration. The name should reference the value returned by the scaffolder field extension API.
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      scaffolderFieldExtensions:
+        - importName: MyNewFieldExtension # References the exported Scaffolder field extension component from your plugin
+```
+
+
+
+[NOTE]
+----
+The module field is optional and specifies which set of assets to access within the plugin. By default, the system uses the PluginRoot module, consistent with the scalprum.exposedModules key in the package.json file of your package.
+----
+
+## Providing additional utility APIs
+
+If a dynamic plugin exports the plugin object returned by createPlugin, the createApp API receives it. All API factories exported by the plugin are automatically registered and available in the front-end application.
+
+You can add an entry to the dynamicPlugins.frontend configuration when a dynamic plugin has only API factories as shown in the following example:
+
+
+```yaml
+# app-config.yaml
+dynamicPlugins:
+  frontend:
+    my-dynamic-plugin-package-with-api-factories: {}
+```
+
+
+However, when the dynamic plugin is not exporting the plugin object, you must explicitly configure each API factory. Use the apiFactories configuration to register them with the createApp API as shown in the following example:
+
+
+```yaml
+# app-config.yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      apiFactories:
+        # (Optional): Specify the import name that references a `AnyApiFactory<{}>` implementation. (Defaults to `default` export)
+        - importName: BarApi
+          # (Optional): An argument which specifies the assets you want to access within the plugin. If not provided, the default module named `PluginRoot` is used
+          module: CustomModule
+```
+
+
+An API factory from a dynamic plugin overrides the API factories that the Developer Hub application initializes when both specify the same API ref ID. A dynamic plugin can export AnyApiFactory<{}> to cater for some specific use case as shown in the following example:
+
+
+```yaml
+export const customScmAuthApiFactory = createApiFactory({
+  api: scmAuthApiRef,
+  deps: { githubAuthApi: githubAuthApiRef },
+  factory: ({ githubAuthApi }) =>
+    ScmAuth.merge(
+      ScmAuth.forGithub(githubAuthApi, { host: "github.someinstance.com" }),
+      ScmAuth.forGithub(githubAuthApi, {
+        host: "github.someotherinstance.com",
+      }),
+    ),
+});
+```
+
+
+The corresponding configuration that overrides the default ScmAuth API factory that Developer Hub defaults to is as shown in the following example:
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    my-plugin:  # The plugin package name
+      apiFactories:
+        - importName: customScmAuthApiFactory
+```
+
+
+## Adding custom authentication provider settings
+
+You can install new authentication providers from a dynamic plugin that either adds additional configuration support for an existing provider or adds a new authentication provider. The user settings section lists these providers under the Authentication Providers tab.
+
+You can use the providerSettings configuration to add entries for an authentication provider from a dynamic plugin, as shown in the following example:
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      providerSettings:
+        # The title for the authentication provider shown above the user's profile image if available
+        - title: My Custom Auth Provider
+          # The description of the authentication provider
+          description: Sign in using My Custom Auth Provider
+          # The ID of the authentication provider as provided to the `createApiRef` API call.
+          provider: core.auth.my-custom-auth-provider
+```
+
+
+
+[NOTE]
+----
+provider looks up the corresponding API factory for the authentication provider to connect the provider's Sign In/Sign Out button.
+----
+
+## Providing custom TechDocs add-ons
+
+If a plugin provides many add-ons, each techdocsAddon entry specifies a unique importName corresponding to the add-on.
+Front-end plugins expose the TechDocs add-on component by using the techdocsAddons configuration as shown in the following example:
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      techdocsAddons:
+        - importName: ExampleAddon # The exported add-on component
+          config:
+            props: ... # (Optional): React props to pass to the add-on
+```
+
+
+## Customizing Red Hat Developer Hub theme
+
+You can customize Developer Hub themes from a dynamic plugin with various configurations as shown in the following example:
+
+
+```yaml
+import { lightTheme } from './lightTheme';
+import { darkTheme } from './darkTheme';
+import { UnifiedThemeProvider } from '@backstage/theme';
+export const lightThemeProvider = ({ children }: { children: ReactNode }) => (
+  <UnifiedThemeProvider theme={lightTheme} children={children} />
+);
+export const darkThemeProvider = ({ children }: { children: ReactNode }) => (
+  <UnifiedThemeProvider theme={darkTheme} children={children} />
+);
+```
+
+
+For more information about creating a custom theme, see creating a custom theme.
+
+You can declare the theme by using the themes configuration as shown in the following example:
+
+
+```yaml
+dynamicPlugins:
+  frontend:
+    my-plugin: # The plugin package name
+      themes:
+          #  are `light` or `dark`. Using 'light' overrides the app-provided light theme
+        - id: light
+          title: Light
+          variant: light
+          icon: someIconReference
+          importName: lightThemeProvider
+          # The theme name displayed to the user on the *Settings* page. Using 'dark' overrides the app-provided dark theme
+        - id: dark
+          title: Dark
+          variant: dark
+          icon: someIconReference # A string reference to a system or app icon
+          # The name of the exported theme provider function, the function signature should match `({ children }: { children: ReactNode }): React.JSX.Element`
+          importName: darkThemeProvider
+```
+
+
+# Use plugin indicators and support types in the Red Hat Developer Hub
+
+Understanding plugin indicators and support types is crucial for effectively using the Red Hat Developer Hub.
+
+## Navigate the plugin marketplace and filter plugins using badges
+
+The plugin marketplace uses badges and indicators to display plugin status, support level, and maturity to help you make informed decisions when selecting plugins.
+
+
+[IMPORTANT]
+----
+Developer Preview features are not supported by Red Hat in any way and are not functionally complete or production-ready. Do not use Developer Preview features for production or business-critical workloads. Developer Preview features provide early access to functionality in advance of possible inclusion in a Red Hat product offering. Customers can use these features to test functionality and provide feedback during the development process. Developer Preview features might not have any documentation, are subject to change or removal at any time, and have received limited testing. Red Hat might provide ways to submit feedback on Developer Preview features without an associated SLA.
+For more information about the support scope of Red Hat Developer Preview features, see Developer Preview Support Scope.
+----
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+The marketplace employs the following badges and tags to offer quick visual cues:
+
+* Certified
+* Generally Available (GA)
+* Community Plugin
+* Tech Preview
+* Dev Preview
+* Custom Plugin
+
+[NOTE]
+----
+Hovering your mouse cursor over any badge or tag (such as GA or Certified) on either the plugin list or details page displays a helper text explanation clarifying its meaning and implications. Hovering over tags such as Technology Preview, or Developer Preview will display a helper text explanation clarifying its meaning and indicating if it is in a technical preview phase or a development preview phase.
+----
+
+The plugin details pages include the following fields for additional context: author, tags, category,publisher, and support provider. The update also changes the version text to Backstage compatibility version to offer more precise compatibility information.
+
+The following filter examples are available:
+
+* To view only plugins that are Generally Available (GA), apply the GA filter.
+* To find Certified plugins, apply the Certified in Support type filter.
+* To explore plugins currently in Tech Preview, Dev Preview, or Community Plugin status, apply the corresponding filter.
+
+1. Navigate to the main plugin list page within the Red Hat Developer Hub.
+2. On the plugin list page, use the Support type filter to refine your plugin listings based on the plugin support status. You can use this filter to quickly narrow down options to plugins that meet your specific support requirements.
+3. Click the entry of a plugin list page to view its details, which offer an in-depth view of its characteristics.

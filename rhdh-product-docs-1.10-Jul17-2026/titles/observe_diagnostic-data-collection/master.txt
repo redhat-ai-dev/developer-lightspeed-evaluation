@@ -1,0 +1,586 @@
+# Collect diagnostic data to streamline support resolution
+
+Collect diagnostic data from Red Hat Developer Hub deployments on OpenShift Container Platform and Kubernetes platforms by using the must-gather tool to accelerate troubleshooting and provide complete information for support cases.
+
+# Diagnostic data collection overview
+
+The must-gather tool collects diagnostic data and logging information from your cluster, which helps Red Hat Support resolve your deployment issues efficiently.
+
+
+[IMPORTANT]
+----
+These features are for Technology Preview only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs), might not be functionally complete, and Red Hat does not recommend using them for production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information on Red Hat Technology Preview features, see Technology Preview Features Scope.
+----
+
+Use must-gather when you open a support ticket with Red Hat Global Support Services, troubleshoot deployment issues, or capture deployment state before RHDH upgrades.
+
+
+[NOTE]
+----
+Typical collection size ranges from 10 MB to 50 MB for basic collections and 500 MB to 2 GB when including heap dumps.
+Plan for adequate storage and bandwidth when collecting for support tickets.
+----
+
+
+[IMPORTANT]
+----
+The must-gather output might contain sensitive information such as configuration values, environment variables, application logs, and resource definitions.
+While the tool automatically sanitizes known secret types, you should review the output before sharing it with support to check for domain-specific sensitive data.
+----
+
+# Run must-gather on OpenShift to collect diagnostic data
+
+Collect diagnostic data from RHDH deployments on OpenShift Container Platform.
+
+* You have deployed Red Hat Developer Hub on OpenShift Container Platform.
+* Cluster administrator access or RBAC permissions for resource inspection.
+* Authenticated OpenShift CLI (oc) (OpenShift Container Platform).
+
+1. Run must-gather:
+
+```terminal
+$ oc adm must-gather --image=registry.access.redhat.com/rhdh/rhdh-must-gather-rhel9:1.10
+```
+
+
+Output: ./must-gather.local.<timestamp>
+
+[NOTE]
+----
+The must-gather tool automatically detects and collects data from all RHDH instances in the cluster, regardless of whether they were deployed using the Operator or Helm chart.
+For advanced scenarios, you can limit data collection:
+1. Skip Helm-based deployments: - /usr/bin/gather --without-helm
+2. Skip Operator-based deployments: - /usr/bin/gather --without-operator
+----
+
+* Confirm that the output directory exists:
+
+```terminal
+$ ls must-gather.local.<timestamp>/
+```
+
+
+The directory contains subdirectories for each deployment method found:
+* operator/ - Data from Operator-based deployments
+* helm/ - Data from Helm-based deployments
+
+* Gathering data about your cluster in the Red Hat OpenShift Container Platform documentation
+
+# Run must-gather on Kubernetes to collect diagnostic data
+
+Collect diagnostic data from RHDH deployments on supported Kubernetes platforms.
+
+* You have deployed Red Hat Developer Hub on a supported Kubernetes platform.
+* Cluster administrator access or RBAC permissions for resource inspection.
+* Authenticated CLI: kubectl and helm.
+
+1. Install must-gather:
+
+```terminal
+$ helm upgrade --install my-rhdh-must-gather redhat-developer-hub-must-gather \
+  --repo https://charts.openshift.io \
+  --namespace rhdh-diagnostics \
+  --create-namespace
+```
+
+
+[NOTE]
+----
+The must-gather tool automatically detects and collects data from all RHDH instances in the cluster, regardless of whether they were deployed using the Operator or Helm chart.
+For advanced scenarios, you can limit data collection using Helm values:
+1. Skip Helm-based deployments: --set gather.withHelm=false
+2. Skip Operator-based deployments: --set gather.withOperator=false
+----
+2. Wait for collection:
+
+```terminal
+$ kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/instance=my-rhdh-must-gather,app.kubernetes.io/component=gather \
+  --timeout=3600s -n rhdh-diagnostics
+```
+
+3. Extract data:
+
+```terminal
+$ kubectl exec deploy/my-rhdh-must-gather -c data-holder -n rhdh-diagnostics -- \
+  tar czf - -C /must-gather . > rhdh-must-gather-output.tar.gz
+```
+
+4. Clean up:
+
+```terminal
+$ helm uninstall my-rhdh-must-gather -n rhdh-diagnostics
+```
+
+
+* Confirm that the output archive contains diagnostic data:
+
+```terminal
+$ tar -tzf rhdh-must-gather-output.tar.gz
+```
+
+
+The archive contains subdirectories for each deployment method found:
+* operator/ - Data from Operator-based deployments
+* helm/ - Data from Helm-based deployments
+
+# Collect diagnostic data from air-gapped clusters with a mirrored must-gather image
+
+Mirror the must-gather image to your registry to enable diagnostic data collection from disconnected clusters.
+
+* skopeo tool installed on the machine with registry access.
+* Access to an internal container registry.
+* For OpenShift Container Platform: Cluster administrator access to update the global pull secret.
+* For Kubernetes: Ability to create secrets in target namespaces.
+
+1. Choose your mirroring workflow based on network access:
+Partially disconnected:
+Your local machine can access both the internet and the internal registry.
+Fully disconnected:
+Requires a bastion host or approved file transfer method to move images.
+2. Mirror the must-gather image:
+For partially disconnected environments:
+
+```terminal
+$ skopeo copy \
+  docker://registry.access.redhat.com/rhdh/rhdh-must-gather-rhel9:*<version>* \
+  docker://<internal-registry>/rhdh/rhdh-must-gather:*<version>*
+```
+
+For fully disconnected environments:
+On a machine with internet access, pull the must-gather image:
+
+```terminal
+$ skopeo copy \
+  docker://registry.access.redhat.com/rhdh/rhdh-must-gather-rhel9:*<version>* \
+  dir:./rhdh-must-gather-<version>
+```
+
+Pull the Helm chart:
+
+```terminal
+$ helm pull redhat-developer-hub-must-gather --repo https://charts.openshift.io
+```
+
+Transfer the image directory and the redhat-developer-hub-must-gather-<version>.tgz chart file to your bastion host. Push the image to the internal registry:
+
+```terminal
+$ skopeo copy \
+  dir:./rhdh-must-gather-<version> \
+  docker://<internal-registry>/rhdh/rhdh-must-gather:*<version>*
+```
+
+Replace <version> with the must-gather version that matches your RHDH deployment and <internal-registry> with your internal registry hostname.
+3. Configure image pull authentication:
+
+[NOTE]
+----
+If your internal registry requires authentication, you must configure image pull secrets before running must-gather. Without proper credentials, the must-gather pod fails with ImagePullBackOff errors.
+----
+On OpenShift Container Platform:
+Add your internal registry credentials to the cluster-wide pull secret.
+For instructions, see Updating the global cluster pull secret in the Red Hat OpenShift Container Platform documentation.
+On Kubernetes:
+Create a docker-registry secret:
+
+```terminal
+$ kubectl create secret docker-registry must-gather-pull-secret \
+  --docker-server=<internal-registry> \
+  --docker-username=<username> \
+  --docker-password=<password> \
+  -n rhdh-diagnostics
+```
+4. Run must-gather using the mirrored image:
+On OpenShift Container Platform:
+
+```terminal
+$ oc adm must-gather --image=<internal-registry>/rhdh/rhdh-must-gather:*<version>*
+```
+
+On Kubernetes (partially disconnected):
+
+```terminal
+$ helm upgrade --install my-rhdh-must-gather redhat-developer-hub-must-gather \
+  --repo https://charts.openshift.io \
+  --namespace rhdh-diagnostics \
+  --create-namespace \
+  --set image.registry=<internal-registry> \
+  --set image.repository=rhdh/rhdh-must-gather \
+  --set image.tag=<version> \
+  --set imagePullSecrets[0].name=must-gather-pull-secret
+```
+
+On Kubernetes (fully disconnected):
+
+```terminal
+$ helm upgrade --install my-rhdh-must-gather /path/to/redhat-developer-hub-must-gather-<version>.tgz \
+  --repo https://charts.openshift.io \
+  --namespace rhdh-diagnostics \
+  --create-namespace \
+  --set image.registry=<internal-registry> \
+  --set image.repository=rhdh/rhdh-must-gather \
+  --set image.tag=<version> \
+  --set imagePullSecrets[0].name=must-gather-pull-secret
+```
+
+* Verify that the collection starts without ImagePullBackOff errors:
+
+```terminal
+$ oc get pods -n openshift-must-gather-<random>  # On OpenShift
+$ kubectl get pods -n rhdh-diagnostics           # On Kubernetes
+```
+
+
+ImagePullBackOff errors:
+
+Check that registry credentials are configured correctly and that the image path matches your registry structure.
+
+Certificate errors:
+
+If your internal registry uses self-signed certificates, configure certificate trust on the cluster.
+For OpenShift Container Platform, see Configuring image registry repository mirroring in the Red Hat OpenShift Container Platform documentation.
+
+* Updating the global cluster pull secret in the Red Hat OpenShift Container Platform documentation
+
+# Diagnostic data types and collection scope
+
+The must-gather tool uses collectors to gather specific types of diagnostic data.
+
+Reduce collection time by:
+
+* Excluding collectors not needed for your deployment
+* Filtering to specific namespaces
+* Enabling optional collectors only when required
+
+## Default-enabled collectors
+
+The following collectors run by default. Exclude collectors not needed for your deployment using --without-<collector> flags:
+
+platform collector:: Collects cluster version and platform type (OpenShift Container Platform, AKS, EKS, or GKE).
+Disable with --without-platform.
+helm collector:: Collects Helm release information.
+Use for Helm-based deployments only.
+Disable with --without-helm.
+operator collector:: Collects Operator logs and custom resources.
+Use for Operator-based deployments only.
+Disable with --without-operator.
+orchestrator collector:: Collects workflow data for the Orchestrator plugin.
+Use to troubleshoot Orchestrator workflows only.
+Disable with --without-orchestrator.
+route-ingress collector:: Collects route definitions (OpenShift Container Platform) and ingress configurations (Kubernetes).
+Use to troubleshoot external access only.
+Disable with --without-route or --without-ingress.
+namespace-inspect collector:: Collects namespace resources for support teams.
+Limit to specific namespaces using --namespaces.
+Recommended for all collections.
+Disable with --without-namespace-inspect.
+
+## Opt-in collectors
+
+The following collectors do not run by default. Enable them only when needed:
+
+cluster-info collector:: Collects cluster-wide state information beyond basic platform metadata.
+Enable with --cluster-info.
+
+[IMPORTANT]
+----
+Enable this collector only when support requests it, as it significantly increases collection time and may impact cluster performance during collection.
+----
+heap-dumps collector:: Collects Node.js memory snapshots for diagnosing memory issues.
+Enable with --with-heap-dumps.
+
+Requirements:
+* Liveness probe timeout increased to prevent pod restarts
+* Sufficient storage (50 MB to 500 MB per heap dump file)
+
+Use only when:
+
+* Troubleshooting memory leaks
+* Support requests memory analysis
+* Diagnosing out-of-memory errors
+
+# Collect heap dumps to diagnose memory issues
+
+Collect Node.js heap snapshots when you troubleshoot memory leaks, out-of-memory errors, or when support requests memory analysis.
+
+* Sufficient storage for heap dump files (50 MB to 500 MB each).
+* For SIGUSR2 method: Node.js 12+ for --heapsnapshot-signal flag support.
+
+1. Choose the heap dump collection method:
+Inspector protocol (default):
+* Works out of the box
+* Use unless your deployment sets --disable-sigusr1 in NODE_OPTIONS
+SIGUSR2 signal:
+* Requires configuring NODE_OPTIONS in your deployment first
+* Use when the inspector protocol is not available
+2. If using SIGUSR2, configure NODE_OPTIONS:
+
+[NOTE]
+----
+Skip this step if using the inspector protocol (default method).
+----
+Operator deployments:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha1
+kind: Backstage
+metadata:
+  name: my-rhdh
+spec:
+  application:
+    extraEnvs:
+      - name: NODE_OPTIONS
+        value: "--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
+```
+
+Apply the change:
+
+```terminal
+$ oc apply -f backstage-cr.yaml
+```
+
+Helm deployments:
+
+```yaml
+upstream:
+  backstage:
+    extraEnvVars:
+      - name: NODE_OPTIONS
+        value: "--heapsnapshot-signal=SIGUSR2 --diagnostic-dir=/tmp"
+```
+
+Update the release:
+
+```terminal
+$ helm upgrade my-rhdh redhat-developer-hub/backstage -f values.yaml -n <namespace>
+```
+
+Wait for pods to restart before proceeding.
+3. Increase the liveness probe timeout to prevent pod restarts:
+
+[IMPORTANT]
+----
+RHDH stops responding during heap dump collection, and large memory footprints (1GB+) can cause liveness probe failures.
+Plan collection during maintenance windows or low-traffic periods.
+----
+Operator deployments:
+Update the Backstage custom resource to patch the deployment:
+
+```yaml
+apiVersion: rhdh.redhat.com/v1alpha1
+kind: Backstage
+metadata:
+  name: my-rhdh
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: backstage-backend
+                livenessProbe:
+                  failureThreshold: 180
+```
+
+Apply the change:
+
+```terminal
+$ oc apply -f backstage-cr.yaml
+```
+
+Helm deployments:
+Update your Helm values:
+
+```yaml
+upstream:
+  backstage:
+    livenessProbe:
+      failureThreshold: 180
+```
+
+Apply the change:
+
+```terminal
+$ helm upgrade my-rhdh redhat-developer-hub/backstage -f values.yaml -n <namespace>
+```
+
+Wait for pods to restart before proceeding.
+4. Run must-gather with heap dumps enabled:
+On OpenShift Container Platform:
+For inspector protocol (default):
+
+```terminal
+$ oc adm must-gather --image=registry.access.redhat.com/rhdh/rhdh-must-gather-rhel9:1.10 -- /usr/bin/gather --with-heap-dumps
+```
+
+For SIGUSR2 method:
+
+```terminal
+$ oc adm must-gather --image=registry.access.redhat.com/rhdh/rhdh-must-gather-rhel9:1.10 -- /usr/bin/gather --with-heap-dumps --heap-dump-method sigusr2
+```
+
+On supported Kubernetes platforms:
+For inspector protocol (default):
+
+```yaml
+gather:
+  heapDump:
+    enabled: true
+    method: "inspector"
+```
+
+For SIGUSR2 method:
+
+```yaml
+gather:
+  heapDump:
+    enabled: true
+    method: "sigusr2"
+```
+
+Collection takes 5-15 minutes depending on pod count and memory size.
+
+Check for .heapsnapshot files:
+
+
+```terminal
+$ find must-gather.local.<timestamp> -name "*.heapsnapshot"  # On OpenShift
+$ tar -tzf rhdh-must-gather-output.tar.gz | grep heapsnapshot  # On Kubernetes
+```
+
+
+If collection starts but times out before completing:: You see progress messages but collection eventually times out before finishing.
+Check the must-gather logs for warnings about liveness probe settings:
+
+```terminal
+[WARN] Pod 'xxx' may restart during heap dump collection!
+[WARN]   Current: failureThreshold=3 × periodSeconds=10s = 30s before restart
+[WARN]   Required: at least 900s (HEAP_DUMP_TIMEOUT)
+```
+
+
+Set your liveness probe timeout longer than the collection time.
+
+For Operator-based deployments, update the Backstage custom resource:
+
+```yaml
+spec:
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: backstage-backend
+                livenessProbe:
+                  failureThreshold: 180
+```
+
+
+Apply with oc apply -f backstage-cr.yaml.
+
+For Helm-based deployments, patch the deployment directly:
+
+```terminal
+$ oc patch deployment <deployment-name> -n <namespace> \
+  -p '{"spec":{"template":{"spec":{"containers":[{"name":"backstage-backend","livenessProbe":{"failureThreshold":180}}]}}}}'
+```
+
+
+Wait for your pods to restart with the new configuration, then run heap dump collection again.
+If collection times out:: Large memory footprints (multiple gigabytes) can take 10-15 minutes to snapshot.
+Increase the heap dump timeout to allow more time for collection.
+
+On OpenShift Container Platform, set the timeout using an environment variable:
+
+```terminal
+$ oc adm must-gather --image=registry.access.redhat.com/rhdh/rhdh-must-gather-rhel9:1.10 \
+  -- /usr/bin/env HEAP_DUMP_TIMEOUT=1800 /usr/bin/gather --with-heap-dumps
+```
+
+
+On Kubernetes, set the timeout in your Helm values:
+
+```yaml
+gather:
+  heapDump:
+    enabled: true
+    timeout: "1800"
+```
+
+
+# Configuration options for diagnostic collection
+
+Reference tables for must-gather command-line flags, environment variables, and Helm chart values.
+
+## Command-line flags
+
+Command-line flags are available when running the gather script directly.
+On OpenShift Container Platform, pass these flags after&#8201;&#8212;&#8201;/usr/bin/gather.
+On Kubernetes, use the equivalent Helm chart values instead.
+
+
+
+## Environment variables
+
+Environment variables control must-gather operational behavior when running the gather script directly.
+When using the Helm chart, use the Helm chart values described in the next section instead of environment variables.
+
+
+
+## Helm chart values
+
+When deploying must-gather on Kubernetes platforms using the Helm chart, configure collection options using a values file.
+The following table shows key Helm values and their equivalent command-line flags or environment variables.
+
+
+
+
+[NOTE]
+----
+Helm boolean values use positive logic (withX: true means include), while command-line flags use negative logic (--without-X means exclude).
+----
+
+# Diagnostic data output structure and organization
+
+The must-gather output directory organizes data by collector type, namespace, and resource type.
+
+## Top-level directory structure
+
+The must-gather output directory contains files and subdirectories organized by collection method and data type.
+The following table shows the top-level structure:
+
+
+
+## Heap dump file locations
+
+When the tool collects heap dumps with the --with-heap-dumps flag, they appear within deployment-specific directories, not under namespace-inspect/namespaces/. The location depends on the installation method:
+
+Heap dump file paths by deployment type:
+
+* Helm releases: helm/releases/ns=<namespace>/<release>/deployment/heap-dumps/&#8230;&#8203;
+* Helm standalone: helm/standalone/ns=<namespace>/<workload>/deployment/heap-dumps/&#8230;&#8203;
+* Operator: operator/backstage-crs/ns=<namespace>/<cr>/deployment/heap-dumps/&#8230;&#8203;
+
+Example:
+
+
+```
+helm/releases/ns=rhdh-prod/developer-hub/deployment/heap-dumps/pod=backstage-developer-hub-7d8f9c5b-xk2m4/container=backstage-backend/heapdump-20260430-143022.heapsnapshot
+```
+
+
+Analyze heap dump files using Chrome DevTools, Node.js heap analysis tools, or memory profilers.
+
+## Common diagnostic data locations
+
+The following table shows where to find frequently needed diagnostic information in the must-gather output:
+
+
+
+# Additional resources
+
+* RHDH must-gather repository
+* Create a support case for Red Hat Global Support Services

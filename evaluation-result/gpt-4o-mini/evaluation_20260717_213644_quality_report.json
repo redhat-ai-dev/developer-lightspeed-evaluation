@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-07-17T21:36:44.856435+00:00",
+  "quality_score": 0.7755028092373952,
+  "quality_metrics": {
+    "custom:answer_correctness": {
+      "mean": 0.8094188376753507,
+      "count": 499,
+      "weight": 0.5
+    },
+    "ragas:faithfulness": {
+      "mean": 0.7415867807994398,
+      "count": 499,
+      "weight": 0.5
+    }
+  },
+  "extra_metrics": {
+    "ragas:context_precision_without_reference": {
+      "mean": 0.9346006745528673,
+      "count": 499
+    },
+    "ragas:context_recall": {
+      "mean": 1.0,
+      "count": 499
+    },
+    "ragas:context_relevance": {
+      "mean": 0.9954909819639278,
+      "count": 499
+    }
+  },
+  "agent_latency_stats": null,
+  "agent_token_stats": null,
+  "warnings": [
+    "WARNING: Quality score metrics ['ragas:context_precision', 'custom:tool_eval'] were excluded from quality score computation. Reason: Not found in evaluation results."
+  ]
+}
