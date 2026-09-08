@@ -1,5 +1,8 @@
 # Developer Lightspeed Evaluation
 
+> [!WARNING]
+> This repository has been retired and will no longer be maintained. It has been moved to [redhat-developer/rhdh-intelligent-assistant-evaluation](https://github.com/redhat-developer/rhdh-intelligent-assistant-evaluation).
+
 This branch contains the evaluation resources for **Developer Lightspeed 1.10**, including the source RAG documentation, the generated datasets, and the performance results across multiple LLMs.
 
 ## 📂 Repository Structure
